@@ -8,17 +8,17 @@
 #include <condition_variable>
 #include <unordered_map>
 #include "common_struct.h"
-//协议相关配置信息
-#define HIGH_FREQ_SLOT_LEN 2.5  //业务信道时隙长度（单位：ms）
-#define LOW_FREQ_SLOT_LEN 20    //网管信道时隙长度（单位：ms）
-#define TRIGGER_LEN 0.5     //触发时长（单位：ms）
-#define HIGH_FREQ_CHANNEL_TRIGGER_LEN (HIGH_FREQ_SLOT_LEN/TRIGGER_LEN)    //业务信道触发次数
-#define LOW_FREQ_CHANNEL_TRIGGER_LEN (LOW_FREQ_SLOT_LEN/TRIGGER_LEN)  //网管信道触发次数
-#define TIME_PRECISION 100 //时间精确度（100us）(与底层中断相关，不要随便改变！！！！！！)
-#define END_LINK_BUILD_TIME 1000              // 结束建链阶段时间（单位：ms）
-#define SUBNET_NODE_NUMBER_MAX 20 //子网最大节点数
+// 协议相关配置信息
+#define HIGH_FREQ_SLOT_LEN 2.5                                           // 业务信道时隙长度（单位：ms）
+#define LOW_FREQ_SLOT_LEN 20                                             // 网管信道时隙长度（单位：ms）
+#define TRIGGER_LEN 0.5                                                  // 触发时长（单位：ms）
+#define HIGH_FREQ_CHANNEL_TRIGGER_LEN (HIGH_FREQ_SLOT_LEN / TRIGGER_LEN) // 业务信道触发次数
+#define LOW_FREQ_CHANNEL_TRIGGER_LEN (LOW_FREQ_SLOT_LEN / TRIGGER_LEN)   // 网管信道触发次数
+#define TIME_PRECISION 100                                               // 时间精确度（100us）(与底层中断相关，不要随便改变！！！！！！)
+#define END_LINK_BUILD_TIME 1000                                         // 结束建链阶段时间（单位：ms）
+#define SUBNET_NODE_NUMBER_MAX 20                                        // 子网最大节点数
 
-//低频信道相关配置
+// 低频信道相关配置
 #define MANAGEMENT_SLOT_NUMBER_LINK_BUILD 25  // 建链阶段网管信道时隙表包含时隙数
 #define MANAGEMENT_SLOT_NUMBER_OTHER_STAGE 50 // 其他阶段阶段网管信道时隙表包含时隙数
 #define MANA_MAX_BUSINESS_NUMBER 10           // 网管信道每一个优先级可允许容纳的业务量
@@ -26,19 +26,19 @@
 #define ACCESS_REQUREST_WAITING_MAX_TIME 200                    // 节点等待接入请求回复最长时间（单位：ms）
 #define ACCESS_SUBNET_FREQUENCY_PARTTERN_WAITTING_MAX_TIME 3000 // 等待接收全网跳频图案的最大时间
 #define MAX_RANDOM_BACKOFF_NUM 7                                // 最大接入退避时隙
-//高频信道相关配置信息
+// 高频信道相关配置信息
 #define FREQUENCY_DIVISION_MULTIPLEXING_NUMBER 10 // 子网内通信频分复用允许最大复用数(1/2,向下取整)
 #define TRAFFIC_SLOT_NUMBER 400                   // 业务信道时隙表包含时隙数(执行阶段)
 #define TRAFFIC_CHANNEL_PRIORITY 4                // 业务信道业务优先级数量
 #define TRAFFIC_MAX_BUSINESS_NUMBER 60            // 业务信道每一个优先级可允许容纳的业务量
-#define MAX_WAITING_TIME 100000              // 数据包在队列中的最大等待时间(ms)
-#define LINK_SETUP_GUARD_TIME 100          // 建链阶段保护时间(在网管节点开始广播(20ms)后80ms开始业务信道的建链)
-#define LINK_SETUP_INTERVAL 500            // 两次建链间的间隔时间(指从第一次开始发建链请求到第二次开始)
-#define SENDING_SLOTTABLE_PREPARE_TIME 500 // 在收到链路构建需求事件后 发送时隙表
+#define MAX_WAITING_TIME 100000                   // 数据包在队列中的最大等待时间(ms)
+#define LINK_SETUP_GUARD_TIME 100                 // 建链阶段保护时间(在网管节点开始广播(20ms)后80ms开始业务信道的建链)
+#define LINK_SETUP_INTERVAL 500                   // 两次建链间的间隔时间(指从第一次开始发建链请求到第二次开始)
+#define SENDING_SLOTTABLE_PREPARE_TIME 500        // 在收到链路构建需求事件后 发送时隙表
 // 频谱感知与跳频序列
-#define NSUM 50                               // 与产生正态分布数有关, 该值越大, 符合正态分布精度值越大(中心极限定理法)
+#define NSUM 50                                // 与产生正态分布数有关, 该值越大, 符合正态分布精度值越大(中心极限定理法)
 #define INTERFEREENCE_FREQUENCY_THRESHOLD 0.01 // 使用频段干扰比例, 若超过此门限, 则进入频率调整阶段
-#define TOTAL_FREQ_POINT 501                  // 总频点
+#define TOTAL_FREQ_POINT 501                   // 总频点
 #define M_SEQUENCE_LENGTH 9
 #define FREQUENCY_COUNT 25
 #define MIN_FREQUENCY 0
@@ -60,7 +60,7 @@ enum MacState
     Mac_Access // 接入阶段
 };
 
-enum 
+enum
 {
     DAATR_STATUS_TX,
     DAATR_STATUS_RX,
@@ -75,10 +75,10 @@ enum
 enum NodeType
 {
     // 节点类型  分为网管节点(Node_Management)、网关节点(Node_Gateway)、普通节点(Node_Ordinary)
-    Node_Management = 0,//网管节点
-    Node_Gateway,//网关节点
-    Node_Standby_Gateway,//备用网关节点
-    Node_Ordinary//普通节点
+    Node_Management = 0,  // 网管节点
+    Node_Gateway,         // 网关节点
+    Node_Standby_Gateway, // 备用网关节点
+    Node_Ordinary         // 普通节点
 };
 
 enum NodeAccess
@@ -144,7 +144,7 @@ typedef struct spectrum_sensing_struct
 
 typedef struct subnet_frequency_parttern
 {
-    unsigned int mana_node_hopping[500];                                   // 网管节点跳频图案
+    unsigned int mana_node_hopping[500];                                       // 网管节点跳频图案
     unsigned int subnet_node_hopping[SUBNET_NODE_NUMBER_MAX][FREQUENCY_COUNT]; // 子网各节点跳频图案
 } subnet_frequency_parttern;
 
@@ -174,7 +174,8 @@ typedef struct Send_slottable
     mana_slot_traffic slot_traffic_execution_new[TRAFFIC_SLOT_NUMBER];
 } Send_slottable;
 
-typedef struct mana_business_mana{
+typedef struct mana_business_mana
+{
     int priority;
     double data_kbyte_sum;
     int waiting_time;
@@ -226,80 +227,81 @@ typedef struct MacPacket_Daatr
     std::vector<msgFromControl> MFC_list;
 } MacPacket;
 
-
-
-//mac层daatr类
+// mac层daatr类
 class MacDaatr
 {
-    //私有信息存储区，此部分信息需要额外设置访问函数
-    private:
-        
-        //网管信道时隙表
-        //业务信道时隙表
-    //共有信息存储区，此部分信息可以直接访问
-    public:
-        /*公共变量*/
-        uint16_t nodeId;//节点Id
-        uint16_t subnetId;//子网号
-        uint16_t subnet_node_num;//当前在网节点数量
-        std::unordered_map<uint16_t, std::string> in_subnet_id_to_ip;//子网内节点Id对应的IP地址
-        std::mutex lock_Mac_to_Net;//Mac->Net写锁
-        MacState state_now;//当前节点状态
-        uint64_t time;//协议栈绝对时间（单位us，精确度100us）
-        NodeType node_type;//节点身份
-        int mana_node;                                                      // 本子网网管节点ID
-        int gateway_node;                                                   // 本子网网关节点ID
-        int standby_gateway_node;                                           // 本子网备用网关节点ID
+    // 私有信息存储区，此部分信息需要额外设置访问函数
+private:
+    // 网管信道时隙表
+    Low_Freq_Channel_Business low_freq_channel_business_queue[MANA_MAX_BUSINESS_NUMBER]; // 低频网管信道待发送业务队列
+    // 业务信道时隙表
 
-        /*管控线程相关*/
-        std::mutex lock_central_control_thread;//管控线程访问锁
-        std::condition_variable central_control_thread_var;//管控线程条件变量
-        uint8_t clock_trigger;//时帧触发数目
+    // 共有信息存储区，此部分信息可以直接访问
+public:
+    /*公共变量*/
+    uint16_t nodeId;                                              // 节点Id
+    uint16_t subnetId;                                            // 子网号
+    uint16_t subnet_node_num;                                     // 当前在网节点数量
+    std::unordered_map<uint16_t, std::string> in_subnet_id_to_ip; // 子网内节点Id对应的IP地址
+    std::mutex lock_Mac_to_Net;                                   // Mac->Net写锁
+    MacState state_now;                                           // 当前节点状态
+    uint64_t time;                                                // 协议栈绝对时间（单位us，精确度100us）
+    NodeType node_type;                                           // 节点身份
 
-        /*低频信道线程相关*/
-        int mac_daatr_low_freq_socket_fid;//daatr协议低频信道socket句柄
-        std::mutex lock_mana_channel;//网管信道待发送队列访问锁
-        uint8_t low_slottable_should_read;//低频信道时隙位置(时隙表最大时隙数)
-        low_freq_slot low_freq_link_build_slot_table[MANAGEMENT_SLOT_NUMBER_LINK_BUILD];              // 建链阶段网管信道时隙表
-        low_freq_slot low_freq_other_stage_slot_table[MANAGEMENT_SLOT_NUMBER_OTHER_STAGE]; // 其他阶段网管信道时隙表
-        uint8_t need_change_state; // 网管节点的阶段转换标志(默认为0) 1 表示时域调整 2 表示频域调整
-        Low_Freq_Channel_Business low_freq_channel_business_queue[MANA_MAX_BUSINESS_NUMBER];//低频网管信道待发送业务队列
+    int mana_node;            // 本子网网管节点ID
+    int gateway_node;         // 本子网网关节点ID
+    int standby_gateway_node; // 本子网备用网关节点ID
 
-        /*随遇接入相关*/
-        NodeAccess access_state; // 当前节点接入状态    
-        uint8_t access_backoff_number; // 接入退避数目
-        uint16_t waiting_to_access_node; // 等待接入的节点ID(网管节点专属)
+    /*管控线程相关*/
+    std::mutex lock_central_control_thread;             // 管控线程访问锁
+    std::condition_variable central_control_thread_var; // 管控线程条件变量
+    uint8_t clock_trigger;                              // 时帧触发数目
 
-        // 频域信息
-        unsigned int frequency_sequence[SUBNET_NODE_NUMBER_MAX][FREQUENCY_COUNT];        // 生成子网内调频序列(仅网管节点有)
-        unsigned int subnet_frequency_sequence[TOTAL_FREQ_POINT];                    // 子网所使用频段(共501频点, 对应频点值为1代表使用此频点, 0为不使用)(网管节点独有)
-        unsigned int spectrum_sensing_node[TOTAL_FREQ_POINT];                        // 本节点频谱感知结果
-        unsigned int spectrum_sensing_sum[SUBNET_NODE_NUMBER_MAX][TOTAL_FREQ_POINT + 1]; // 总频谱感知结果, 只存在于网管节点.最后一列每一行代表一个节点, 若为0, 则说明没有接收到此节点的频谱感知结果, 若为1, 则说明接收到了
-        unsigned int unavailable_frequency_points[TOTAL_FREQ_POINT];                 // 不可用频点集合(1: 频点未干扰 0: 频点受到干扰)
+    /*低频信道线程相关*/
+    int mac_daatr_low_freq_socket_fid;                                                 // daatr协议低频信道socket句柄
+    std::mutex lock_mana_channel;                                                      // 网管信道待发送队列访问锁
+    uint8_t low_slottable_should_read;                                                 // 低频信道时隙位置(时隙表最大时隙数)
+    low_freq_slot low_freq_link_build_slot_table[MANAGEMENT_SLOT_NUMBER_LINK_BUILD];   // 建链阶段网管信道时隙表
+    low_freq_slot low_freq_other_stage_slot_table[MANAGEMENT_SLOT_NUMBER_OTHER_STAGE]; // 其他阶段网管信道时隙表
+    uint8_t need_change_state;                                                         // 网管节点的阶段转换标志(默认为0) 1 表示时域调整 2 表示频域调整
 
-        /*高频信道线程相关*/
-        int mac_daatr_high_freq_socket_fid;//daatr协议高频信道socket句柄
-        std::mutex lock_buss_channel;//业务信道待发送队列访问锁
-        bool has_received_slottable;              // 时隙表是否已收到一次
-        bool has_received_sequence;
-        mana_business_traffic traffic_channel_business[SUBNET_NODE_NUMBER_MAX]; // 业务信道的待发送队列
+    /*随遇接入相关*/
+    NodeAccess access_state;         // 当前节点接入状态
+    uint8_t access_backoff_number;   // 接入退避数目
+    uint16_t waiting_to_access_node; // 等待接入的节点ID(网管节点专属)
 
-        /*飞行状态信息*/
-        FlightStatus subnet_other_node_position[SUBNET_NODE_NUMBER_MAX - 1]; // 子网其他节点位置信息
-        FlightStatus local_node_position_info;                           // 本地飞行状态信息
-    //类函数
-    public:
-        MacDaatr(uint16_t nodeId,uint16_t subnetId);
-        MacDaatr();
-        msgFromControl get_buss_from_mana_channel();//从网管信道队列取业务
-        msgFromControl get_buss_from_buss_channel();//从业务信道队列取业务
+    // 频域信息
+    unsigned int frequency_sequence[SUBNET_NODE_NUMBER_MAX][FREQUENCY_COUNT];        // 生成子网内调频序列(仅网管节点有)
+    unsigned int subnet_frequency_sequence[TOTAL_FREQ_POINT];                        // 子网所使用频段(共501频点, 对应频点值为1代表使用此频点, 0为不使用)(网管节点独有)
+    unsigned int spectrum_sensing_node[TOTAL_FREQ_POINT];                            // 本节点频谱感知结果
+    unsigned int spectrum_sensing_sum[SUBNET_NODE_NUMBER_MAX][TOTAL_FREQ_POINT + 1]; // 总频谱感知结果, 只存在于网管节点.最后一列每一行代表一个节点, 若为0, 则说明没有接收到此节点的频谱感知结果, 若为1, 则说明接收到了
+    unsigned int unavailable_frequency_points[TOTAL_FREQ_POINT];                     // 不可用频点集合(1: 频点未干扰 0: 频点受到干扰)
+
+    /*高频信道线程相关*/
+    int mac_daatr_high_freq_socket_fid; // daatr协议高频信道socket句柄
+    std::mutex lock_buss_channel;       // 业务信道待发送队列访问锁
+    bool has_received_slottable;        // 时隙表是否已收到一次
+    bool has_received_sequence;
+    mana_business_traffic traffic_channel_business[SUBNET_NODE_NUMBER_MAX]; // 业务信道的待发送队列
+
+    /*飞行状态信息*/
+    FlightStatus subnet_other_node_position[SUBNET_NODE_NUMBER_MAX - 1]; // 子网其他节点位置信息
+    FlightStatus local_node_position_info;                               // 本地飞行状态信息
+
+    // 类函数
+public:
+    MacDaatr(uint16_t nodeId, uint16_t subnetId);
+    MacDaatr();
+    msgFromControl getBusinessFromHighChannel(); // 从业务信道队列取业务
+    bool MacDaatNetworkHasLowFreqChannelPacketToSend(msgFromControl *busin);
+    bool getLowChannelBusinessFromQueue(msgFromControl *busin);
 };
 
-void mac_buffer_handle(uint8_t *rBuffer_mac);
-void mac_to_net_buffer_handle(void* data,uint8_t type,uint16_t len);
-void mac_paramater_initialization();
-void print_time_ms();
-uint64_t get_time();
-void print_time_us();
-void print_time_s();
+void networkToMacBufferHandle(uint8_t *rBuffer_mac);
+void macToNetworkBufferHandle(void *data, uint8_t type, uint16_t len);
+void macParameterInitialization();
+uint64_t getTime();
+void printTime_ms();
+void printTime_us();
+void printTime_s();
 #endif

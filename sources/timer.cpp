@@ -9,13 +9,13 @@ using namespace std;
 //  extern uint16_t event_number_now;
 //  for(int i = 0;i < 10;i++)
 //  {
-//      insert_event_timer_ms(1,hello);
-//      event_timmer_update();
+//      insertEventTimer_ms(1,hello);
+//      eventTimerUpdate();
 //      cout << "定时器现有数据：" << event_number_now << endl;
 //  }
 //  for(int i = 0;i < 12;i++)
 //  {
-//      event_timmer_update();
+//      eventTimerUpdate();
 //  }
 
 myevent event_list[EVENT_MAX_NUMBER];
@@ -29,7 +29,7 @@ uint16_t event_number_now = 0;
  * @return true 成功插入事件定时器
  * @return false 事件列表已满，无法插入新的定时器
  */
-bool insert_event_timer_us(uint64_t time_del, event_function event_func)
+bool insertEventTimer_us(uint64_t time_del, event_function event_func)
 {
     if (event_number_now >= EVENT_MAX_NUMBER)
         return false;
@@ -55,7 +55,7 @@ bool insert_event_timer_us(uint64_t time_del, event_function event_func)
  * @return true 成功插入事件定时器
  * @return false 事件列表已满，无法插入新的定时器
  */
-bool insert_event_timer_ms(double time_del, event_function event_func)
+bool insertEventTimer_ms(double time_del, event_function event_func)
 {
     time_del *= 1000; // 转化成us
     for (int i = 0; i < EVENT_MAX_NUMBER; i++)
@@ -74,7 +74,7 @@ bool insert_event_timer_ms(double time_del, event_function event_func)
     return false;
 }
 
-void event_timmer_update()
+void eventTimerUpdate()
 {
     if (event_number_now == 0)
         return;

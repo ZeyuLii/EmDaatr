@@ -3,6 +3,6 @@
 
 #include "macdaatr.h"
 
-void Update_Position(MacPacket_Daatr *macpacket_daatr, MacDaatr *macdata_daatr);
+void UpdatePosition(MacPacket_Daatr *macpacket_daatr, MacDaatr *macdata_daatr);
 
 #endif

@@ -21,6 +21,11 @@ int main()
     cout << "hello world" << endl;
     cout << "hihihihi" << endl;
 
-    mac_paramater_initialization(); // mac层参数初始化
+    macParameterInitialization(); // mac层参数初始化
+
+    // thread macControl(macDaatrControlThread);
+    // macDaatrSocketHighFreqThread;
+    // macDaatrSocketLowFreqThread;
+
     return 0;
 }

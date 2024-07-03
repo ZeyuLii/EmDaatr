@@ -615,7 +615,7 @@ bool MacDaatr_struct_converter::daatr_0_1_to_PDU1()
     MacHeader *struct_ptr_temp = new MacHeader;
     memset(struct_ptr_temp, 0, sizeof(MacHeader));
     struct_ptr_temp->PDUtype |= bit_sequence_ptr_[0] >> 7;
-    struct_ptr_temp->is_mac_layer |=(0x60 & bit_sequence_ptr_[0]) >> 5;
+    struct_ptr_temp->is_mac_layer |= (0x60 & bit_sequence_ptr_[0]) >> 5;
     struct_ptr_temp->backup |= (0x1f & bit_sequence_ptr_[0]); // 已修改 check
     temp_vari = bit_sequence_ptr_[1];
     temp_vari = temp_vari << 8;
@@ -2880,7 +2880,7 @@ static void TGS_copy_node_topology(MacDataDaatr *macdata_daatr, std::vector<std:
 }
 
 // 返回任意两节点间距离(单位: km)
-static double calculate_link_distance(float lat_1, float lng_1, float h_1, float lat_2, float lng_2, float h_2)
+static double calculateLinkDistance(float lat_1, float lng_1, float h_1, float lat_2, float lng_2, float h_2)
 {
     lat_1 = PI * lat_1 / 180.0;
     lng_1 = PI * lng_1 / 180.0;
@@ -2994,13 +2994,13 @@ static void Send_Local_Link_Status(Node *node, MacDataDaatr *macdata_daatr)
             // nodeNetNeigh_data->localNeighList.push_back(nodeLocalNeighdata);
             send_neighborList->push_back(nodeLocalNeighdata);
         }
-		else 
-		{
-			if(node->nodeId != dest_node)
-			{
-							cout << endl;
-			}
-		}
+        else
+        {
+            if (node->nodeId != dest_node)
+            {
+                cout << endl;
+            }
+        }
     }
     loca_linkstate_struct.neighborList = send_neighborList;
 
@@ -3029,7 +3029,7 @@ static int mac_search_number_of_node_position(MacDataDaatr *macdata_daatr)
 }
 
 // 函数功能：网络层数据包有网管信道业务调用此函数将业务添加到本节点待发送网管信道业务队列中
-bool MacDaatr_network_has_mana_channel_packet_to_send(Node *node, int interfaceIndex, msgFromControl *busin)
+bool MacDaatNetworkHasLowFreqChannelPacketToSend(Node *node, int interfaceIndex, msgFromControl *busin)
 {
     int i = 0;
     int j = 0;
@@ -3056,7 +3056,7 @@ bool MacDaatr_network_has_mana_channel_packet_to_send(Node *node, int interfaceI
 }
 
 // 函数功能：从网管信道队列中获取业务去发送
-bool get_mana_channel_business_from_queue(msgFromControl *busin, Node *node, MacDataDaatr *macdata_daatr)
+bool getLowChannelBusinessFromQueue(msgFromControl *busin, Node *node, MacDataDaatr *macdata_daatr)
 {
     int i = 0;
     bool flag = false;
@@ -3262,12 +3262,12 @@ static void Attach_Status_Information_To_Packet(Node *node, Node *dest_node, Mac
 
     Status_Information->dest_node = dest_node->nodeId;
 
-    int temp_distance = calculate_link_distance(macdata_daatr->local_node_position_info.positionX,
-                                                macdata_daatr->local_node_position_info.positionY,
-                                                macdata_daatr->local_node_position_info.positionZ,
-                                                macdata_daatr->subnet_other_node_position[temp_Id].positionX,
-                                                macdata_daatr->subnet_other_node_position[temp_Id].positionY,
-                                                macdata_daatr->subnet_other_node_position[temp_Id].positionZ);
+    int temp_distance = calculateLinkDistance(macdata_daatr->local_node_position_info.positionX,
+                                              macdata_daatr->local_node_position_info.positionY,
+                                              macdata_daatr->local_node_position_info.positionZ,
+                                              macdata_daatr->subnet_other_node_position[temp_Id].positionX,
+                                              macdata_daatr->subnet_other_node_position[temp_Id].positionY,
+                                              macdata_daatr->subnet_other_node_position[temp_Id].positionZ);
     // 需要 distance 到 level 的转换
     Status_Information->transmitSpeedLevel = calculate_slot_type_mana(temp_distance);
     // 需要跳频图案
@@ -3288,13 +3288,15 @@ static void Attach_Status_Information_To_Packet(Node *node, Node *dest_node, Mac
     MESSAGE_Send(node, flight_status_msg, delay);
 }
 
-bool MacDaatr_judge_if_could_send_config_or_LinkRequist(Node* node, int interfaceIndex)
+bool MacDaatr_judge_if_could_send_config_or_LinkRequist(Node *node, int interfaceIndex)
 {
-	bool flag = false;
-	MacDataDaatr *macdata_daatr = (MacDataDaatr*)node->macData[interfaceIndex]->macVar;
-	if(macdata_daatr->state_now == Mac_Execution)
-	{flag = true;}
-	return flag;
+    bool flag = false;
+    MacDataDaatr *macdata_daatr = (MacDataDaatr *)node->macData[interfaceIndex]->macVar;
+    if (macdata_daatr->state_now == Mac_Execution)
+    {
+        flag = true;
+    }
+    return flag;
 }
 
 // 根据子网分配跳频点生成子网内使用的频段
@@ -3321,140 +3323,142 @@ static void MacDaatr_generate_subnet_using_freq(MacDataDaatr *macdata_daatr)
     cout << endl;
 }
 
-//计算子网使用频点的个数
+// 计算子网使用频点的个数
 static int MacDaatr_Cacu_Freq_Number(MacDataDaatr *macdata_daatr)
 {
-	int num = 0;
-	for(int i = 0; i < TOTAL_FREQ_POINT; i++)
-	{
-		if(macdata_daatr->subnet_frequency_sequence[i] == 1)
-		{num++;}
-	}
-	return num;
+    int num = 0;
+    for (int i = 0; i < TOTAL_FREQ_POINT; i++)
+    {
+        if (macdata_daatr->subnet_frequency_sequence[i] == 1)
+        {
+            num++;
+        }
+    }
+    return num;
 }
 
-//计算子网各节点窄带干扰数目
-//type: 0:更新前  1：更新后
+// 计算子网各节点窄带干扰数目
+// type: 0:更新前  1：更新后
 static void MacDaatr_Cacu_node_narrow_band_interfer_ratio(MacDataDaatr *macdata_daatr, int type)
 {
-	int i = 0, j = 0, k;
-	int node_interfer_num = 0;
-	int subnet_interfer_num = 0;
-	int temp;
-	macdata_daatr->stats.narrow_band_interfer_nodeID.clear();
-	vector<int>node_list;
+    int i = 0, j = 0, k;
+    int node_interfer_num = 0;
+    int subnet_interfer_num = 0;
+    int temp;
+    macdata_daatr->stats.narrow_band_interfer_nodeID.clear();
+    vector<int> node_list;
 
-	vector<ParamData>patam_narrow_list;//节点窄带干扰比例
-	ParamData pa_narrow_data;
-	vector<ParamDataStr>ParamDataStr_narrow_list;//窄带干扰频点集合
-	ParamDataStr pa_narrow_data_str;
+    vector<ParamData> patam_narrow_list; // 节点窄带干扰比例
+    ParamData pa_narrow_data;
+    vector<ParamDataStr> ParamDataStr_narrow_list; // 窄带干扰频点集合
+    ParamDataStr pa_narrow_data_str;
 
-	if(type == 1)
-	{
-		for(i = 0; i < SUBNET_NODE_FREQ_NUMBER; i++)
-		{
-			pa_narrow_data.nodeId = i + 1;/////统计参数上传
-			pa_narrow_data_str.nodeId = i + 1;/////统计参数上传
-			for(j = i+1; j < SUBNET_NODE_FREQ_NUMBER; j++)
-			{
-				for(k = 0; k < FREQUENCY_COUNT; k++)
-				{
-					temp = macdata_daatr->frequency_sequence[i][k]-macdata_daatr->frequency_sequence[j][k];
-					if(abs(temp) <= 15)
-					{//如果出现窄带干扰
-						node_interfer_num++;
-						node_list.push_back(i+1);
-						node_list.push_back(j+1);
-						macdata_daatr->stats.narrow_band_interfer_nodeID.push_back(node_list);
-						node_list.clear();
-						pa_narrow_data_str.value += std::to_string((long long)j + 1);/////统计参数上传
-						pa_narrow_data_str.value += ',';/////统计参数上传//在字符串末尾会有“,”,也即1,2,3,
-						break;
-					}
-				}
-			}
-			macdata_daatr->stats.node_narrow_band_interfer_ratio[i] = (float)node_interfer_num / FREQUENCY_COUNT;
-			macdata_daatr->stats.node_narrow_band_interfer_ratio[i] *= 100;
-			//////////////////////////////统计参数上传
-			pa_narrow_data.value = macdata_daatr->stats.node_narrow_band_interfer_ratio[i];
-			patam_narrow_list.push_back(pa_narrow_data);/////统计参数上传
-			ParamDataStr_narrow_list.push_back(pa_narrow_data_str);
-			pa_narrow_data_str.value.erase(0);
-			/////////////////////////////////////////
-			subnet_interfer_num += node_interfer_num;
-			node_interfer_num = 0;
-		}
-		//Stats_ProSendData(node, MAC_LAYER, 1, 11, patam_narrow_list);//窄带干扰比例
-		//Stats_ProSendData(node, MAC_LAYER, 1, 12, ParamDataStr_narrow_list);//窄带干扰节点对
-	}
-	if(type == 0)
-	{
-		for(i = 0; i < SUBNET_NODE_FREQ_NUMBER; i++)
-		{
-			for(j = i+1; j < SUBNET_NODE_FREQ_NUMBER; j++)
-			{
-				for(k = 0; k < FREQUENCY_COUNT; k++)
-				{
-					temp = macdata_daatr->frequency_sequence[i][k]-macdata_daatr->frequency_sequence[j][k];
-					if(abs(temp) <= 15)
-					{//如果出现窄带干扰
-						node_interfer_num++;
-						break;
-					}
-				}
-			}
-			macdata_daatr->stats.node_narrow_band_interfer_ratio_before[i] = (float)node_interfer_num / FREQUENCY_COUNT;
-			macdata_daatr->stats.node_narrow_band_interfer_ratio_before[i] *= 100;
-			subnet_interfer_num += node_interfer_num;
-			node_interfer_num = 0;
-		}
-	}
+    if (type == 1)
+    {
+        for (i = 0; i < SUBNET_NODE_FREQ_NUMBER; i++)
+        {
+            pa_narrow_data.nodeId = i + 1;     /////统计参数上传
+            pa_narrow_data_str.nodeId = i + 1; /////统计参数上传
+            for (j = i + 1; j < SUBNET_NODE_FREQ_NUMBER; j++)
+            {
+                for (k = 0; k < FREQUENCY_COUNT; k++)
+                {
+                    temp = macdata_daatr->frequency_sequence[i][k] - macdata_daatr->frequency_sequence[j][k];
+                    if (abs(temp) <= 15)
+                    { // 如果出现窄带干扰
+                        node_interfer_num++;
+                        node_list.push_back(i + 1);
+                        node_list.push_back(j + 1);
+                        macdata_daatr->stats.narrow_band_interfer_nodeID.push_back(node_list);
+                        node_list.clear();
+                        pa_narrow_data_str.value += std::to_string((long long)j + 1); /////统计参数上传
+                        pa_narrow_data_str.value += ',';                              /////统计参数上传//在字符串末尾会有“,”,也即1,2,3,
+                        break;
+                    }
+                }
+            }
+            macdata_daatr->stats.node_narrow_band_interfer_ratio[i] = (float)node_interfer_num / FREQUENCY_COUNT;
+            macdata_daatr->stats.node_narrow_band_interfer_ratio[i] *= 100;
+            //////////////////////////////统计参数上传
+            pa_narrow_data.value = macdata_daatr->stats.node_narrow_band_interfer_ratio[i];
+            patam_narrow_list.push_back(pa_narrow_data); /////统计参数上传
+            ParamDataStr_narrow_list.push_back(pa_narrow_data_str);
+            pa_narrow_data_str.value.erase(0);
+            /////////////////////////////////////////
+            subnet_interfer_num += node_interfer_num;
+            node_interfer_num = 0;
+        }
+        // Stats_ProSendData(node, MAC_LAYER, 1, 11, patam_narrow_list);//窄带干扰比例
+        // Stats_ProSendData(node, MAC_LAYER, 1, 12, ParamDataStr_narrow_list);//窄带干扰节点对
+    }
+    if (type == 0)
+    {
+        for (i = 0; i < SUBNET_NODE_FREQ_NUMBER; i++)
+        {
+            for (j = i + 1; j < SUBNET_NODE_FREQ_NUMBER; j++)
+            {
+                for (k = 0; k < FREQUENCY_COUNT; k++)
+                {
+                    temp = macdata_daatr->frequency_sequence[i][k] - macdata_daatr->frequency_sequence[j][k];
+                    if (abs(temp) <= 15)
+                    { // 如果出现窄带干扰
+                        node_interfer_num++;
+                        break;
+                    }
+                }
+            }
+            macdata_daatr->stats.node_narrow_band_interfer_ratio_before[i] = (float)node_interfer_num / FREQUENCY_COUNT;
+            macdata_daatr->stats.node_narrow_band_interfer_ratio_before[i] *= 100;
+            subnet_interfer_num += node_interfer_num;
+            node_interfer_num = 0;
+        }
+    }
 }
 
-//计算子网跳频图案干扰比例
-static void  MacDaatr_Cacu_Subnet_Node_Interfer_ratio(Node *node, MacDataDaatr *macdata_daatr)
+// 计算子网跳频图案干扰比例
+static void MacDaatr_Cacu_Subnet_Node_Interfer_ratio(Node *node, MacDataDaatr *macdata_daatr)
 {
-	int inerefer_number = 0;
-	int i, j ,k;
-	for (i = 0; i < TOTAL_FREQ_POINT; i++)
-	{
-		if(macdata_daatr->subnet_frequency_sequence[i] == 1)
-		{//此频段使用
-			if(macdata_daatr->unavailable_frequency_points[i] == 0)
-			{
-				inerefer_number++;
-			}
-		}
-	}
-	int subnet_using_freq_num = 0;
-	subnet_using_freq_num = MacDaatr_Cacu_Freq_Number(macdata_daatr);
-	macdata_daatr->stats.subnet_freq_interfer_ratio = (float)inerefer_number / subnet_using_freq_num;//子网频谱干扰比例
-	macdata_daatr->stats.subnet_freq_interfer_ratio *= 100;
-	int node_interfer_number = 0;
-	int temp_freq;
-	for(i = 0; i < SUBNET_NODE_FREQ_NUMBER; i++)
-	{
-		for(j = 0; j < FREQUENCY_COUNT; j++)
-		{
-			temp_freq = macdata_daatr->frequency_sequence[i][j];
-			if(macdata_daatr->unavailable_frequency_points[temp_freq] == 0)
-			{
-				node_interfer_number++;
-			}
-		}
-		macdata_daatr->stats.node_freq_interfer_ratio[i] =  (float)node_interfer_number / FREQUENCY_COUNT;
-		macdata_daatr->stats.node_freq_interfer_ratio[i] *= 100;
-		node_interfer_number = 0;
-	}
+    int inerefer_number = 0;
+    int i, j, k;
+    for (i = 0; i < TOTAL_FREQ_POINT; i++)
+    {
+        if (macdata_daatr->subnet_frequency_sequence[i] == 1)
+        { // 此频段使用
+            if (macdata_daatr->unavailable_frequency_points[i] == 0)
+            {
+                inerefer_number++;
+            }
+        }
+    }
+    int subnet_using_freq_num = 0;
+    subnet_using_freq_num = MacDaatr_Cacu_Freq_Number(macdata_daatr);
+    macdata_daatr->stats.subnet_freq_interfer_ratio = (float)inerefer_number / subnet_using_freq_num; // 子网频谱干扰比例
+    macdata_daatr->stats.subnet_freq_interfer_ratio *= 100;
+    int node_interfer_number = 0;
+    int temp_freq;
+    for (i = 0; i < SUBNET_NODE_FREQ_NUMBER; i++)
+    {
+        for (j = 0; j < FREQUENCY_COUNT; j++)
+        {
+            temp_freq = macdata_daatr->frequency_sequence[i][j];
+            if (macdata_daatr->unavailable_frequency_points[temp_freq] == 0)
+            {
+                node_interfer_number++;
+            }
+        }
+        macdata_daatr->stats.node_freq_interfer_ratio[i] = (float)node_interfer_number / FREQUENCY_COUNT;
+        macdata_daatr->stats.node_freq_interfer_ratio[i] *= 100;
+        node_interfer_number = 0;
+    }
 }
 
 static void Judge_If_Enter_Freq_Adjust(Node *node, MacDataDaatr *macdata_daatr)
 {
     // 判断是否进入频率调整阶段
     int i = 0, j = 0;
-    int interfer_number = 0; // 子网使用频段干扰频段数量
-	int interfer_number_sum = 0;//总频段被干扰数目
-	MacDaatr_Cacu_node_narrow_band_interfer_ratio(macdata_daatr,0);//变化前窄带干扰比例
+    int interfer_number = 0;                                         // 子网使用频段干扰频段数量
+    int interfer_number_sum = 0;                                     // 总频段被干扰数目
+    MacDaatr_Cacu_node_narrow_band_interfer_ratio(macdata_daatr, 0); // 变化前窄带干扰比例
     for (i = 0; i < TOTAL_FREQ_POINT; i++)
     {
         macdata_daatr->unavailable_frequency_points[i] = 1;
@@ -3464,11 +3468,13 @@ static void Judge_If_Enter_Freq_Adjust(Node *node, MacDataDaatr *macdata_daatr)
         for (j = 0; j < SUBNET_NODE_FREQ_NUMBER; j++)
         {
             if (macdata_daatr->spectrum_sensing_sum[j][i] == 0 && macdata_daatr->spectrum_sensing_sum[j][TOTAL_FREQ_POINT] == 1)
-            {                                                       // 若当前节点对应的频谱感知结果已经接收到了, 且此频段受到干扰了
+            { // 若当前节点对应的频谱感知结果已经接收到了, 且此频段受到干扰了
                 if (macdata_daatr->subnet_frequency_sequence[i] == 1)
-				{interfer_number++;}// 此值对应的是子网现使用频段被干扰的数目，不对应总的干扰频段数目
+                {
+                    interfer_number++;
+                } // 此值对应的是子网现使用频段被干扰的数目，不对应总的干扰频段数目
                 macdata_daatr->unavailable_frequency_points[i] = 0; // 此频点受到干扰, 赋0（此处为总干扰频段）
-				interfer_number_sum++;
+                interfer_number_sum++;
                 break;
             }
         }
@@ -3478,81 +3484,81 @@ static void Judge_If_Enter_Freq_Adjust(Node *node, MacDataDaatr *macdata_daatr)
         cout << macdata_daatr->unavailable_frequency_points[i] << " ";
     }
     cout << endl;
-	cout << "总频段被干扰数目为： " << interfer_number_sum << endl;
+    cout << "总频段被干扰数目为： " << interfer_number_sum << endl;
     cout << "子网使用频段被干扰数目为： " << interfer_number << endl;
-	int subnet_using_freq_num = 0;
-	subnet_using_freq_num = MacDaatr_Cacu_Freq_Number(macdata_daatr);
-	float using_freq_interfer_ratio = (float)interfer_number / subnet_using_freq_num;
-	cout << "子网使用频段被干扰比例为： " << using_freq_interfer_ratio << endl;
-	macdata_daatr->stats.subnet_freq_interfer_ratio_before = (float)interfer_number / subnet_using_freq_num;
-	macdata_daatr->stats.subnet_freq_interfer_ratio_before *= 100;
-	int node_interfer_number = 0;
-	int temp_freq;
-	for(i = 0; i < SUBNET_NODE_FREQ_NUMBER; i++)
-	{
-		for(j = 0; j < FREQUENCY_COUNT; j++)
-		{
-			temp_freq = macdata_daatr->frequency_sequence[i][j];
-			if(macdata_daatr->unavailable_frequency_points[temp_freq] == 0)
-			{
-				node_interfer_number++;
-			}
-		}
-		macdata_daatr->stats.node_freq_interfer_ratio_before[i] =  (float)node_interfer_number / FREQUENCY_COUNT;
-		macdata_daatr->stats.node_freq_interfer_ratio_before[i] *= 100;
-		node_interfer_number = 0;
-	}
-	///////////////////////////////////////向上传递干扰信息参数//////////////////////////////////
-	vector<ParamData>patam_list;//节点干扰比例
-	ParamData pa_data;
-	pa_data.nodeId = 0;//子网干扰比例
-	pa_data.value = macdata_daatr->stats.subnet_freq_interfer_ratio_before;
-	patam_list.push_back(pa_data);
-	for(i=1; i <= SUBNET_NODE_FREQ_NUMBER; i++)
-	{
-		pa_data.nodeId = i;//节点干扰比例
-		pa_data.value = macdata_daatr->stats.node_freq_interfer_ratio_before[i];
-		patam_list.push_back(pa_data);
-	}
-	//Stats_ProSendData(node, MAC_LAYER, 1, 13, patam_list);//发送参数
-	//string test_string = "22";
-	vector<ParamDataStr>ParamDataStr_list;//干扰频点集合
-	ParamDataStr pa_data_str;
-	pa_data_str.nodeId = 0;
-	for(i = 0; i < TOTAL_FREQ_POINT; i++)
-	{
-		if(macdata_daatr->unavailable_frequency_points[i] == 0)
-		{//如果此频点被干扰
-			pa_data_str.value += std::to_string((long long)i + 1);//频段范围（1-501）
-			pa_data_str.value += ',';//在字符串末尾会有“,”,也即1,2,3,
-		}
-	}
-	ParamDataStr_list.push_back(pa_data_str);
-	pa_data_str.value.erase(0);
-	for(i=1; i <= SUBNET_NODE_FREQ_NUMBER; i++)
-	{//其他节点干扰频点
-		pa_data_str.nodeId = i;//节点干扰比例
-		for(j = 0; j < TOTAL_FREQ_POINT; j++)
-		{
-			if(macdata_daatr->spectrum_sensing_sum[i][j] == 0)
-			{//如果此频点被干扰
-				pa_data_str.value += to_string((long long)j + 1);//频段范围（1-501）
-				pa_data_str.value += ',';//在字符串末尾会有“,”,也即1,2,3,
-			}
-		}
-		ParamDataStr_list.push_back(pa_data_str);
-		pa_data_str.value.erase(0);
-	}
-	//Stats_ProSendData(node, MAC_LAYER, 1, 14, ParamDataStr_list);//发送参数
-	//////////////////////////////////////////////////////////////////////////////////////////
+    int subnet_using_freq_num = 0;
+    subnet_using_freq_num = MacDaatr_Cacu_Freq_Number(macdata_daatr);
+    float using_freq_interfer_ratio = (float)interfer_number / subnet_using_freq_num;
+    cout << "子网使用频段被干扰比例为： " << using_freq_interfer_ratio << endl;
+    macdata_daatr->stats.subnet_freq_interfer_ratio_before = (float)interfer_number / subnet_using_freq_num;
+    macdata_daatr->stats.subnet_freq_interfer_ratio_before *= 100;
+    int node_interfer_number = 0;
+    int temp_freq;
+    for (i = 0; i < SUBNET_NODE_FREQ_NUMBER; i++)
+    {
+        for (j = 0; j < FREQUENCY_COUNT; j++)
+        {
+            temp_freq = macdata_daatr->frequency_sequence[i][j];
+            if (macdata_daatr->unavailable_frequency_points[temp_freq] == 0)
+            {
+                node_interfer_number++;
+            }
+        }
+        macdata_daatr->stats.node_freq_interfer_ratio_before[i] = (float)node_interfer_number / FREQUENCY_COUNT;
+        macdata_daatr->stats.node_freq_interfer_ratio_before[i] *= 100;
+        node_interfer_number = 0;
+    }
+    ///////////////////////////////////////向上传递干扰信息参数//////////////////////////////////
+    vector<ParamData> patam_list; // 节点干扰比例
+    ParamData pa_data;
+    pa_data.nodeId = 0; // 子网干扰比例
+    pa_data.value = macdata_daatr->stats.subnet_freq_interfer_ratio_before;
+    patam_list.push_back(pa_data);
+    for (i = 1; i <= SUBNET_NODE_FREQ_NUMBER; i++)
+    {
+        pa_data.nodeId = i; // 节点干扰比例
+        pa_data.value = macdata_daatr->stats.node_freq_interfer_ratio_before[i];
+        patam_list.push_back(pa_data);
+    }
+    // Stats_ProSendData(node, MAC_LAYER, 1, 13, patam_list);//发送参数
+    // string test_string = "22";
+    vector<ParamDataStr> ParamDataStr_list; // 干扰频点集合
+    ParamDataStr pa_data_str;
+    pa_data_str.nodeId = 0;
+    for (i = 0; i < TOTAL_FREQ_POINT; i++)
+    {
+        if (macdata_daatr->unavailable_frequency_points[i] == 0)
+        {                                                          // 如果此频点被干扰
+            pa_data_str.value += std::to_string((long long)i + 1); // 频段范围（1-501）
+            pa_data_str.value += ',';                              // 在字符串末尾会有“,”,也即1,2,3,
+        }
+    }
+    ParamDataStr_list.push_back(pa_data_str);
+    pa_data_str.value.erase(0);
+    for (i = 1; i <= SUBNET_NODE_FREQ_NUMBER; i++)
+    {                           // 其他节点干扰频点
+        pa_data_str.nodeId = i; // 节点干扰比例
+        for (j = 0; j < TOTAL_FREQ_POINT; j++)
+        {
+            if (macdata_daatr->spectrum_sensing_sum[i][j] == 0)
+            {                                                     // 如果此频点被干扰
+                pa_data_str.value += to_string((long long)j + 1); // 频段范围（1-501）
+                pa_data_str.value += ',';                         // 在字符串末尾会有“,”,也即1,2,3,
+            }
+        }
+        ParamDataStr_list.push_back(pa_data_str);
+        pa_data_str.value.erase(0);
+    }
+    // Stats_ProSendData(node, MAC_LAYER, 1, 14, ParamDataStr_list);//发送参数
+    //////////////////////////////////////////////////////////////////////////////////////////
 
     if (using_freq_interfer_ratio >= INTERFEREENCE_FREQUENCY_THRESHOLD)
     { // 干扰频段数目超过阈值, 进入频率调整阶段
         cout << "干扰频段数目超过阈值, 进入频率调整阶段, Time: " << (float)(node->getNodeTime() / 1000000) << endl;
         Generate_Frequency_Sequence(macdata_daatr);
         MacDaatr_generate_subnet_using_freq(macdata_daatr);
-		MacDaatr_Cacu_Subnet_Node_Interfer_ratio(node, macdata_daatr);
-		MacDaatr_Cacu_node_narrow_band_interfer_ratio(macdata_daatr,1);//变化后窄带干扰比例
+        MacDaatr_Cacu_Subnet_Node_Interfer_ratio(node, macdata_daatr);
+        MacDaatr_Cacu_node_narrow_band_interfer_ratio(macdata_daatr, 1); // 变化后窄带干扰比例
         if (macdata_daatr->need_change_stage == 0 &&
             macdata_daatr->state_now != Mac_Adjustment_Slot &&
             macdata_daatr->state_now != Mac_Adjustment_Freqency)
@@ -3621,7 +3627,7 @@ static void Print_Wave_Info(FlightStatus node_flight, FlightStatus nei_flight[SU
 
 // 根据网管信道数据包更新子网内各节点的位置信息
 // 并将其更新业务信道队列的 distance
-static void Update_Position(MacPacket_Daatr *macpacket_daatr, MacDataDaatr *macdata_daatr)
+static void UpdatePosition(MacPacket_Daatr *macpacket_daatr, MacDataDaatr *macdata_daatr)
 {
     for (int i = 0; i < SUBNET_NODE_FREQ_NUMBER - 1; i++)
     { // 存储子网其他节点位置信息
@@ -3644,12 +3650,12 @@ static void Update_Position(MacPacket_Daatr *macpacket_daatr, MacDataDaatr *macd
     }
     int node_temp = macpacket_daatr->node_position.nodeId;
     macdata_daatr->traffic_channel_business[node_temp - 1].distance =
-        calculate_link_distance(macdata_daatr->local_node_position_info.positionX,
-                                macdata_daatr->local_node_position_info.positionY,
-                                macdata_daatr->local_node_position_info.positionZ,
-                                macpacket_daatr->node_position.positionX,
-                                macpacket_daatr->node_position.positionY,
-                                macpacket_daatr->node_position.positionZ);
+        calculateLinkDistance(macdata_daatr->local_node_position_info.positionX,
+                              macdata_daatr->local_node_position_info.positionY,
+                              macdata_daatr->local_node_position_info.positionZ,
+                              macpacket_daatr->node_position.positionX,
+                              macpacket_daatr->node_position.positionY,
+                              macpacket_daatr->node_position.positionZ);
     // cout << "Node " << node_temp << " distance: " << macdata_daatr->traffic_channel_business[node_temp - 1].distance << " km " << endl;
     // system("pause");
 }
@@ -4509,7 +4515,7 @@ static int Generate_LinkAssignment_Stage_3nodes(LinkAssignment link_assign[])
 }
 
 // 搜寻对应节点时隙位置
-static vector<uint8_t> *MacDaatr_search_slot_location(int nodeId, MacDataDaatr *macdata_daatr)
+static vector<uint8_t> *MacDaatrSrearchSlotLocation(int nodeId, MacDataDaatr *macdata_daatr)
 {
     int i = 0;
     vector<uint8_t> *slot_location = new vector<uint8_t>;
@@ -4686,7 +4692,7 @@ static void MacDaatrInitialize_parameter(Node *node, MacDataDaatr *macdata_daatr
     for (int i = 0; i < TOTAL_FREQ_POINT; i++)
     {
         macdata_daatr->unavailable_frequency_points[i] = 1;
-        //macdata_daatr->subnet_frequency_sequence[i] = 1; // !!!!目前初始化默认子网使用所有频点, 后面根据需求改动
+        // macdata_daatr->subnet_frequency_sequence[i] = 1; // !!!!目前初始化默认子网使用所有频点, 后面根据需求改动
     }
 
     macdata_daatr->mana_node = mana_node; // 网管节点
@@ -4717,7 +4723,7 @@ static void MacDaatrInitialize_Judge_If_Enter_Freq_Adjust_Timer(Node *node, MacD
                                       MAC_PROTOCOL_DAATR,
                                       MAC_DAATR_Mana_Judge_Enter_Freq_Adjustment_Stage);
     MESSAGE_Send(node, send_msg, 2000 * MILLI_SECOND);
-	macdata_daatr->ptr_to_period_judge_if_enter_adjustment = send_msg;
+    macdata_daatr->ptr_to_period_judge_if_enter_adjustment = send_msg;
 }
 
 // 链路状态定时器初始化
@@ -5059,12 +5065,12 @@ void MacDaatrInit(Node *node,
     MacDaatrInitialize_Link_Setup_Timer(node, macdata_daatr);           // 业务信道开始建链初始化
     MacDaatrInitialize_Other_End_Build_Link_Stage(node, macdata_daatr); // 结束建链阶段定时器初始化
     MacDaatr_Node_Frequency_Initialization(node, macdata_daatr);        // 初始化跳频序列
-	MacDaatr_generate_subnet_using_freq(macdata_daatr);
-	MacDaatr_Cacu_node_narrow_band_interfer_ratio(macdata_daatr,0);
+    MacDaatr_generate_subnet_using_freq(macdata_daatr);
+    MacDaatr_Cacu_node_narrow_band_interfer_ratio(macdata_daatr, 0);
     if (node->nodeId == macdata_daatr->mana_node)
     {
         // 如果是网管节点, 则初始化定期判断是否进入频率调整阶段
-         MacDaatrInitialize_Judge_If_Enter_Freq_Adjust_Timer(node, macdata_daatr);
+        MacDaatrInitialize_Judge_If_Enter_Freq_Adjust_Timer(node, macdata_daatr);
     }
 
     //////////////////////////////// 通知装载射前时隙表 ////////////////////////////////
@@ -5097,7 +5103,7 @@ void MacDaatrInit(Node *node,
     }
     MESSAGE_PacketAlloc(node, msg_indentity, sizeof(NodeNotification), TRACE_DAATR);
     memcpy((NodeNotification *)MESSAGE_ReturnPacket(msg_indentity), &node_notify, sizeof(NodeNotification));
-   // MESSAGE_Send(node, msg_indentity, 1100 * MILLI_SECOND);
+    // MESSAGE_Send(node, msg_indentity, 1100 * MILLI_SECOND);
 
     /////////////////////////////// 生成频谱感知结果测试 ///////////////////////////////
     spectrum_sensing_struct spec_struct;
@@ -5526,7 +5532,7 @@ static void Caclulate_slotnum_per_frame(Node *node, MacDataDaatr *macdata_daatr,
     }
 
     // 正常运行时将下面的部分解注释
-    // LinkAssignment_single_temp->distance = calculate_link_distance(temp_posiX1, temp_posiY1, temp_posiZ1,
+    // LinkAssignment_single_temp->distance = calculateLinkDistance(temp_posiX1, temp_posiY1, temp_posiZ1,
     //                                                                temp_posiX2, temp_posiY2, temp_posiZ2);
     LinkAssignment_single_temp->distance = 49;
     // LinkAssignment_single_temp->distance = std::max({LinkAssignment_single_temp->distance, 500});
@@ -5928,28 +5934,30 @@ bool MAC_NetworkLayerHasPacketToSend(Node *node, int interfaceIndex, msgFromCont
     {
         // 如果是网络层数据包, 那么需要查看路由表对应节点的队列是否已满
         temp_node = Search_Next_Hop_Addr(macdata_daatr, busin->destAddr);
-		if(busin->msgType == 2)
-		{temp_node = 0;}
+        if (busin->msgType == 2)
+        {
+            temp_node = 0;
+        }
         if (temp_node == 0) // 即不存在转发表的情况
         {
-            
+
             // system("pause"); // 在此处停住说明目的地址不存在转发节点 可以注释掉
-			if(busin->msgType != 2)
-			{
-				cout << "此时数据包的接收节点 " << busin->destAddr << " 不存在转发节点, 丢弃业务" << endl;
-				return false;
-			}
-			else
-			{
-				//cout << "收到MSGTYPE=2的数据包 " << busin->srcAddr << "->" << busin->destAddr << endl;
-				loc = get_sequence_available_location(macdata_daatr, busin->destAddr, busin->priority);
-			}
+            if (busin->msgType != 2)
+            {
+                cout << "此时数据包的接收节点 " << busin->destAddr << " 不存在转发节点, 丢弃业务" << endl;
+                return false;
+            }
+            else
+            {
+                // cout << "收到MSGTYPE=2的数据包 " << busin->srcAddr << "->" << busin->destAddr << endl;
+                loc = get_sequence_available_location(macdata_daatr, busin->destAddr, busin->priority);
+            }
         }
         else
         {
             loc = get_sequence_available_location(macdata_daatr, temp_node, busin->priority);
-            //cout << "节点 " << node->nodeId << " 收到目的地址为: " << busin->destAddr << " 的数据包, 下一跳转发节点为 " << temp_node << endl;
-            // system("pause");
+            // cout << "节点 " << node->nodeId << " 收到目的地址为: " << busin->destAddr << " 的数据包, 下一跳转发节点为 " << temp_node << endl;
+            //  system("pause");
         }
     }
 
@@ -5982,7 +5990,7 @@ bool MAC_NetworkLayerHasPacketToSend(Node *node, int interfaceIndex, msgFromCont
                     flag = 1;
                     break;
                 }
-				printf("the sequence of node %d of priority %d is full!\n", i, busin->priority);
+                printf("the sequence of node %d of priority %d is full!\n", i, busin->priority);
             }
         }
         else
@@ -5997,15 +6005,19 @@ bool MAC_NetworkLayerHasPacketToSend(Node *node, int interfaceIndex, msgFromCont
                 if (new_loc != TRAFFIC_MAX_BUSINESS_NUMBER)
                 {
                     Insert_mfc_to_queue(macdata_daatr, busin, i, new_loc, 0, 1);
-					if(busin->msgType == 3)
-					{macdata_daatr->stats.msgtype3_recv++;}
+                    if (busin->msgType == 3)
+                    {
+                        macdata_daatr->stats.msgtype3_recv++;
+                    }
                     flag = 1;
                     break;
                 }
-				printf("the sequence of node %d of priority %d is full!\n", i, busin->priority);
+                printf("the sequence of node %d of priority %d is full!\n", i, busin->priority);
             }
-			if(flag == false)
-			{cout << endl;}
+            if (flag == false)
+            {
+                cout << endl;
+            }
         }
     }
     else
@@ -6027,8 +6039,10 @@ bool MAC_NetworkLayerHasPacketToSend(Node *node, int interfaceIndex, msgFromCont
         else
         {
             Insert_mfc_to_queue(macdata_daatr, busin, busin->priority, loc, 1, 1);
-			if(busin->msgType == 3)
-			{macdata_daatr->stats.msgtype3_recv++;}
+            if (busin->msgType == 3)
+            {
+                macdata_daatr->stats.msgtype3_recv++;
+            }
         }
         flag = 1;
     }
@@ -6036,7 +6050,7 @@ bool MAC_NetworkLayerHasPacketToSend(Node *node, int interfaceIndex, msgFromCont
     return flag;
 }
 
-void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg) 
+void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
 {
     MacDataDaatr *macdata_daatr = (MacDataDaatr *)node->macData[interfaceIndex]->macVar;
 
@@ -6180,7 +6194,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                 FlightStatus *flight_sta = (FlightStatus *)mac_converter2.get_struct();
                 macpacket_daatr.node_position = *flight_sta;
                 macpacket_daatr.node_position.nodeId = mac_header2.srcAddr;
-                Update_Position(&macpacket_daatr, macdata_daatr);
+                UpdatePosition(&macpacket_daatr, macdata_daatr);
                 // if(macdata_daatr->if_mana_slottable_synchronization == true && macdata_daatr->if_receive_mana_flight == true)
                 //{//如果需要进行网管信道时隙表同步
                 //	macdata_daatr->mana_slottable_synchronization++;
@@ -6220,7 +6234,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                 //	int slot_number = macdata_daatr->mana_slottable_synchronization;
                 //	macdata_daatr->slot_management_other_stage[slot_number].nodeId = mac_header2.srcAddr;
                 //}
-                Update_Position(&macpacket_daatr, macdata_daatr);
+                UpdatePosition(&macpacket_daatr, macdata_daatr);
                 break;
             }
             case 6:
@@ -6240,10 +6254,10 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                 else if (change_state->state == 1)
                 {
                     macdata_daatr->state_now = Mac_Adjustment_Slot; // 调整本节点为时隙调整阶段
-					macdata_daatr->has_received_slottable = false;  // 初始未收到时隙表
+                    macdata_daatr->has_received_slottable = false;  // 初始未收到时隙表
                     cout << "节点 " << node->nodeId << " 收到网管节点广播消息, 并改变自己节点 state_now 为 Adjustment_Slot. Time: "
                          << (float)(node->getNodeTime()) / 1000000 << endl;
-					macdata_daatr->stats.slot_adjust_begin_time = (node->getNodeTime()) / 1000000;//时隙调整阶段开始时间
+                    macdata_daatr->stats.slot_adjust_begin_time = (node->getNodeTime()) / 1000000; // 时隙调整阶段开始时间
                     // 在收到网管节点发来的状态调整信息后, 立刻将自己的波束指向网管节点, 等待接收时隙表
                     Node *dest_node_ptr = MAPPING_GetNodePtrFromHash(node->partitionData->nodeIdHash, macdata_daatr->mana_node);
                     Attach_Status_Information_To_Packet(node, dest_node_ptr, macdata_daatr, DAATR_STATUS_RX, 0);
@@ -6252,10 +6266,10 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                 else if (change_state->state == 2)
                 {
                     macdata_daatr->state_now = Mac_Adjustment_Freqency; // 调整本节点为时隙调整阶段
-					macdata_daatr->has_received_sequence = false;
+                    macdata_daatr->has_received_sequence = false;
                     cout << "节点 " << node->nodeId << " 收到网管节点广播消息, 并改变自己节点 state_now 为 Adjustment_Freqency. Time: "
                          << (float)(node->getNodeTime()) / 1000000 << endl;
-					macdata_daatr->stats.freq_adjust_begin_time = (node->getNodeTime()) / 1000000;//时隙调整阶段开始时间
+                    macdata_daatr->stats.freq_adjust_begin_time = (node->getNodeTime()) / 1000000; // 时隙调整阶段开始时间
                     // 在收到网管节点发来的状态调整信息后, 立刻将自己的波束指向网管节点, 等待接收时隙表
                     Node *dest_node_ptr = MAPPING_GetNodePtrFromHash(node->partitionData->nodeIdHash, macdata_daatr->mana_node);
                     Attach_Status_Information_To_Packet(node, dest_node_ptr, macdata_daatr, DAATR_STATUS_RX, 0);
@@ -6405,7 +6419,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                         delete mac_header2_ptr;
                     }
                 }
-				macdata_daatr->stats.mac_network_overhead += 42;//网络开销
+                macdata_daatr->stats.mac_network_overhead += 42; // 网络开销
             }
             else
             { // 为接收时隙
@@ -6448,7 +6462,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                 { // 接入请求
                     if (macdata_daatr->state_now != Mac_Access)
                     { // 节点未处于接入状态, 不需要广播接入请求
-                        //cout << "[接入广播-MANA] Node ID " << node->nodeId << " 未处于接入状态, 非建链阶段不需要广播 网管信道 接入请求 ";
+                        // cout << "[接入广播-MANA] Node ID " << node->nodeId << " 未处于接入状态, 非建链阶段不需要广播 网管信道 接入请求 ";
                         float time = (float)(node->getNodeTime()) / 1000000;
                         cout << "Time : " << time << "ms" << endl;
                         temp_Management_Channel_Information.SendOrReceive = 2;
@@ -6496,7 +6510,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                                     delete mac_header2_ptr;
                                 }
                             }
-							macdata_daatr->stats.mac_network_overhead += 18;//网络开销
+                            macdata_daatr->stats.mac_network_overhead += 18;             // 网络开销
                             macdata_daatr->access_state = DAATR_HAS_SENT_ACCESS_REQUEST; // 断开节点已发送接入请求
                             Message *send_msg_access_waiting_time = MESSAGE_Alloc(node,
                                                                                   MAC_LAYER,
@@ -6532,11 +6546,11 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                 }
                 case 4:
                 { // 接入回复
-					if(macdata_daatr->state_now == Mac_Access)
-					{
-						cout << "处于接入阶段，停止收发" << endl;
-						break;
-					}
+                    if (macdata_daatr->state_now == Mac_Access)
+                    {
+                        cout << "处于接入阶段，停止收发" << endl;
+                        break;
+                    }
                     if (macdata_daatr->access_state == DAATR_WAITING_TO_REPLY && macdata_daatr->state_now == Mac_Execution)
                     { // 如果网管节点有需要回复的节点
                         cout << endl;
@@ -6544,7 +6558,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                         float time = (float)(node->getNodeTime()) / 1000000;
                         cout << "Time : " << time << "ms" << endl;
                         vector<uint8_t> *slot_location;
-                        slot_location = MacDaatr_search_slot_location(macdata_daatr->waiting_to_access_node, macdata_daatr);
+                        slot_location = MacDaatrSrearchSlotLocation(macdata_daatr->waiting_to_access_node, macdata_daatr);
                         mana_access_reply access_reply;
                         for (i = 0; i < FREQUENCY_COUNT; i++)
                         {
@@ -6598,7 +6612,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                                 delete mac_header2_ptr;
                             }
                         }
-						macdata_daatr->stats.mac_network_overhead += 50;//网络开销
+                        macdata_daatr->stats.mac_network_overhead += 50; // 网络开销
                         delete slot_location;
                         macdata_daatr->access_state = DAATR_WAITING_TO_SEND_HOPPING_PARTTERN;
 
@@ -6679,7 +6693,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                                 delete mac_header2_ptr;
                             }
                         }
-						macdata_daatr->stats.mac_network_overhead += 18;//网络开销
+                        macdata_daatr->stats.mac_network_overhead += 18; // 网络开销
                         macdata_daatr->waiting_to_access_node = 0;
                     }
                     else
@@ -6693,11 +6707,11 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                 }
                 case 5:
                 { // 飞行状态信息通告
-					if(macdata_daatr->state_now == Mac_Access)
-					{
-						cout << "处于接入阶段，停止收发" << endl;
-						break;
-					}
+                    if (macdata_daatr->state_now == Mac_Access)
+                    {
+                        cout << "处于接入阶段，停止收发" << endl;
+                        break;
+                    }
                     cout << endl;
                     cout << "[执行阶段-MANA] Node " << node->nodeId << " 广播 飞行状态信息 ";
                     float time = (float)(node->getNodeTime()) / 1000000;
@@ -6748,17 +6762,17 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                             delete mac_header2_ptr;
                         }
                     }
-					macdata_daatr->stats.mac_network_overhead += 42;//网络开销
+                    macdata_daatr->stats.mac_network_overhead += 42; // 网络开销
                     break;
                 }
                 case 6:
                 {
                     // 网管节点通告消息
-					if(macdata_daatr->state_now == Mac_Access)
-					{
-						cout << "处于接入阶段，停止收发" << endl;
-						break;
-					}
+                    if (macdata_daatr->state_now == Mac_Access)
+                    {
+                        cout << "处于接入阶段，停止收发" << endl;
+                        break;
+                    }
                     cout << endl;
                     cout << "[执行阶段-MANA] Node " << node->nodeId << " 广播 网管节点通告消息 ";
                     float time = (float)(node->getNodeTime()) / 1000000;
@@ -6846,23 +6860,23 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                             delete mac_header2_ptr;
                         }
                     }
-					macdata_daatr->stats.mac_network_overhead += 19;//网络开销
+                    macdata_daatr->stats.mac_network_overhead += 19; // 网络开销
                     break;
                 }
                 case 7:
                 { // 网络层业务发送
-					if(macdata_daatr->state_now == Mac_Access)
-					{
-						cout << "处于接入阶段，停止收发" << endl;
-						break;
-					}
+                    if (macdata_daatr->state_now == Mac_Access)
+                    {
+                        cout << "处于接入阶段，停止收发" << endl;
+                        break;
+                    }
                     cout << endl;
                     cout << "[执行阶段-MANA] Node ID " << node->nodeId << " 广播 网络层控制消息 ";
                     float time = (float)(node->getNodeTime()) / 1000000;
                     cout << "Time : " << time << " ms" << endl;
                     msgFromControl buss_to_be_sent;
                     bool flag;
-                    flag = get_mana_channel_business_from_queue(&buss_to_be_sent, node, macdata_daatr);
+                    flag = getLowChannelBusinessFromQueue(&buss_to_be_sent, node, macdata_daatr);
                     if (flag == true)
                     { // 如果业务队列不为空, 有待发送业务
                         int mfc_length = buss_to_be_sent.packetLength;
@@ -6933,7 +6947,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                        sizeof(Management_Channel_Information));
                 MESSAGE_Send(node, send_msg0, 0);
 
-                //system("pause");
+                // system("pause");
             }
             else
             { // 为接收时隙
@@ -6991,9 +7005,11 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
         double trans_speed, trans_data;
         int current_slot_Id = macdata_daatr->currentSlotId;
         int current_slot_state = macdata_daatr->slot_traffic_execution[current_slot_Id].state;
-		bool all_link_flag = false;
-		if(current_slot_Id % 20 < 8 && current_slot_Id % 20 > 15 && current_slot_Id < 62)
-		{all_link_flag = true;}
+        bool all_link_flag = false;
+        if (current_slot_Id % 20 < 8 && current_slot_Id % 20 > 15 && current_slot_Id < 62)
+        {
+            all_link_flag = true;
+        }
         int slot_available = 1;
         int multi = 0;
         int skip_pkt = 0; // 表示这是大数据包(的个数), 无法放入此PDU, 跳过
@@ -7021,9 +7037,9 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                 }
                 /*if (macdata_daatr->Forwarding_Table[dest_node - 1][1] == 0 &&
                     macdata_daatr->traffic_channel_business[dest_node - 1].business[0][0].busin_data.backup == 0)*/
-				if(dest_node > SUBNET_NODE_NUMBER)
+                if (dest_node > SUBNET_NODE_NUMBER)
                 {
-                    //cout << "到节点 " << dest_node << " 无链路可用,该节点转发变为空, 不再发送" << endl;
+                    // cout << "到节点 " << dest_node << " 无链路可用,该节点转发变为空, 不再发送" << endl;
                     MacDaatrUpdateTimer(node, macdata_daatr);
                     // system("pause");
                     break;
@@ -7208,7 +7224,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                     MacHeader *mac_header = new MacHeader;
                     mac_header->is_mac_layer = 0;
                     mac_header->mac_backup = multi;
-                   // cout << "节点 " << node->nodeId << " 向节点 " << dest_node << " 本次发送合包 " << multi << " 个" << endl;
+                    // cout << "节点 " << node->nodeId << " 向节点 " << dest_node << " 本次发送合包 " << multi << " 个" << endl;
                     mac_header->PDUtype = 0;
                     mac_header->packetLength = 25; // 设定PDU包头的初始长度
                     mac_header->destAddr = dest_node;
@@ -7238,15 +7254,15 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                         mac_converter_PDU1 + mac_converter_temp; // 将新生成的MFC的seq添加至PDU1包头之后
                         PDU_TotalLength += mfc_temp->packetLength;
                         MFC_Trans_temp->clear();
-						macdata_daatr->stats.traffic_output += (*mfc_temp).packetLength;
-						/*if((*mfc_temp).srcAddr == 0)
-						{macdata_daatr->stats.msgtype3_sent1++;}
-						if((*mfc_temp).destAddr == 0)
-						{macdata_daatr->stats.msgtype3_sent1++;}*/
-						//else if((*mfc_temp).msgType == 3 && dest_node == 2)
-						//{macdata_daatr->stats.msgtype3_sent2++;}
-						//else if((*mfc_temp).msgType == 3 && dest_node == 3)
-						//{macdata_daatr->stats.msgtype3_sent3++;}
+                        macdata_daatr->stats.traffic_output += (*mfc_temp).packetLength;
+                        /*if((*mfc_temp).srcAddr == 0)
+                        {macdata_daatr->stats.msgtype3_sent1++;}
+                        if((*mfc_temp).destAddr == 0)
+                        {macdata_daatr->stats.msgtype3_sent1++;}*/
+                        // else if((*mfc_temp).msgType == 3 && dest_node == 2)
+                        //{macdata_daatr->stats.msgtype3_sent2++;}
+                        // else if((*mfc_temp).msgType == 3 && dest_node == 3)
+                        //{macdata_daatr->stats.msgtype3_sent3++;}
                         macdata_daatr->stats.UDU_SentUnicast++;
                     }
                     MFC_list_temp.clear(); // 清空待发送队列
@@ -7262,7 +7278,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                     Attach_Status_Information_To_Packet(node, dest_node_struct, macdata_daatr, DAATR_STATUS_TX, 0);
                     MESSAGE_Send(dest_node_struct, data_msg, 0);
                     macdata_daatr->stats.PDU_SentUnicast++;
-                  //  cout << "节点 " << node->nodeId << " 结束当前时隙发送任务, 调整业务队列的等待时间与优先级" << endl;
+                    //  cout << "节点 " << node->nodeId << " 结束当前时隙发送任务, 调整业务队列的等待时间与优先级" << endl;
                 }
 
                 for (i = 0; i < SUBNET_NODE_FREQ_NUMBER; i++)
@@ -7334,7 +7350,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
 
         else if (macdata_daatr->state_now == Mac_Adjustment_Freqency)
         {
-			
+
             cout << "节点 " << node->nodeId << " 进入频率调整阶段, Time: " << (float)(node->getNodeTime()) / 1000000 << endl;
             MESSAGE_CancelSelfMsg(node, macdata_daatr->timerMsg);
         }
@@ -7342,9 +7358,9 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
         else if (macdata_daatr->state_now == Mac_Access)
         {
             cout << "节点 " << node->nodeId << " 进入接入状态, Time: " << (float)(node->getNodeTime()) / 1000000 << endl;
-			macdata_daatr->stats.access_begin_time = (node->getNodeTime()) / 1000000;//随遇接入时间
-			MacDaatrUpdateTimer(node, macdata_daatr);
-            //MESSAGE_CancelSelfMsg(node, macdata_daatr->timerMsg);
+            macdata_daatr->stats.access_begin_time = (node->getNodeTime()) / 1000000; // 随遇接入时间
+            MacDaatrUpdateTimer(node, macdata_daatr);
+            // MESSAGE_CancelSelfMsg(node, macdata_daatr->timerMsg);
         }
 
         else
@@ -7788,18 +7804,18 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
 
     case MSG_MAC_SendLocalLinkStateTimer:
     {
-		//if(macdata_daatr->state_now == Mac_Execution)
-		//{
-			cout << "Node " << node->nodeId << "Send Local Link Status To NetworkLayer" << endl;
-			Send_Local_Link_Status(node, macdata_daatr);
-			// SendLocalLinkMsg(node); //网络层测试函数
-			MacDaatrInitialize_LocalLinkState_timer(node, macdata_daatr);
-		//}
-		//else
-		//{
-		//	MacDaatrInitialize_LocalLinkState_timer(node, macdata_daatr);
-		//}
-		MESSAGE_Free(node, msg);
+        // if(macdata_daatr->state_now == Mac_Execution)
+        //{
+        cout << "Node " << node->nodeId << "Send Local Link Status To NetworkLayer" << endl;
+        Send_Local_Link_Status(node, macdata_daatr);
+        // SendLocalLinkMsg(node); //网络层测试函数
+        MacDaatrInitialize_LocalLinkState_timer(node, macdata_daatr);
+        //}
+        // else
+        //{
+        //	MacDaatrInitialize_LocalLinkState_timer(node, macdata_daatr);
+        //}
+        MESSAGE_Free(node, msg);
         break;
     }
 
@@ -7808,12 +7824,12 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
         if (macdata_daatr->has_received_chain_building_request == false &&
             node->nodeId != macdata_daatr->mana_node)
         {
-            macdata_daatr->state_now = Mac_Access;           // 进入接入阶段
-			if(node->nodeId == macdata_daatr->mana_node)
-			{
-				macdata_daatr->mana_node = 0;
-				macdata_daatr->node_type = Node_Ordinary;
-			}
+            macdata_daatr->state_now = Mac_Access; // 进入接入阶段
+            if (node->nodeId == macdata_daatr->mana_node)
+            {
+                macdata_daatr->mana_node = 0;
+                macdata_daatr->node_type = Node_Ordinary;
+            }
             macdata_daatr->access_state = DAATR_NEED_ACCESS; // 需要发送接入请求
 
             cout << "[建链阶段] Node " << node->nodeId << " ";
@@ -7832,11 +7848,11 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
             macdata_daatr->mana_channel_frame_num += 1; // 已过去1s
 
             /////////////// 测试随遇接入用 ///////////////
-            //if (node->nodeId == 5)
+            // if (node->nodeId == 5)
             //{
-            //    macdata_daatr->state_now = Mac_Access;           // 进入接入阶段
-            //    macdata_daatr->access_state = DAATR_NEED_ACCESS; // 需要发送接入请求
-            //}
+            //     macdata_daatr->state_now = Mac_Access;           // 进入接入阶段
+            //     macdata_daatr->access_state = DAATR_NEED_ACCESS; // 需要发送接入请求
+            // }
             /////////////////////////////////////////////
 
             if (macdata_daatr->link_build_state == 0)
@@ -8218,8 +8234,8 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
         }
         macdata_daatr->state_now = Mac_Execution;
         macdata_daatr->access_state = DAATR_NO_NEED_TO_ACCESS;
-		macdata_daatr->stats.access_end_time = (node->getNodeTime()) / 1000000;
-       // MacDaatrInitialize_traffic_Timer(node, macdata_daatr); // 业务信道定时器初始化
+        macdata_daatr->stats.access_end_time = (node->getNodeTime()) / 1000000;
+        // MacDaatrInitialize_traffic_Timer(node, macdata_daatr); // 业务信道定时器初始化
 
         // 暂时不用同步
         // macdata_daatr->if_mana_slottable_synchronization = true;//新接入节点需要作网管信道时隙表同步
@@ -8234,11 +8250,15 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
 
     case MSG_MAC_AllNodesEnterExecutionState:
     {
-        if(macdata_daatr->state_now == Mac_Adjustment_Slot)
-		{macdata_daatr->stats.slot_adjust_end_time = (node->getNodeTime() / 1000000);}
-		else if(macdata_daatr->state_now == Mac_Adjustment_Freqency)
-		{macdata_daatr->stats.freq_adjust_end_time = (node->getNodeTime() / 1000000);}
-		macdata_daatr->state_now = Mac_Execution;
+        if (macdata_daatr->state_now == Mac_Adjustment_Slot)
+        {
+            macdata_daatr->stats.slot_adjust_end_time = (node->getNodeTime() / 1000000);
+        }
+        else if (macdata_daatr->state_now == Mac_Adjustment_Freqency)
+        {
+            macdata_daatr->stats.freq_adjust_end_time = (node->getNodeTime() / 1000000);
+        }
+        macdata_daatr->state_now = Mac_Execution;
         cout << "节点 " << node->nodeId << " 收到定时器事件, 通知进入执行阶段 Time: " << (float)(node->getNodeTime() / 1000000) << endl;
 
         if (macdata_daatr->link_build_state == 0)
@@ -8405,7 +8425,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
         cout << "[建链阶段] 网管节点收到 Node " << build_requist->nodeID << " 的建链请求. ";
         float time = (float)(node->getNodeTime()) / 1000000;
         cout << "Time : " << time << " ms" << endl;
-		
+
         // 在一段时间后进行Response报文的发送
         Message *send_msg0 = MESSAGE_Alloc(node,
                                            MAC_LAYER,
@@ -8477,67 +8497,64 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
             }
             macdata_daatr->spectrum_sensing_sum[0][TOTAL_FREQ_POINT] = 1;
         }
-		else
-		{
-			// 在业务信道队列中添加此业务
-			spectrum_sensing_struct *spec_sen = new spectrum_sensing_struct;
-			for (int i = 0; i < TOTAL_FREQ_POINT; i++)
-			{
-				spec_sen->spectrum_sensing[i] = macdata_daatr->spectrum_sensing_node[i];
-			}
+        else
+        {
+            // 在业务信道队列中添加此业务
+            spectrum_sensing_struct *spec_sen = new spectrum_sensing_struct;
+            for (int i = 0; i < TOTAL_FREQ_POINT; i++)
+            {
+                spec_sen->spectrum_sensing[i] = macdata_daatr->spectrum_sensing_node[i];
+            }
 
+            /*spectrum_sensing_struct spec_struct;
+            for (int i = 0; i < TOTAL_FREQ_POINT; i++)
+            {
+                spec_struct.spectrum_sensing[i] = Randomly_Generate_0_1(0.8);
+            }
+            Message *spec_sense_msg = MESSAGE_Alloc(node,
+                                                    MAC_LAYER,
+                                                    MAC_PROTOCOL_DAATR,
+                                                    MAC_DAATR_SpectrumSensing);
+            MESSAGE_PacketAlloc(node, spec_sense_msg, sizeof(spectrum_sensing_struct), TRACE_DAATR);
+            memcpy((spectrum_sensing_struct *)MESSAGE_ReturnPacket(spec_sense_msg),
+                   &spec_struct, sizeof(spectrum_sensing_struct));
+            MESSAGE_Send(node, spec_sense_msg, 700 * MILLI_SECOND);*/
 
-			/*spectrum_sensing_struct spec_struct;
-			for (int i = 0; i < TOTAL_FREQ_POINT; i++)
-			{
-				spec_struct.spectrum_sensing[i] = Randomly_Generate_0_1(0.8);
-			}
-			Message *spec_sense_msg = MESSAGE_Alloc(node,
-													MAC_LAYER,
-													MAC_PROTOCOL_DAATR,
-													MAC_DAATR_SpectrumSensing);
-			MESSAGE_PacketAlloc(node, spec_sense_msg, sizeof(spectrum_sensing_struct), TRACE_DAATR);
-			memcpy((spectrum_sensing_struct *)MESSAGE_ReturnPacket(spec_sense_msg),
-				   &spec_struct, sizeof(spectrum_sensing_struct));
-			MESSAGE_Send(node, spec_sense_msg, 700 * MILLI_SECOND);*/
+            // 以下是将频谱感知结果转换为01序列, 放在MFC的data字段中, 并将MFC放入队列中等待发送
+            MacDaatr_struct_converter mac_converter_Spec(5);
+            mac_converter_Spec.set_struct((uint8_t *)spec_sen, 5);
+            mac_converter_Spec.daatr_freq_sense_to_0_1();
+            uint8_t *bit_seq = mac_converter_Spec.get_sequence(); // 63 byte
 
+            vector<uint8_t> *SpecData = new vector<uint8_t>;
+            for (int i = 0; i < 63; i++)
+            {
+                SpecData->push_back(bit_seq[i]);
+            }
 
-			// 以下是将频谱感知结果转换为01序列, 放在MFC的data字段中, 并将MFC放入队列中等待发送
-			MacDaatr_struct_converter mac_converter_Spec(5);
-			mac_converter_Spec.set_struct((uint8_t *)spec_sen, 5);
-			mac_converter_Spec.daatr_freq_sense_to_0_1();
-			uint8_t *bit_seq = mac_converter_Spec.get_sequence(); // 63 byte
+            msgFromControl *MFC_temp = new msgFromControl;
+            MFC_temp->srcAddr = node->nodeId;
+            MFC_temp->destAddr = macdata_daatr->mana_node; // 给网管节点发送
+            MFC_temp->backup = 1;                          // 标识本层MFC数据包
+            MFC_temp->data = (char *)SpecData;
+            MFC_temp->priority = 0; // 最高优先级
+            MFC_temp->packetLength = 73;
+            MFC_temp->msgType = 15;
+            MFC_temp->fragmentNum = 15; // 以上三项都是15标识频谱感知结果
 
-			vector<uint8_t> *SpecData = new vector<uint8_t>;
-			for (int i = 0; i < 63; i++)
-			{
-				SpecData->push_back(bit_seq[i]);
-			}
+            // Message *send_msg0 = MESSAGE_Alloc(node,
+            //                                    MAC_LAYER,
+            //                                    MAC_PROTOCOL_DAATR,
+            //                                    MAC_DAATR_Mana_Node_Recv_Spec_Sensing); // 生成消息
+            // MESSAGE_PacketAlloc(node, send_msg0, sizeof(msgFromControl), TRACE_DAATR);
+            // memcpy((msgFromControl *)MESSAGE_ReturnPacket(send_msg0), MFC_temp, sizeof(msgFromControl));
+            // node_ptr_to_node = MAPPING_GetNodePtrFromHash(node->partitionData->nodeIdHash, 1); // 获取该接收节点指针
+            // MESSAGE_Send(node_ptr_to_node, send_msg0, 2.5 * MILLI_SECOND);
 
-			msgFromControl *MFC_temp = new msgFromControl;
-			MFC_temp->srcAddr = node->nodeId;
-			MFC_temp->destAddr = macdata_daatr->mana_node; // 给网管节点发送
-			MFC_temp->backup = 1;                          // 标识本层MFC数据包
-			MFC_temp->data = (char *)SpecData;
-			MFC_temp->priority = 0; // 最高优先级
-			MFC_temp->packetLength = 73;
-			MFC_temp->msgType = 15;
-			MFC_temp->fragmentNum = 15; // 以上三项都是15标识频谱感知结果
+            cout << "节点 " << node->nodeId << " 将结果存入最高优先级的业务队列中. Time: " << (float)(node->getNodeTime()) / 1000000 << endl;
+            MAC_NetworkLayerHasPacketToSend(node, 0, MFC_temp); // 将此业务添加进业务信道队列
+        }
 
-			// Message *send_msg0 = MESSAGE_Alloc(node,
-			//                                    MAC_LAYER,
-			//                                    MAC_PROTOCOL_DAATR,
-			//                                    MAC_DAATR_Mana_Node_Recv_Spec_Sensing); // 生成消息
-			// MESSAGE_PacketAlloc(node, send_msg0, sizeof(msgFromControl), TRACE_DAATR);
-			// memcpy((msgFromControl *)MESSAGE_ReturnPacket(send_msg0), MFC_temp, sizeof(msgFromControl));
-			// node_ptr_to_node = MAPPING_GetNodePtrFromHash(node->partitionData->nodeIdHash, 1); // 获取该接收节点指针
-			// MESSAGE_Send(node_ptr_to_node, send_msg0, 2.5 * MILLI_SECOND);
-
-			cout << "节点 " << node->nodeId << " 将结果存入最高优先级的业务队列中. Time: " << (float)(node->getNodeTime()) / 1000000 << endl;
-			MAC_NetworkLayerHasPacketToSend(node, 0, MFC_temp); // 将此业务添加进业务信道队列
-		}
-
-        
         // system("pause");
         MESSAGE_Free(node, msg);
         break;
@@ -8597,7 +8614,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                                           MAC_PROTOCOL_DAATR,
                                           MAC_DAATR_Mana_Judge_Enter_Freq_Adjustment_Stage);
         MESSAGE_Send(node, send_msg, SPEC_SENSING_PERIOD * MILLI_SECOND);
-		macdata_daatr->ptr_to_period_judge_if_enter_adjustment = send_msg;
+        macdata_daatr->ptr_to_period_judge_if_enter_adjustment = send_msg;
         MESSAGE_Free(node, msg);
         break;
     }
@@ -8741,21 +8758,21 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
             }
             if (macdata_daatr->mana_node != node_notify_ptr->intragroupcontrolNodeId)
             { // 如果网管节点发生变化, 则需要修改网管信道时隙表
-				int mana_node_pre = macdata_daatr->mana_node;
-				int mana_node_now = node_notify_ptr->intragroupcontrolNodeId;
-				if(node->nodeId == mana_node_pre)
-				{
-					MESSAGE_CancelSelfMsg(node, macdata_daatr->timerMsg);
-				}
-				else if(node->nodeId == mana_node_now)
-				{
-					Message *send_msg = MESSAGE_Alloc(node,
-                                          MAC_LAYER,
-                                          MAC_PROTOCOL_DAATR,
-                                          MAC_DAATR_Mana_Judge_Enter_Freq_Adjustment_Stage);
-					MESSAGE_Send(node, send_msg, SPEC_SENSING_PERIOD * MILLI_SECOND);
-					macdata_daatr->ptr_to_period_judge_if_enter_adjustment = send_msg;
-				}
+                int mana_node_pre = macdata_daatr->mana_node;
+                int mana_node_now = node_notify_ptr->intragroupcontrolNodeId;
+                if (node->nodeId == mana_node_pre)
+                {
+                    MESSAGE_CancelSelfMsg(node, macdata_daatr->timerMsg);
+                }
+                else if (node->nodeId == mana_node_now)
+                {
+                    Message *send_msg = MESSAGE_Alloc(node,
+                                                      MAC_LAYER,
+                                                      MAC_PROTOCOL_DAATR,
+                                                      MAC_DAATR_Mana_Judge_Enter_Freq_Adjustment_Stage);
+                    MESSAGE_Send(node, send_msg, SPEC_SENSING_PERIOD * MILLI_SECOND);
+                    macdata_daatr->ptr_to_period_judge_if_enter_adjustment = send_msg;
+                }
                 if (node_notify_ptr->intragroupcontrolNodeId == node->nodeId)
                 { // 如果本节点成为新网管节点
                     cout << "本节点 "
@@ -8764,8 +8781,8 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                     vector<uint8_t> *ptr_temp1; // 网管节点
                     vector<uint8_t>::iterator ptr_it;
                     short num;
-                    ptr_temp = MacDaatr_search_slot_location(node->nodeId, macdata_daatr);              // 本节点
-                    ptr_temp1 = MacDaatr_search_slot_location(macdata_daatr->mana_node, macdata_daatr); // 网管节点
+                    ptr_temp = MacDaatrSrearchSlotLocation(node->nodeId, macdata_daatr);              // 本节点
+                    ptr_temp1 = MacDaatrSrearchSlotLocation(macdata_daatr->mana_node, macdata_daatr); // 网管节点
                     for (ptr_it = ptr_temp->begin(); ptr_it != ptr_temp->end(); ptr_it++)
                     { // 原网管节点分配到本节点原时隙位置
                         num = *ptr_it;
@@ -8792,8 +8809,8 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                     vector<uint8_t> *ptr_temp1; // 新网管节点
                     vector<uint8_t>::iterator ptr_it;
                     short num;
-                    ptr_temp = MacDaatr_search_slot_location(macdata_daatr->mana_node, macdata_daatr);                  // 原网管节点
-                    ptr_temp1 = MacDaatr_search_slot_location(node_notify_ptr->intragroupcontrolNodeId, macdata_daatr); // 新网管节点
+                    ptr_temp = MacDaatrSrearchSlotLocation(macdata_daatr->mana_node, macdata_daatr);                  // 原网管节点
+                    ptr_temp1 = MacDaatrSrearchSlotLocation(node_notify_ptr->intragroupcontrolNodeId, macdata_daatr); // 新网管节点
                     for (ptr_it = ptr_temp->begin(); ptr_it != ptr_temp->end(); ptr_it++)
                     { // 新网管节点分配到网管节点时隙
                         num = *ptr_it;
@@ -8818,7 +8835,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
             macdata_daatr->node_notification = *(node_notify_ptr);
             macdata_daatr->mana_node = node_notify_ptr->intragroupcontrolNodeId;
             macdata_daatr->gateway_node = node_notify_ptr->intergroupgatewayNodeId;
-			macdata_daatr->standby_gateway_node = node_notify_ptr->reserveintergroupgatewayNodeId;
+            macdata_daatr->standby_gateway_node = node_notify_ptr->reserveintergroupgatewayNodeId;
             cout << "The node" << node->nodeId << "Resonsibility of msgdata is" << temp_nodeResonsibility;
         }
         else if (macdata_daatr->state_now == Mac_Initialization)
@@ -8845,48 +8862,48 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
 
         if (recv_forwarding_table->size() == 0)
         {
-			if(macdata_daatr->state_now == Mac_Execution)
-			{
-				macdata_daatr->Forwarding_Table_int_access_sign++;
-				if(macdata_daatr->Forwarding_Table_int_access_sign == 3)
-				{
-					macdata_daatr->access_state = DAATR_NEED_ACCESS;
-					macdata_daatr->state_now = Mac_Access;
-					if(node->nodeId == macdata_daatr->mana_node)
-					{
-						macdata_daatr->mana_node = 0;
-						macdata_daatr->node_type = Node_Ordinary;
-					}
-					cout << "收到全空转发表3次, 该节点进入接入状态" << endl;
-					macdata_daatr->Forwarding_Table_int_access_sign = 0;
-				}
-			}
+            if (macdata_daatr->state_now == Mac_Execution)
+            {
+                macdata_daatr->Forwarding_Table_int_access_sign++;
+                if (macdata_daatr->Forwarding_Table_int_access_sign == 3)
+                {
+                    macdata_daatr->access_state = DAATR_NEED_ACCESS;
+                    macdata_daatr->state_now = Mac_Access;
+                    if (node->nodeId == macdata_daatr->mana_node)
+                    {
+                        macdata_daatr->mana_node = 0;
+                        macdata_daatr->node_type = Node_Ordinary;
+                    }
+                    cout << "收到全空转发表3次, 该节点进入接入状态" << endl;
+                    macdata_daatr->Forwarding_Table_int_access_sign = 0;
+                }
+            }
         }
-		else
-		{
-			macdata_daatr->Forwarding_Table_int_access_sign = 0;
-		}
-		if(macdata_daatr->state_now == Mac_Execution)
-		{
-			for (i = 0; i < SUBNET_NODE_NUMBER; i++)
-		{
-			macdata_daatr->Forwarding_Table[i][1] = 0; //
-			// 在收到新的路由表之后, 将原来的路由表的转发节点全部清零
-		}
-		for (i = 0; i < recv_forwarding_table->size(); i++)
-		{
-			// 如果此次传下来的路由表中有对应destnode,则将其赋值至对应位置
-			// 如果没有的话, 就将其置零
-			// 此外, 表中节点编号均为nodeId, 即为1-20, 并非0-19
-			temp_node = (*recv_forwarding_table)[i][0];
-			macdata_daatr->Forwarding_Table[temp_node - 1][1] = (*recv_forwarding_table)[i][1];
-		}
-		cout << "Node " << node->nodeId << " ForwardingTable: " << endl;
-		for (i = 0; i < SUBNET_NODE_NUMBER; i++)
-		{
-			cout << macdata_daatr->Forwarding_Table[i][0] << "  " << macdata_daatr->Forwarding_Table[i][1] << endl;
-		}
-		}
+        else
+        {
+            macdata_daatr->Forwarding_Table_int_access_sign = 0;
+        }
+        if (macdata_daatr->state_now == Mac_Execution)
+        {
+            for (i = 0; i < SUBNET_NODE_NUMBER; i++)
+            {
+                macdata_daatr->Forwarding_Table[i][1] = 0; //
+                                                           // 在收到新的路由表之后, 将原来的路由表的转发节点全部清零
+            }
+            for (i = 0; i < recv_forwarding_table->size(); i++)
+            {
+                // 如果此次传下来的路由表中有对应destnode,则将其赋值至对应位置
+                // 如果没有的话, 就将其置零
+                // 此外, 表中节点编号均为nodeId, 即为1-20, 并非0-19
+                temp_node = (*recv_forwarding_table)[i][0];
+                macdata_daatr->Forwarding_Table[temp_node - 1][1] = (*recv_forwarding_table)[i][1];
+            }
+            cout << "Node " << node->nodeId << " ForwardingTable: " << endl;
+            for (i = 0; i < SUBNET_NODE_NUMBER; i++)
+            {
+                cout << macdata_daatr->Forwarding_Table[i][0] << "  " << macdata_daatr->Forwarding_Table[i][1] << endl;
+            }
+        }
         MESSAGE_Free(node, msg);
         // system("pause");
         break;
@@ -8904,7 +8921,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
 
     case MSG_NETWORK_ReceiveNetworkPkt:
     {
-       // printf("[MAC] 收到网络层下发的数据包MFC\n");
+        // printf("[MAC] 收到网络层下发的数据包MFC\n");
 
         ////////////////此处接收到网络层vector型0/1消息, 需要转换为msgfromcontrol结构体类型
         char *from_network_MFC = MESSAGE_ReturnPacket(msg);
@@ -8915,19 +8932,21 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                                                                  //////////////////////////////////////////////
 
         // msgFromControl *MFC_temp = (msgFromControl *)MESSAGE_ReturnPacket(msg);
-		//cout << MFC_temp->msgType << endl;
+        // cout << MFC_temp->msgType << endl;
         if (MFC_temp->msgType == 1) // 网管信道消息
         {
-            MacDaatr_network_has_mana_channel_packet_to_send(node, 0, MFC_temp);
+            MacDaatNetworkHasLowFreqChannelPacketToSend(node, 0, MFC_temp);
         }
         else // 业务信道消息
         {
             unsigned int temp_destAddr = MFC_temp->destAddr;
             unsigned int temp_sourceAddr = MFC_temp->srcAddr;
-			if(temp_destAddr == 0)
-			{cout << endl;}
-           // cout << "The destAddr from network layer packet is " << temp_destAddr << endl;
-           // cout << "The srcAddr from network layer packet is " << temp_sourceAddr << endl;
+            if (temp_destAddr == 0)
+            {
+                cout << endl;
+            }
+            // cout << "The destAddr from network layer packet is " << temp_destAddr << endl;
+            // cout << "The srcAddr from network layer packet is " << temp_sourceAddr << endl;
 
             if (MFC_temp->backup == 0)
             {
@@ -8938,12 +8957,14 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                     MESSAGE_Free(node, msg);
                     break;
                 }
-				if(MFC_temp->msgType == 3)
-				{macdata_daatr->stats.msgtype3_recv_network++;}
+                if (MFC_temp->msgType == 3)
+                {
+                    macdata_daatr->stats.msgtype3_recv_network++;
+                }
                 MAC_NetworkLayerHasPacketToSend(node, interfaceIndex, MFC_temp);
                 delete MFC_temp;
                 macdata_daatr->stats.UDU_GotUnicast++;
-                //cout << "MAC 将数据包放入队列. " << endl;
+                // cout << "MAC 将数据包放入队列. " << endl;
             }
             else
             {
@@ -8961,13 +8982,13 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
 
         if (Status_Information->SendOrReceive == DAATR_STATUS_TX)
         {
-          //  cout << "{TX} Node {" << node->nodeId << "}  -> " << Status_Information->dest_node
-             //    << " Time: " << (float)(node->getNodeTime()) / 1000000 << " ms" << endl;
+            //  cout << "{TX} Node {" << node->nodeId << "}  -> " << Status_Information->dest_node
+            //    << " Time: " << (float)(node->getNodeTime()) / 1000000 << " ms" << endl;
         }
         else
         {
-            //cout << "{RX} Node {" << node->nodeId << "}  <- " << Status_Information->dest_node
-                // << " Time: " << (float)(node->getNodeTime()) / 1000000 << " ms" << endl;
+            // cout << "{RX} Node {" << node->nodeId << "}  <- " << Status_Information->dest_node
+            //  << " Time: " << (float)(node->getNodeTime()) / 1000000 << " ms" << endl;
         }
         // cout << "天线编号 antennaID: " << Status_Information->SendOrReceive.antennaID << endl;
         // cout << "波束方位角 azimuth: " << Status_Information->SendOrReceive.azimuth << endl;
@@ -9010,7 +9031,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
 
     case MSG_MAC_Data_Transmitting:
     {
-       // printf("[MAC]节点 %d 业务信道 收到数据包!\n", node->nodeId);
+        // printf("[MAC]节点 %d 业务信道 收到数据包!\n", node->nodeId);
         macdata_daatr->stats.PDU_GotUnicast++;
 
         uint8_t *bit_seq = (uint8_t *)MESSAGE_ReturnPacket(msg);
@@ -9057,22 +9078,22 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
 
                 vector<uint8_t> *MFC_ToNetwork = new vector<uint8_t>;
                 MFC_ToNetwork = PackMsgFromControl(MFC_temp);
-				if(MFC_temp->msgType == 3 && MFC_temp->srcAddr == 1)
-				{
-					macdata_daatr->stats.msgtype3_sent_network1++;
-				}
-				else if(MFC_temp->msgType == 3 && MFC_temp->srcAddr == 2)
-				{
-					macdata_daatr->stats.msgtype3_sent_network2++;
-				}
-				else if(MFC_temp->msgType == 3 && MFC_temp->srcAddr == 3)
-				{
-					macdata_daatr->stats.msgtype3_sent_network3++;
-				}
-				else if(MFC_temp->msgType != 2 && MFC_temp->msgType != 4)
-				{
-					cout << MFC_temp->msgType << endl;
-				}
+                if (MFC_temp->msgType == 3 && MFC_temp->srcAddr == 1)
+                {
+                    macdata_daatr->stats.msgtype3_sent_network1++;
+                }
+                else if (MFC_temp->msgType == 3 && MFC_temp->srcAddr == 2)
+                {
+                    macdata_daatr->stats.msgtype3_sent_network2++;
+                }
+                else if (MFC_temp->msgType == 3 && MFC_temp->srcAddr == 3)
+                {
+                    macdata_daatr->stats.msgtype3_sent_network3++;
+                }
+                else if (MFC_temp->msgType != 2 && MFC_temp->msgType != 4)
+                {
+                    cout << MFC_temp->msgType << endl;
+                }
                 MESSAGE_PacketAlloc(node, msg_send_network, MFC_ToNetwork->size(), TRACE_DAATR);
                 memcpy(MESSAGE_ReturnPacket(msg_send_network), MFC_ToNetwork->data(), MFC_ToNetwork->size());
                 MESSAGE_Send(node, msg_send_network, 0);
@@ -9085,7 +9106,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                 // delete control_to_network_ptr;
                 // MEM_free(pktStart);
                 mfc_count_upper++;
-                //cout << "MAC 收到本层数据包并传往上层. " << mfc_count_upper << " / " << Total_MFC_num << endl;
+                // cout << "MAC 收到本层数据包并传往上层. " << mfc_count_upper << " / " << Total_MFC_num << endl;
             }
             else
             {
@@ -9103,64 +9124,64 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
 
     case MSG_MAC_PktCounter:
     {
-		extern int appDateToLayer;
-		extern int receivedAppDate;
+        extern int appDateToLayer;
+        extern int receivedAppDate;
         cout << "---------[ Node " << node->nodeId << " ] Pkt_Stats ---------" << endl;
         cout << "Recv PDU num: " << macdata_daatr->stats.PDU_GotUnicast << endl;
         cout << "Sent PDU num: " << macdata_daatr->stats.PDU_SentUnicast << endl;
         cout << "Recv UDU num: " << macdata_daatr->stats.UDU_GotUnicast << endl;
         cout << "Sent UDU num: " << macdata_daatr->stats.UDU_SentUnicast << endl;
-		//cout << "网络层下发msgtype3的包数量： " << macdata_daatr->stats.msgtype3_recv_network << endl;
-		//cout << "网络层下发msgtype3的包并进入队列的包数量： " << macdata_daatr->stats.msgtype3_recv << endl;
-		//cout << "网络层下发msgtype3的包并发送给节点1的包数量： " << macdata_daatr->stats.msgtype3_sent1 << endl;
-		//cout << "网络层下发msgtype3的包并发送给节点2的包数量： " << macdata_daatr->stats.msgtype3_sent2 << endl;
-		//cout << "网络层下发msgtype3的包并发送给节点3的包数量： " << macdata_daatr->stats.msgtype3_sent3 << endl;
-		//cout << "节点1网络层成功传输msgtype3的包并发送的包数量： " << macdata_daatr->stats.msgtype3_sent_network1 << endl;
-		//cout << "节点2网络层成功传输msgtype3的包并发送的包数量： " << macdata_daatr->stats.msgtype3_sent_network2 << endl;
-		//cout << "节点3网络层成功传输msgtype3的包并发送的包数量： " << macdata_daatr->stats.msgtype3_sent_network3 << endl;
-		//cout << "网络层发给链路层的业务数据包总个数为：" << appDateToLayer << endl;
-		//cout << "网络层收到链路层转发回的业务数据包总个数为：" << receivedAppDate << endl;
-        cout << "Access Begin Time: " << macdata_daatr->stats.access_begin_time <<" ms" << endl;
-		cout << "Access End Time: " << macdata_daatr->stats.access_end_time << " ms" << endl;
-		cout << "SLot Adjust Begin Time: " << macdata_daatr->stats.slot_adjust_begin_time <<" ms" << endl;
-		cout << "SLot Adjust End Time: " << macdata_daatr->stats.slot_adjust_end_time << " ms" << endl;
-		cout << "Freq Adjust Begin Time: " << macdata_daatr->stats.freq_adjust_begin_time <<" ms" << endl;
-		cout << "Freq Adjust End Time: " << macdata_daatr->stats.freq_adjust_end_time << " ms" << endl;
-		cout << "Traffic Throughput: " << macdata_daatr->stats.traffic_output << " Byte" << endl;
-		cout << "网络开销: " << macdata_daatr->stats.mac_network_overhead << " Byte" << endl;
-		if(macdata_daatr->mana_node == node->nodeId)
-		{
-			cout << "更新前全子网跳频图案干扰比例 " << macdata_daatr->stats.subnet_freq_interfer_ratio_before << "%" << endl;
-			cout << "更新后全子网跳频图案干扰比例 " << macdata_daatr->stats.subnet_freq_interfer_ratio <<"%" << endl;
-			for(int i = 0; i < SUBNET_NODE_FREQ_NUMBER; i++)
-			{
-				cout << "更新前节点 " << i+1 << " 跳频图案干扰比例 " << macdata_daatr->stats.node_freq_interfer_ratio_before[i] << "%" << endl;
-				cout << "更新后节点 " << i+1 << " 跳频图案干扰比例 " << macdata_daatr->stats.node_freq_interfer_ratio[i] << "%" << endl;
-			}
-			for(int i = 0; i < SUBNET_NODE_FREQ_NUMBER; i++)
-			{
-				cout << "更新前节点 " << i+1 << " 窄带干扰比例 " << macdata_daatr->stats.node_narrow_band_interfer_ratio_before[i] << "%" << endl;
-				cout << "更新后节点 " << i+1 << " 窄带干扰比例 " << macdata_daatr->stats.node_narrow_band_interfer_ratio[i] << "%" << endl;
-			}
-			cout << "存在窄带干扰的节点对： " << endl;
-			vector<int>* temp;
-			for(int i = 0; i < macdata_daatr->stats.narrow_band_interfer_nodeID.size(); i++)
-			{
-				temp = &(macdata_daatr->stats.narrow_band_interfer_nodeID.at(i));
-				cout << temp->at(0) << "--" << temp->at(1) << "  ";
-			}
-			cout << endl;
-		}
+        // cout << "网络层下发msgtype3的包数量： " << macdata_daatr->stats.msgtype3_recv_network << endl;
+        // cout << "网络层下发msgtype3的包并进入队列的包数量： " << macdata_daatr->stats.msgtype3_recv << endl;
+        // cout << "网络层下发msgtype3的包并发送给节点1的包数量： " << macdata_daatr->stats.msgtype3_sent1 << endl;
+        // cout << "网络层下发msgtype3的包并发送给节点2的包数量： " << macdata_daatr->stats.msgtype3_sent2 << endl;
+        // cout << "网络层下发msgtype3的包并发送给节点3的包数量： " << macdata_daatr->stats.msgtype3_sent3 << endl;
+        // cout << "节点1网络层成功传输msgtype3的包并发送的包数量： " << macdata_daatr->stats.msgtype3_sent_network1 << endl;
+        // cout << "节点2网络层成功传输msgtype3的包并发送的包数量： " << macdata_daatr->stats.msgtype3_sent_network2 << endl;
+        // cout << "节点3网络层成功传输msgtype3的包并发送的包数量： " << macdata_daatr->stats.msgtype3_sent_network3 << endl;
+        // cout << "网络层发给链路层的业务数据包总个数为：" << appDateToLayer << endl;
+        // cout << "网络层收到链路层转发回的业务数据包总个数为：" << receivedAppDate << endl;
+        cout << "Access Begin Time: " << macdata_daatr->stats.access_begin_time << " ms" << endl;
+        cout << "Access End Time: " << macdata_daatr->stats.access_end_time << " ms" << endl;
+        cout << "SLot Adjust Begin Time: " << macdata_daatr->stats.slot_adjust_begin_time << " ms" << endl;
+        cout << "SLot Adjust End Time: " << macdata_daatr->stats.slot_adjust_end_time << " ms" << endl;
+        cout << "Freq Adjust Begin Time: " << macdata_daatr->stats.freq_adjust_begin_time << " ms" << endl;
+        cout << "Freq Adjust End Time: " << macdata_daatr->stats.freq_adjust_end_time << " ms" << endl;
+        cout << "Traffic Throughput: " << macdata_daatr->stats.traffic_output << " Byte" << endl;
+        cout << "网络开销: " << macdata_daatr->stats.mac_network_overhead << " Byte" << endl;
+        if (macdata_daatr->mana_node == node->nodeId)
+        {
+            cout << "更新前全子网跳频图案干扰比例 " << macdata_daatr->stats.subnet_freq_interfer_ratio_before << "%" << endl;
+            cout << "更新后全子网跳频图案干扰比例 " << macdata_daatr->stats.subnet_freq_interfer_ratio << "%" << endl;
+            for (int i = 0; i < SUBNET_NODE_FREQ_NUMBER; i++)
+            {
+                cout << "更新前节点 " << i + 1 << " 跳频图案干扰比例 " << macdata_daatr->stats.node_freq_interfer_ratio_before[i] << "%" << endl;
+                cout << "更新后节点 " << i + 1 << " 跳频图案干扰比例 " << macdata_daatr->stats.node_freq_interfer_ratio[i] << "%" << endl;
+            }
+            for (int i = 0; i < SUBNET_NODE_FREQ_NUMBER; i++)
+            {
+                cout << "更新前节点 " << i + 1 << " 窄带干扰比例 " << macdata_daatr->stats.node_narrow_band_interfer_ratio_before[i] << "%" << endl;
+                cout << "更新后节点 " << i + 1 << " 窄带干扰比例 " << macdata_daatr->stats.node_narrow_band_interfer_ratio[i] << "%" << endl;
+            }
+            cout << "存在窄带干扰的节点对： " << endl;
+            vector<int> *temp;
+            for (int i = 0; i < macdata_daatr->stats.narrow_band_interfer_nodeID.size(); i++)
+            {
+                temp = &(macdata_daatr->stats.narrow_band_interfer_nodeID.at(i));
+                cout << temp->at(0) << "--" << temp->at(1) << "  ";
+            }
+            cout << endl;
+        }
 
-		cout << "----------------------------------------" << endl;
-		/*macdata_daatr->stats.PDU_GotUnicast = 0;
+        cout << "----------------------------------------" << endl;
+        /*macdata_daatr->stats.PDU_GotUnicast = 0;
     macdata_daatr->stats.PDU_SentUnicast = 0;
     macdata_daatr->stats.UDU_GotUnicast = 0;
     macdata_daatr->stats.UDU_SentUnicast = 0;*/
-		if(node->nodeId == macdata_daatr->mana_node)
-		{
-			system("pause");
-		}
+        if (node->nodeId == macdata_daatr->mana_node)
+        {
+            system("pause");
+        }
         MESSAGE_Free(node, msg);
         // MacDaatrInitialize_pkt_Counter(node, macdata_daatr); // 此处会清零之前数据!!!!!
         Message *pkt_counter_timerMsg = MESSAGE_Alloc(node, MAC_LAYER, MAC_PROTOCOL_DAATR, MSG_MAC_PktCounter);

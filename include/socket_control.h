@@ -5,8 +5,8 @@
 #include <mutex>
 #include <string.h>
 
-void mac_daatr_low_freq_socket_send(uint8_t* data, uint32_t len);
-void mac_daatr_high_freq_socket_send(uint8_t* data, uint32_t len, uint16_t nodeId);
-void mac_daatr_socket_low_freq_thread(bool IF_NOT_BLOCKED = false);
-void mac_daatr_socket_high_freq_thread(bool IF_NOT_BLOCKED = false);
+void macDaatrLowFreqSocketSend(uint8_t *data, uint32_t len);
+void macDaatrHighFreqSocketSend(uint8_t *data, uint32_t len, uint16_t nodeId);
+void macDaatrSocketLowFreqThread(bool IF_NOT_BLOCKED = false);
+void macDaatrSocketHighFreqThread(bool IF_NOT_BLOCKED = false);
 #endif

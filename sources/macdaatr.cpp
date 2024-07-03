@@ -4,6 +4,7 @@
 #include "fstream"
 #include <sstream>
 using namespace std;
+
 /*****************************此文件主要包含对本层协议结构体控制相关函数******************************/
 /**
  * 获取当前时间
@@ -14,7 +15,8 @@ using namespace std;
  *
  * @return 返回当前协议栈的绝对时间，单位取决于外部变量daatr_str的定义。
  */
-uint64_t get_time()
+
+uint64_t getTime()
 {
     extern MacDaatr daatr_str;
     return daatr_str.time;
@@ -28,7 +30,7 @@ uint64_t get_time()
  *
  * 注意：该函数依赖于外部定义的daatr_str变量，该变量应事先被正确初始化和更新。
  */
-void print_time_ms()
+void printTime_ms()
 {
     extern MacDaatr daatr_str;
     double time_ms = daatr_str.time / 1000.0;
@@ -43,7 +45,7 @@ void print_time_ms()
  *
  * 注意：该函数依赖于外部定义的daatr_str变量，该变量应事先被正确初始化和更新。
  */
-void print_time_us()
+void printTime_us()
 {
     extern MacDaatr daatr_str;
     cout << "time:" << daatr_str.time << " us" << endl;
@@ -57,7 +59,7 @@ void print_time_us()
  *
  * 注意：该函数依赖于外部定义的daatr_str变量，该变量应事先被正确初始化和更新。
  */
-void print_time_s()
+void printTime_s()
 {
     extern MacDaatr daatr_str;
     double time_ms = daatr_str.time / 1000000.0;
@@ -112,14 +114,8 @@ MacDaatr::MacDaatr()
     access_state = DAATR_NO_NEED_TO_ACCESS; // 默认不需要接入
     access_backoff_number = 0;              // 接入时隙
 }
-msgFromControl MacDaatr::get_buss_from_mana_channel()
-{
-    lock_mana_channel.lock();
-    // 获取业务
 
-    lock_mana_channel.unlock();
-}
-msgFromControl MacDaatr::get_buss_from_buss_channel()
+msgFromControl MacDaatr::getBusinessFromHighChannel()
 {
     lock_buss_channel.lock();
     // 获取业务
@@ -140,7 +136,7 @@ msgFromControl MacDaatr::get_buss_from_buss_channel()
  * 具体的转换流程是，对数据添加帧头，第一位为数据类型，第二、三位为数据长度（采用大端），第四位开始为数据
  * 然后将转换后的数据插入缓冲区
  */
-void mac_to_net_buffer_handle(void *data, uint8_t type, uint16_t len)
+void macToNetworkBufferHandle(void *data, uint8_t type, uint16_t len)
 {
     extern MacDaatr daatr_str; // mac层协议类
     extern ringBuffer macToRouting_Buffer;
@@ -171,7 +167,7 @@ void mac_to_net_buffer_handle(void *data, uint8_t type, uint16_t len)
  *
  * 注意：当前函数实现中，各个分支内的处理逻辑尚未实现，需要根据具体需求进行补充。
  */
-void net_to_mac_buffer_handle(uint8_t *rBuffer_mac)
+void networkToMacBufferHandle(uint8_t *rBuffer_mac)
 {
     extern MacDaatr daatr_str;     // mac层协议类
     uint8_t type = rBuffer_mac[0]; // 数据类型
@@ -211,7 +207,7 @@ void net_to_mac_buffer_handle(uint8_t *rBuffer_mac)
     }
 }
 
-void mac_paramater_initialization()
+void macParameterInitialization()
 {
     extern MacDaatr daatr_str; // mac层协议类
     string filePath = "../config/daatr_config.txt";
@@ -300,6 +296,7 @@ void mac_paramater_initialization()
             }
         }
     }
+
     // 关闭文件
     file.close();
     // 配置ip地址，ip地址配置策略为'192.168.'+ 子网号 + 节点ID

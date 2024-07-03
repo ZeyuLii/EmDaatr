@@ -17,7 +17,7 @@ using namespace std;
 /*   receiver - 接收者地址结构体 */
 /*   nodeId - 节点ID，用于索引IP地址 */
 /*   port - 端口号，用于设置服务端口 */
-void initialize_node_ip(sockaddr_in &receiver, uint16_t nodeId, int port)
+void initializeNodeIP(sockaddr_in &receiver, uint16_t nodeId, int port)
 {
     /* 引入mac层数据结构类，用于获取节点IP地址 */
     extern MacDaatr daatr_str; // mac层数据结构信息保存类
@@ -39,7 +39,7 @@ void initialize_node_ip(sockaddr_in &receiver, uint16_t nodeId, int port)
 /*   if_not_block: 指示套接字是否应该被设置为非阻塞模式 */
 /* 返回值: */
 /*   成功创建并绑定套接字后返回套接字文件描述符，否则退出程序 */
-int mac_daatr_create_UDP_socket(string ip, int port, bool if_not_block)
+int macDaatrCreateUDPSocket(string ip, int port, bool if_not_block)
 {
     /* 创建一个IPv4地址族的UDP套接字 */
     int sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -88,12 +88,12 @@ int mac_daatr_create_UDP_socket(string ip, int port, bool if_not_block)
  *   port: 要绑定的端口号
  *   IF_NOT_BLOCKED: 指示套接字是否应该被设置为非阻塞模式
  **/
-void mac_daatr_socket_high_freq_thread(bool IF_NOT_BLOCKED = false)
+void macDaatrSocketHighFreqThread(bool IF_NOT_BLOCKED = false)
 {
     extern bool end_simulation;
     extern MacDaatr daatr_str; // mac层协议类
     string IP = daatr_str.in_subnet_id_to_ip[daatr_str.nodeId];
-    int sock_fd = mac_daatr_create_UDP_socket(IP, HIGH_FREQ_SOCKET_PORT, IF_NOT_BLOCKED);
+    int sock_fd = macDaatrCreateUDPSocket(IP, HIGH_FREQ_SOCKET_PORT, IF_NOT_BLOCKED);
     daatr_str.mac_daatr_high_freq_socket_fid = sock_fd;
     int recv_num;
     int send_num;
@@ -157,12 +157,12 @@ void mac_daatr_socket_high_freq_thread(bool IF_NOT_BLOCKED = false)
  *   port: 要绑定的端口号
  *   IF_NOT_BLOCKED: 指示套接字是否应该被设置为非阻塞模式
  **/
-void mac_daatr_socket_low_freq_thread(bool IF_NOT_BLOCKED = false)
+void macDaatrSocketLowFreqThread(bool IF_NOT_BLOCKED = false)
 {
     extern bool end_simulation;
     extern MacDaatr daatr_str; // mac层协议类
     string IP = daatr_str.in_subnet_id_to_ip[daatr_str.nodeId];
-    int sock_fd = mac_daatr_create_UDP_socket(IP, LOW_FREQ_SOCKET_PORT, IF_NOT_BLOCKED);
+    int sock_fd = macDaatrCreateUDPSocket(IP, LOW_FREQ_SOCKET_PORT, IF_NOT_BLOCKED);
     daatr_str.mac_daatr_low_freq_socket_fid = sock_fd;
     int recv_num;
     int send_num;
@@ -229,10 +229,10 @@ void mac_daatr_socket_low_freq_thread(bool IF_NOT_BLOCKED = false)
  * @param len 发送的数据长度
  * @param nodeId 目的节点ID
  */
-void mac_daatr_high_freq_socket_send(uint8_t *data, uint32_t len, uint16_t nodeId)
+void macDaatrHighFreqSocketSend(uint8_t *data, uint32_t len, uint16_t nodeId)
 {
     sockaddr_in recever; // 接收端地址
-    initialize_node_ip(recever, nodeId, HIGH_FREQ_SOCKET_PORT);
+    initializeNodeIP(recever, nodeId, HIGH_FREQ_SOCKET_PORT);
     // 引入外部定义的MacDaatr类实例，用于获取socket文件描述符
     extern MacDaatr daatr_str;
     // 获取mac_daatr_high_freq_socket_fid的值，用于后续的发送操作
@@ -265,7 +265,7 @@ void mac_daatr_high_freq_socket_send(uint8_t *data, uint32_t len, uint16_t nodeI
  * @param data 发送的数据指针
  * @param len 发送的数据长度
  */
-void mac_daatr_low_freq_socket_send(uint8_t *data, uint32_t len)
+void macDaatrLowFreqSocketSend(uint8_t *data, uint32_t len)
 {
     sockaddr_in recever; // 接收端地址
     // 引入外部定义的MacDaatr类实例，用于获取socket文件描述符
@@ -279,8 +279,8 @@ void mac_daatr_low_freq_socket_send(uint8_t *data, uint32_t len)
         for (const auto &sendid : daatr_str.in_subnet_id_to_ip)
         {
             if (sendid.first == daatr_str.nodeId)
-                continue;                                                    // 跳过本节点
-            initialize_node_ip(recever, sendid.first, LOW_FREQ_SOCKET_PORT); // 初始化接收端地址
+                continue;                                                  // 跳过本节点
+            initializeNodeIP(recever, sendid.first, LOW_FREQ_SOCKET_PORT); // 初始化接收端地址
             // 尝试发送数据到指定接收者，sendto函数用于向特定地址发送数据
             send_num = sendto(sock_fd, data, len, 0, (struct sockaddr *)&recever, sizeof(recever));
             // 如果发送字节数小于0，说明发送失败，输出错误信息
