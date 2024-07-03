@@ -33,6 +33,7 @@ bool insertEventTimer_us(uint64_t time_del, event_function event_func)
 {
     if (event_number_now >= EVENT_MAX_NUMBER)
         return false;
+
     for (int i = 0; i < EVENT_MAX_NUMBER; i++)
     {
         if (event_list[i].if_used == false)
@@ -78,6 +79,7 @@ void eventTimerUpdate()
 {
     if (event_number_now == 0)
         return;
+        
     for (int i = 0; i < EVENT_MAX_NUMBER; i++)
     {
         if (event_list[i].if_used == true)

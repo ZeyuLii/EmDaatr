@@ -1,9 +1,14 @@
+#include <fstream>
+#include <sstream>
+
+#include "timer.h"
 #include "macdaatr.h"
 #include "common_struct.h"
 #include "daatr_control.h"
-#include "fstream"
-#include <sstream>
-#include "timer.h"
+#include "socket_control.h"
+#include "low_freq_channel.h"
+#include "high_freq_channel.h"
+
 using namespace std;
 
 bool end_simulation = false;    // 结束仿真标志
@@ -19,11 +24,14 @@ void hello()
 int main()
 {
     cout << "hello world" << endl;
-    cout << "hihihihi" << endl;
+    cout << "hi hi hi hi" << endl;
 
     macParameterInitialization(); // mac层参数初始化
 
-    // thread macControl(macDaatrControlThread);
+    thread macControl(macDaatrControlThread);
+    thread macLowFreq(macDaatrSocketLowFreqThread);
+    thread macHighFreq(macDaatrSocketHighFreqThread);
+
     // macDaatrSocketHighFreqThread;
     // macDaatrSocketLowFreqThread;
 

@@ -8,33 +8,48 @@
 #include <condition_variable>
 #include <unordered_map>
 #include "common_struct.h"
-// 协议相关配置信息
+
+// 嵌入式Daatr 相关配置信息
 #define HIGH_FREQ_SLOT_LEN 2.5                                           // 业务信道时隙长度（单位：ms）
 #define LOW_FREQ_SLOT_LEN 20                                             // 网管信道时隙长度（单位：ms）
-#define TRIGGER_LEN 0.5                                                  // 触发时长（单位：ms）
+#define TRIGGER_LEN 0.1                                                  // 触发时长（单位：ms）
 #define HIGH_FREQ_CHANNEL_TRIGGER_LEN (HIGH_FREQ_SLOT_LEN / TRIGGER_LEN) // 业务信道触发次数
 #define LOW_FREQ_CHANNEL_TRIGGER_LEN (LOW_FREQ_SLOT_LEN / TRIGGER_LEN)   // 网管信道触发次数
 #define TIME_PRECISION 100                                               // 时间精确度（100us）(与底层中断相关，不要随便改变！！！！！！)
-#define END_LINK_BUILD_TIME 1000                                         // 结束建链阶段时间（单位：ms）
-#define SUBNET_NODE_NUMBER_MAX 20                                        // 子网最大节点数
+
+// 子网信息
+#define SUBNET_NODE_NUMBER_MAX 20                 // 子网最大节点数
+#define FREQUENCY_DIVISION_MULTIPLEXING_NUMBER 10 // 子网内通信频分复用允许最大复用数(1/2,向下取整)
+#define FULL_CONNECTION_NODE_NUMBER 20            // 当前使用的全连接时隙表的节点数
+#define SUBNET_NUM 10                             // 子网数
+#define END_LINK_BUILD_TIME 1000                  // 结束建链阶段时间（单位：ms）
 
 // 低频信道相关配置
 #define MANAGEMENT_SLOT_NUMBER_LINK_BUILD 25  // 建链阶段网管信道时隙表包含时隙数
 #define MANAGEMENT_SLOT_NUMBER_OTHER_STAGE 50 // 其他阶段阶段网管信道时隙表包含时隙数
 #define MANA_MAX_BUSINESS_NUMBER 10           // 网管信道每一个优先级可允许容纳的业务量
+
 // 随遇接入相关
 #define ACCESS_REQUREST_WAITING_MAX_TIME 200                    // 节点等待接入请求回复最长时间（单位：ms）
 #define ACCESS_SUBNET_FREQUENCY_PARTTERN_WAITTING_MAX_TIME 3000 // 等待接收全网跳频图案的最大时间
 #define MAX_RANDOM_BACKOFF_NUM 7                                // 最大接入退避时隙
+
 // 高频信道相关配置信息
-#define FREQUENCY_DIVISION_MULTIPLEXING_NUMBER 10 // 子网内通信频分复用允许最大复用数(1/2,向下取整)
-#define TRAFFIC_SLOT_NUMBER 400                   // 业务信道时隙表包含时隙数(执行阶段)
-#define TRAFFIC_CHANNEL_PRIORITY 4                // 业务信道业务优先级数量
-#define TRAFFIC_MAX_BUSINESS_NUMBER 60            // 业务信道每一个优先级可允许容纳的业务量
-#define MAX_WAITING_TIME 100000                   // 数据包在队列中的最大等待时间(ms)
-#define LINK_SETUP_GUARD_TIME 100                 // 建链阶段保护时间(在网管节点开始广播(20ms)后80ms开始业务信道的建链)
-#define LINK_SETUP_INTERVAL 500                   // 两次建链间的间隔时间(指从第一次开始发建链请求到第二次开始)
-#define SENDING_SLOTTABLE_PREPARE_TIME 500        // 在收到链路构建需求事件后 发送时隙表
+#define TRAFFIC_SLOT_NUMBER 400            // 业务信道时隙表包含时隙数(执行阶段)
+#define TRAFFIC_CHANNEL_PRIORITY 4         // 业务信道业务优先级数量
+#define TRAFFIC_MAX_BUSINESS_NUMBER 60     // 业务信道每一个优先级可允许容纳的业务量
+#define MAX_WAITING_TIME 100000            // 数据包在队列中的最大等待时间(ms)
+#define LINK_SETUP_GUARD_TIME 100          // 建链阶段保护时间(在网管节点开始广播(20ms)后80ms开始业务信道的建链)
+#define LINK_SETUP_INTERVAL 500            // 两次建链间的间隔时间(指从第一次开始发建链请求到第二次开始)
+#define SENDING_SLOTTABLE_PREPARE_TIME 500 // 在收到链路构建需求事件后 发送时隙表
+
+// 时延与周期相关
+#define BEAM_MATAINMENCE_PERIOD 930        // 波束维护周期(单位: ms)
+#define SPEC_SENSING_PERIOD 5000           // 判断是否进入频率调整阶段周期(单位: ms)
+#define SIMULATION_RESULT_SHOW_PERIOD 1000 // 显示仿真结果周期(单位: ms)
+#define LINK_STATE_PERIOD 1000             // 发送链路状态信息周期(单位: ms)
+#define SEND_NODE_POSITION_PERIOD 1000     // 向网络层上传节点位置信息周期(单位: ms)
+
 // 频谱感知与跳频序列
 #define NSUM 50                                // 与产生正态分布数有关, 该值越大, 符合正态分布精度值越大(中心极限定理法)
 #define INTERFEREENCE_FREQUENCY_THRESHOLD 0.01 // 使用频段干扰比例, 若超过此门限, 则进入频率调整阶段
@@ -45,6 +60,7 @@
 #define MAX_FREQUENCY 500
 #define MIN_FREQUENCY_DIFFERENCE 15
 #define NARROW_BAND_WIDTH 30
+
 // 波束维护模块
 #define RADIS_A 6378137.0    //(单位m)基准椭球体长半径
 #define RADIS_B 6356752.3142 //(单位m)基准椭球体短半径

@@ -122,6 +122,7 @@ bool MacDaatr_struct_converter::set_type(unsigned char temp)
         break;
     case 10:
         length_ = 563;
+        break;
     }
     return flag;
 }

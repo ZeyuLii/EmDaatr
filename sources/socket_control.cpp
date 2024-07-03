@@ -1,11 +1,15 @@
-#include "macdaatr.h"
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <string>
 #include <unistd.h>
 #include <unordered_map>
 #include <fstream>
+
+#include "macdaatr.h"
+#include "socket_control.h"
+
 using namespace std;
+
 #define SEND_BUFFER_SIZE 65536     // 发送缓冲区大小
 #define RECV_BUFFER_SIZE 65536     // 接收缓冲区大小
 #define HIGH_FREQ_SOCKET_PORT 8000 // 高频信道端口号

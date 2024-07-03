@@ -6,6 +6,7 @@
 #include <list>
 #include <cstdint>
 #include <mutex>
+
 #define NODENUMINGROUP 20
 #define LINKMAXINRROUP 19
 // 主要定义来自路由模块和链路模块的数据结构
@@ -315,7 +316,7 @@ struct NodeBroadcast
 	}
 };
 
-/***************************************网络层->mac层fifo队列定义********************/
+/****************************网络层->mac层fifo队列定义*******************************/
 #define MAX_BUFFER_NUM 256 // 接受缓冲区的最大个数(大小待定)
 #define MAX_DATA_LEN 65536 // 一条数据的最大长度（大小待定）
 

@@ -4515,7 +4515,7 @@ static int Generate_LinkAssignment_Stage_3nodes(LinkAssignment link_assign[])
 }
 
 // 搜寻对应节点时隙位置
-static vector<uint8_t> *MacDaatrSrearchSlotLocation(int nodeId, MacDataDaatr *macdata_daatr)
+static vector<uint8_t> *MacDaatrSearchSlotLocation(int nodeId, MacDataDaatr *macdata_daatr)
 {
     int i = 0;
     vector<uint8_t> *slot_location = new vector<uint8_t>;
@@ -6558,7 +6558,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                         float time = (float)(node->getNodeTime()) / 1000000;
                         cout << "Time : " << time << "ms" << endl;
                         vector<uint8_t> *slot_location;
-                        slot_location = MacDaatrSrearchSlotLocation(macdata_daatr->waiting_to_access_node, macdata_daatr);
+                        slot_location = MacDaatrSearchSlotLocation(macdata_daatr->waiting_to_access_node, macdata_daatr);
                         mana_access_reply access_reply;
                         for (i = 0; i < FREQUENCY_COUNT; i++)
                         {
@@ -8781,8 +8781,8 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                     vector<uint8_t> *ptr_temp1; // 网管节点
                     vector<uint8_t>::iterator ptr_it;
                     short num;
-                    ptr_temp = MacDaatrSrearchSlotLocation(node->nodeId, macdata_daatr);              // 本节点
-                    ptr_temp1 = MacDaatrSrearchSlotLocation(macdata_daatr->mana_node, macdata_daatr); // 网管节点
+                    ptr_temp = MacDaatrSearchSlotLocation(node->nodeId, macdata_daatr);              // 本节点
+                    ptr_temp1 = MacDaatrSearchSlotLocation(macdata_daatr->mana_node, macdata_daatr); // 网管节点
                     for (ptr_it = ptr_temp->begin(); ptr_it != ptr_temp->end(); ptr_it++)
                     { // 原网管节点分配到本节点原时隙位置
                         num = *ptr_it;
@@ -8809,8 +8809,8 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                     vector<uint8_t> *ptr_temp1; // 新网管节点
                     vector<uint8_t>::iterator ptr_it;
                     short num;
-                    ptr_temp = MacDaatrSrearchSlotLocation(macdata_daatr->mana_node, macdata_daatr);                  // 原网管节点
-                    ptr_temp1 = MacDaatrSrearchSlotLocation(node_notify_ptr->intragroupcontrolNodeId, macdata_daatr); // 新网管节点
+                    ptr_temp = MacDaatrSearchSlotLocation(macdata_daatr->mana_node, macdata_daatr);                  // 原网管节点
+                    ptr_temp1 = MacDaatrSearchSlotLocation(node_notify_ptr->intragroupcontrolNodeId, macdata_daatr); // 新网管节点
                     for (ptr_it = ptr_temp->begin(); ptr_it != ptr_temp->end(); ptr_it++)
                     { // 新网管节点分配到网管节点时隙
                         num = *ptr_it;
