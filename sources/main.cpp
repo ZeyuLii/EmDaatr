@@ -1,5 +1,6 @@
 #include <fstream>
 #include <sstream>
+#include <thread>
 
 #include "timer.h"
 #include "macdaatr.h"
@@ -28,12 +29,11 @@ int main()
 
     macParameterInitialization(); // mac层参数初始化
 
-    thread macControl(macDaatrControlThread);
-    thread macLowFreq(macDaatrSocketLowFreqThread);
-    thread macHighFreq(macDaatrSocketHighFreqThread);
+    thread macControl(macDaatrControlThread); // daatr_control.cpp 总控线程主函数
+    macControl.join();
 
-    // macDaatrSocketHighFreqThread;
-    // macDaatrSocketLowFreqThread;
+    // thread macLowFreq(macDaatrSocketLowFreq_Recv);
+    // thread macHighFreq(macDaatrSocketHighFreq_Recv);
 
     return 0;
 }

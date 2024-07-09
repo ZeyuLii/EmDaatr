@@ -33,7 +33,6 @@ void UpdatePosition(MacPacket_Daatr *macpacket_daatr, MacDaatr *macdata_daatr)
     { // 存储子网其他节点位置信息
         if (macdata_daatr->subnet_other_node_position[i].nodeId == 0)
         {
-
             // 添加新的节点信息
             macdata_daatr->subnet_other_node_position[i] = macpacket_daatr->node_position;
             break;

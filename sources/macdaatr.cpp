@@ -66,7 +66,7 @@ void printTime_s()
     cout << "time:" << time_ms << " s" << endl;
 }
 
-/*******************************MacDaatr类函数********************************************************/
+/*****************************************MacDaatr类函数**********************************************/
 
 /**
  * @brief 构造函数MacDaatr
@@ -74,29 +74,7 @@ void printTime_s()
  * 该构造函数用于初始化MacDaatr类的实例。
  * 它设置了节点ID和子网ID，同时初始化了时钟触发器和两个MAC DAATR套接字的文件描述符。
  *
- * @param nodeId 节点ID，用于标识设备在子网中的唯一位置。
- * @param subnetId 子网ID，用于标识设备所属的子网。
  */
-MacDaatr::MacDaatr(uint16_t nodeId_, uint16_t subnetId_)
-{
-    // 初始化时钟触发器为0，表示尚未触发。
-    clock_trigger = 0;
-
-    // 初始化高频率MAC DAATR套接字文件描述符为-1，表示尚未打开套接字。
-    mac_daatr_high_freq_socket_fid = -1;
-
-    // 初始化低频率MAC DAATR套接字文件描述符为-1，表示尚未打开套接字。
-    mac_daatr_low_freq_socket_fid = -1;
-
-    // 初始化节点ID和子网ID
-    nodeId = nodeId_;
-    subnetId = subnetId_;
-
-    low_slottable_should_read = 0;
-    state_now = Mac_Initialization; // 初试为建链阶段
-    time = 0;                       // 绝对时间初始化为0
-}
-
 MacDaatr::MacDaatr()
 {
     // 初始化时钟触发器为0，表示尚未触发。
@@ -144,7 +122,7 @@ void macToNetworkBufferHandle(void *data, uint8_t type, uint16_t len)
     ret = (uint8_t *)malloc(len + 3);
     memset(ret, 0, sizeof(ret)); // 清零
     ret[0] = type;
-    // memcpy((ret+1),&len,2);//小端序
+    // memcpy((ret+1),&len,2); // 小端序
     // 大端序
     ret[1] |= ((len >> 8) & 0xff);
     ret[2] |= (len & 0xff);
@@ -157,7 +135,7 @@ void macToNetworkBufferHandle(void *data, uint8_t type, uint16_t len)
 }
 
 /**
- * net->MAC缓冲区数据处理函数
+ * @brief net->MAC缓冲区数据处理函数
  *
  * @param rBuffer_mac net->MAC缓冲区取得的数据，注意，这只为一行数据，大小最大
  *
@@ -299,6 +277,7 @@ void macParameterInitialization()
 
     // 关闭文件
     file.close();
+    
     // 配置ip地址，ip地址配置策略为'192.168.'+ 子网号 + 节点ID
     for (int i = 2; i <= daatr_str.subnet_node_num + 1; i++)
     {

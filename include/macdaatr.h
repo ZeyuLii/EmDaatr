@@ -306,7 +306,6 @@ public:
 
     // 类函数
 public:
-    MacDaatr(uint16_t nodeId, uint16_t subnetId);
     MacDaatr();
     msgFromControl getBusinessFromHighChannel(); // 从业务信道队列取业务
     bool MacDaatNetworkHasLowFreqChannelPacketToSend(msgFromControl *busin);
@@ -316,6 +315,7 @@ public:
 void networkToMacBufferHandle(uint8_t *rBuffer_mac);
 void macToNetworkBufferHandle(void *data, uint8_t type, uint16_t len);
 void macParameterInitialization();
+
 uint64_t getTime();
 void printTime_ms();
 void printTime_us();

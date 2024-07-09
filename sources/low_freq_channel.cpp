@@ -91,7 +91,7 @@ bool MacDaatr::getLowChannelBusinessFromQueue(msgFromControl *busin)
     return flag;
 }
 
-void judgeIfBackToAccess()
+static void judgeIfBackToAccess()
 {
     extern MacDaatr daatr_str;
     if (daatr_str.access_state = DAATR_HAS_SENT_ACCESS_REQUEST) // 断开节点已发送接入请求
@@ -110,7 +110,7 @@ void judgeIfBackToAccess()
     }
 }
 
-// 低频信道发送线程 每20ms被调用一次
+// 低频信道 发送线程 每20ms被调用一次
 // 在调用的时候查看当前的状态信息
 void lowFreqSendThread()
 {
@@ -129,7 +129,7 @@ void lowFreqSendThread()
         if (daatr_str.low_freq_link_build_slot_table[slot_num].nodeId == daatr_str.nodeId &&
             daatr_str.low_freq_link_build_slot_table[slot_num].state == DAATR_STATUS_FLIGHTSTATUS_SEND)
         { // 飞行状态信息广播时隙
-            macDaatrLowFreqSocketSend((uint8_t *)(&daatr_str.local_node_position_info), sizeof(FlightStatus));
+            macDaatrSocketLowFreq_Send((uint8_t *)(&daatr_str.local_node_position_info), sizeof(FlightStatus));
         }
         else
         { // 接收，向物理层发送信道参数
@@ -188,7 +188,7 @@ void lowFreqSendThread()
                         uint8_t *temp_buf = new uint8_t[len]; // 此处只是为了防止转换类中的bit指针被释放，所以保险起见复制一份，也可以尝试直接使用
                         memcpy(temp_buf, frame_ptr, len);
 
-                        macDaatrLowFreqSocketSend(temp_buf, len); // 发送
+                        macDaatrSocketLowFreq_Send(temp_buf, len); // 发送
                         delete temp_buf;
                         delete mac_header2_ptr;
                         daatr_str.access_state = DAATR_HAS_SENT_ACCESS_REQUEST; // 断开节点已发送接入请求
@@ -275,7 +275,7 @@ void lowFreqSendThread()
                     uint32_t len = mac_converter1.get_length();
                     uint8_t *temp_buf = new uint8_t[len]; // 此处只是为了防止转换类中的bit指针被释放，所以保险起见复制一份，也可以尝试直接使用
                     memcpy(temp_buf, frame_ptr, len);
-                    macDaatrLowFreqSocketSend(temp_buf, len); // 发送
+                    macDaatrSocketLowFreq_Send(temp_buf, len); // 发送
                     delete temp_buf;
                     delete mac_header2_ptr;
                     daatr_str.access_state = DAATR_WAITING_TO_SEND_HOPPING_PARTTERN;
@@ -306,7 +306,7 @@ void lowFreqSendThread()
                     uint32_t len = mac_converter1.get_length();
                     uint8_t *temp_buf = new uint8_t[len]; // 此处只是为了防止转换类中的bit指针被释放，所以保险起见复制一份，也可以尝试直接使用
                     memcpy(temp_buf, frame_ptr, len);
-                    macDaatrLowFreqSocketSend(temp_buf, len); // 发送
+                    macDaatrSocketLowFreq_Send(temp_buf, len); // 发送
                     delete temp_buf;
                     delete mac_header2_ptr;
                     daatr_str.waiting_to_access_node = 0;
@@ -353,7 +353,7 @@ void lowFreqSendThread()
                 uint32_t len = mac_converter1.get_length();
                 uint8_t *temp_buf = new uint8_t[len]; // 此处只是为了防止转换类中的bit指针被释放，所以保险起见复制一份，也可以尝试直接使用
                 memcpy(temp_buf, frame_ptr, len);
-                macDaatrLowFreqSocketSend(temp_buf, len); // 发送
+                macDaatrSocketLowFreq_Send(temp_buf, len); // 发送
                 delete temp_buf;
                 delete mac_header2_ptr;
                 break;
@@ -427,7 +427,7 @@ void lowFreqSendThread()
                 uint32_t len = mac_converter1.get_length();
                 uint8_t *temp_buf = new uint8_t[len]; // 此处只是为了防止转换类中的bit指针被释放，所以保险起见复制一份
                 memcpy(temp_buf, frame_ptr, len);
-                macDaatrLowFreqSocketSend(temp_buf, len); // 发送
+                macDaatrSocketLowFreq_Send(temp_buf, len); // 发送
                 delete temp_buf;
                 delete mac_header2_ptr;
                 break;
@@ -467,7 +467,7 @@ void lowFreqSendThread()
                     uint32_t len = mac_converter1.get_length();
                     uint8_t *temp_buf = new uint8_t[len]; // 此处只是为了防止转换类中的bit指针被释放，所以保险起见复制一份
                     memcpy(temp_buf, frame_ptr, len);
-                    macDaatrLowFreqSocketSend(temp_buf, len); // 发送
+                    macDaatrSocketLowFreq_Send(temp_buf, len); // 发送
                     delete temp_buf;
                     delete mac_header2_ptr;
                     break;
@@ -479,7 +479,7 @@ void lowFreqSendThread()
 }
 
 /**
- * 处理低频信道接收的数据包。
+ * @brief 处理低频信道接收的数据包。
  *
  * @param bit_seq 指向接收到的位序列的指针。
  * @param len 位序列的长度。
