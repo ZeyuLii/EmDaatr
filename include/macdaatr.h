@@ -7,7 +7,8 @@
 #include <iostream>
 #include <condition_variable>
 #include <unordered_map>
-#include "common_struct.h"
+#include <map>
+#include "common_struct.h" // define namespace
 
 // 嵌入式Daatr 相关配置信息
 #define HIGH_FREQ_SLOT_LEN 2.5                                           // 业务信道时隙长度（单位：ms）
@@ -107,16 +108,16 @@ enum NodeAccess
     DAATR_WAITING_TO_SEND_HOPPING_PARTTERN // 网管节点已经发送同意接入，但尚未发送全网跳频图案
 };
 
+// 时频资源管理模块低频网管信道时隙表
 typedef struct low_freq_slot
 {
-    // 时频资源管理模块低频网管信道时隙表
-    uint16_t state; // 时隙状态：|0:可发送飞行状态|1:可发送上层网络业务|2:发送网管节点通告消息|3:发送接入请求|4:接收接入请求
-    //(废弃) 时隙状态:|0:可发送TX|1:可接收RX|2:不可收发|3:未定义|
+    uint16_t state;  // 时隙状态：|0:可发送飞行状态|1:可发送上层网络业务|2:发送网管节点通告消息|3:发送接入请求|4:接收接入请求
     uint16_t nodeId; // 此时隙分配的节点ID
 } low_freq_slot;
 
+// 低频网管信道业务队列
 typedef struct Low_Freq_Channel_Business
-{                              // 低频网管信道业务队列
+{
     int state;                 // 业务状态（0：此位置未被占用  1：此位置被占用）
     msgFromControl busin_data; // 网络层业务
 } Low_Freq_Channel_Business;
@@ -127,34 +128,36 @@ typedef struct Low_Freq_Channel_Information
     unsigned short transmitSpeedLevel; // 传输速率档位(数值=1)
 } Low_Freq_Channel_Information;
 
+// 网管信道数据包类型
 typedef struct Low_Freq_Packet_Type
-{                 // 网管信道数据包类型
+{
     uint8_t type; // 0：无定义  1：随遇接入请求  2：同意随遇接入请求回复  3：拒绝接入请求恢复  4：普通节点飞行状态信息  5：网管节点飞行状态信息  6：网管节点通告消息
 } Low_Freq_Packet_Type;
 
+// 网管节点接入请求回复
 typedef struct mana_access_reply
-{                                                    // 网管节点接入请求回复
+{
     unsigned int mana_node_hopping[FREQUENCY_COUNT]; // 网管节点跳频图案
     unsigned char slot_location[5];                  // 节点位置(0-49)(60为空，忽略即可)
     unsigned char slot_num;                          // 分配的时隙数量
 } mana_access_reply;
 
+// 建链请求数据包
 typedef struct BuildLink_Request
 {
-    // 建链请求数据包
     unsigned short nodeID;     // 请求建链节点ID
     unsigned int if_build : 6; // 建链请求是否被允许  1:允许建链  0: 不允许建链
 } BuildLink_Request;
 
+// 是否进入调整状态, 此结构体由网管节点通过网管信道广播发送
 typedef struct if_need_change_state
 {
-    // 是否进入调整状态, 此结构体由网管节点通过网管信道广播发送
     unsigned int state; // 0:当前保持原状态  1: 进入时隙调整阶段  2: 进入频率调整阶段  3: 暂无意义
 } if_need_change_state;
 
+// 频谱感知结果结构体
 typedef struct spectrum_sensing_struct
 {
-    // 频谱感知结果结构体
     unsigned int spectrum_sensing[TOTAL_FREQ_POINT]; // 频谱感知结果(为一串0、1序列, 0代表此频段有干扰, 1代表此频段无干扰)
 } spectrum_sensing_struct;
 
@@ -176,41 +179,40 @@ typedef struct Alloc_slot_traffic
     int multiplexing_num; // 剩余可复用数
 } Alloc_slot_traffic;
 
-typedef struct mana_slot_traffic
+// 时频资源管理模块业务信道时隙表
+typedef struct highFreqSlottableUnit
 {
-    // 时频资源管理模块业务信道时隙表
     unsigned int state : 1; // 时隙状态:|0:可发送TX|1:可接收RX|2:不可收发|3:未定义|
-    // int send; // 若时隙状态为接收, 此处存放发送节点ID
-    // int recv; // 若时隙状态为可发送, 此处存放接收节点ID
     unsigned short send_or_recv_node : 10;
-} mana_slot_traffic;
+} highFreqSlottableUnit;
 
-typedef struct Send_slottable
+typedef struct highFreqSlottable
 {
-    mana_slot_traffic slot_traffic_execution_new[TRAFFIC_SLOT_NUMBER];
-} Send_slottable;
+    highFreqSlottableUnit slot_traffic_execution_new[TRAFFIC_SLOT_NUMBER];
+} highFreqSlottable;
 
-typedef struct mana_business_mana
+typedef struct highFreqBusiness
 {
     int priority;
     double data_kbyte_sum;
     int waiting_time;
     msgFromControl busin_data;
-} mana_business_mana;
+} highFreqBusiness;
 
-typedef struct mana_business_traffic
-{                                                                                       // 业务信道业务
-    int recv_node;                                                                      // 下一跳节点
-    mana_business_mana business[TRAFFIC_CHANNEL_PRIORITY][TRAFFIC_MAX_BUSINESS_NUMBER]; // 接收节点对应的各优先级业务
-    double distance;                                                                    // 两节点距离(收发节点)
-    int state;                                                                          // 0: 子网内通信  1: 子网间通信
-} mana_business_traffic;
+typedef struct highFreqBusinessQueue
+{                                                                                     // 业务信道业务
+    int recv_node;                                                                    // 下一跳节点
+    highFreqBusiness business[TRAFFIC_CHANNEL_PRIORITY][TRAFFIC_MAX_BUSINESS_NUMBER]; // 接收节点对应的各优先级业务
+    double distance;                                                                  // 两节点距离(收发节点)
+    int state;                                                                        // 0: 子网内通信  1: 子网间通信
+} highFreqBusinessQueue;
 
+// Mac层包头PDU1
 typedef struct MacHeader
-{ // Mac层包头PDU1
+{
     unsigned int PDUtype : 1;
-    unsigned int is_mac_layer : 2; // 0上层数据包+频谱感知; 1本层数据; 2-3重传包(时隙表&跳频图案)
-    unsigned int backup : 5;
+    unsigned int is_mac_layer : 2; // 0 上层数据包+频谱感知; 1 本层数据; 2-3 重传包 (时隙表&跳频图案)
+    unsigned int backup : 5;       // 1建链请求 2建链回复 4时隙表 5跳频图案 6调整ACK 7频谱干扰
     unsigned short packetLength;
     unsigned int srcAddr : 10;
     unsigned int destAddr : 10;
@@ -221,8 +223,9 @@ typedef struct MacHeader
     unsigned int mac : 24;
 } MacHeader;
 
+// Mac层包头PDU2
 typedef struct MacHeader2
-{                                                    // Mac层包头PDU2
+{
     unsigned int PDUtype : 1;                        // PDU类型
     unsigned short packetLength;                     // 长度
     unsigned int srcAddr : 10;                       // 源地址
@@ -240,8 +243,10 @@ typedef struct MacPacket_Daatr
     MacHeader *mac_header;      // Mac层包头
     FlightStatus node_position; // Mac层数据
     msgFromControl busin_data;
-    std::vector<msgFromControl> MFC_list;
+    vector<msgFromControl> MFC_list;
 } MacPacket;
+
+// class Business
 
 // mac层daatr类
 class MacDaatr
@@ -254,32 +259,53 @@ private:
 
     // 共有信息存储区，此部分信息可以直接访问
 public:
-    /*公共变量*/
-    uint16_t nodeId;                                              // 节点Id
-    uint16_t subnetId;                                            // 子网号
-    uint16_t subnet_node_num;                                     // 当前在网节点数量
-    std::unordered_map<uint16_t, std::string> in_subnet_id_to_ip; // 子网内节点Id对应的IP地址
-    std::mutex lock_Mac_to_Net;                                   // Mac->Net写锁
-    MacState state_now;                                           // 当前节点状态
-    uint64_t time;                                                // 协议栈绝对时间（单位us，精确度100us）
-    NodeType node_type;                                           // 节点身份
+    /*节点信息*/
+    uint16_t nodeId;                                    // 节点Id
+    uint16_t subnetId;                                  // 子网号
+    uint16_t subnet_node_num;                           // 当前在网节点数量
+    unordered_map<uint16_t, string> in_subnet_id_to_ip; // 子网内节点Id对应的IP地址
+    mutex lock_Mac_to_Net;                              // Mac->Net写锁
+    MacState state_now;                                 // 当前节点状态
+    uint64_t time;                                      // 协议栈绝对时间（单位us，精确度100us）
+    NodeType node_type;                                 // 节点身份
 
+    /*子网信息*/
     int mana_node;            // 本子网网管节点ID
     int gateway_node;         // 本子网网关节点ID
     int standby_gateway_node; // 本子网备用网关节点ID
 
     /*管控线程相关*/
-    std::mutex lock_central_control_thread;             // 管控线程访问锁
-    std::condition_variable central_control_thread_var; // 管控线程条件变量
-    uint8_t clock_trigger;                              // 时帧触发数目
+    mutex lock_central_control_thread;             // 管控线程访问锁
+    condition_variable central_control_thread_var; // 管控线程条件变量
+    uint8_t clock_trigger;                         // 时帧触发数目
 
     /*低频信道线程相关*/
     int mac_daatr_low_freq_socket_fid;                                                 // daatr协议低频信道socket句柄
-    std::mutex lock_mana_channel;                                                      // 网管信道待发送队列访问锁
+    mutex lock_mana_channel;                                                           // 网管信道待发送队列访问锁
     uint8_t low_slottable_should_read;                                                 // 低频信道时隙位置(时隙表最大时隙数)
     low_freq_slot low_freq_link_build_slot_table[MANAGEMENT_SLOT_NUMBER_LINK_BUILD];   // 建链阶段网管信道时隙表
     low_freq_slot low_freq_other_stage_slot_table[MANAGEMENT_SLOT_NUMBER_OTHER_STAGE]; // 其他阶段网管信道时隙表
     uint8_t need_change_state;                                                         // 网管节点的阶段转换标志(默认为0) 1 表示时域调整 2 表示频域调整
+
+    /*高频信道线程相关*/
+    uint32_t currentSlotId; // 当前高频信道所处的时隙idx (由::UpdateTimer函数进行更新)
+    uint32_t currentStatus;
+    int mac_daatr_high_freq_socket_fid;               // daatr协议高频信道socket句柄
+    mutex lock_buss_channel;                          // 业务信道待发送队列访问锁
+    mutex highThreadSendMutex;                        // 控制高频信道的发送线程互斥量  unique_lock<mutex> highThreadSendLock(highThreadSendMutex);
+    condition_variable highThread_condition_variable; // 高频信道条件变量 用来在daatrctr中每2.5ms唤醒高频信道发送线程
+    bool has_received_slottable;                      // 时隙表是否已收到一次
+    bool has_received_sequence;
+    bool receivedChainBuildingRequest;
+    uint32_t blTimes; // 已经发送建链请求的数量 与MacHeader seq相关
+
+    highFreqSlottableUnit slotTable[TRAFFIC_SLOT_NUMBER];                                          // 当前在用的时隙表 切换阶段时将其他时隙表赋给这个变量
+    highFreqSlottableUnit slot_traffic_execution[TRAFFIC_SLOT_NUMBER];                             // 业务信道时隙表(执行阶段)
+    highFreqSlottableUnit slottable_setup[TRAFFIC_SLOT_NUMBER];                                    // 业务信道时隙表(建链阶段)
+    highFreqSlottableUnit slot_traffic_adjustment[TRAFFIC_SLOT_NUMBER];                            // 业务信道时隙表(调整阶段)
+    highFreqSlottableUnit slot_traffic_execution_new[SUBNET_NODE_NUMBER_MAX][TRAFFIC_SLOT_NUMBER]; // 存储子网内所有节点的业务信道时隙表
+
+    highFreqBusinessQueue traffic_channel_business[SUBNET_NODE_NUMBER_MAX]; // 业务信道的待发送队列
 
     /*随遇接入相关*/
     NodeAccess access_state;         // 当前节点接入状态
@@ -290,15 +316,9 @@ public:
     unsigned int frequency_sequence[SUBNET_NODE_NUMBER_MAX][FREQUENCY_COUNT];        // 生成子网内调频序列(仅网管节点有)
     unsigned int subnet_frequency_sequence[TOTAL_FREQ_POINT];                        // 子网所使用频段(共501频点, 对应频点值为1代表使用此频点, 0为不使用)(网管节点独有)
     unsigned int spectrum_sensing_node[TOTAL_FREQ_POINT];                            // 本节点频谱感知结果
-    unsigned int spectrum_sensing_sum[SUBNET_NODE_NUMBER_MAX][TOTAL_FREQ_POINT + 1]; // 总频谱感知结果, 只存在于网管节点.最后一列每一行代表一个节点, 若为0, 则说明没有接收到此节点的频谱感知结果, 若为1, 则说明接收到了
-    unsigned int unavailable_frequency_points[TOTAL_FREQ_POINT];                     // 不可用频点集合(1: 频点未干扰 0: 频点受到干扰)
-
-    /*高频信道线程相关*/
-    int mac_daatr_high_freq_socket_fid; // daatr协议高频信道socket句柄
-    std::mutex lock_buss_channel;       // 业务信道待发送队列访问锁
-    bool has_received_slottable;        // 时隙表是否已收到一次
-    bool has_received_sequence;
-    mana_business_traffic traffic_channel_business[SUBNET_NODE_NUMBER_MAX]; // 业务信道的待发送队列
+    unsigned int spectrum_sensing_sum[SUBNET_NODE_NUMBER_MAX][TOTAL_FREQ_POINT + 1]; // 总频谱感知结果, 只存在于网管节点.最后一列每一行代表一个节点,
+    // 若为0, 则说明没有接收到此节点的频谱感知结果, 若为1, 则说明接收到了
+    unsigned int unavailable_frequency_points[TOTAL_FREQ_POINT]; // 不可用频点集合(1: 频点未干扰 0: 频点受到干扰)
 
     /*飞行状态信息*/
     FlightStatus subnet_other_node_position[SUBNET_NODE_NUMBER_MAX - 1]; // 子网其他节点位置信息
@@ -306,15 +326,29 @@ public:
 
     // 类函数
 public:
+    // 初始化相关
     MacDaatr();
-    msgFromControl getBusinessFromHighChannel(); // 从业务信道队列取业务
+    void macParameterInitialization(uint32_t idx);
+
+    // 管控线程
+    void macDaatrControlThread();
+
+    // 业务信道相关函数
+    msgFromControl getBusinessFromHighChannel();                                    // 从业务信道队列取业务
+    void LoadSlottable_setup();                                                     // 读取建链阶段时隙表
+    void highFreqSendThread();                                                      // 高频信道发送线程函数
+    void macDaatrSocketHighFreq_Send(uint8_t *data, uint32_t len, uint16_t nodeId); // 高频信道Socket发送
+    void macDaatrSocketHighFreq_Recv(bool IF_NOT_BLOCKED);                          // 高频信道Socket接收数据包
+    void highFreqChannelHandle(uint8_t *bit_seq, uint64_t len);                     // 高频信道处理数据包
+
+    // 网管信道相关函数
     bool MacDaatNetworkHasLowFreqChannelPacketToSend(msgFromControl *busin);
     bool getLowChannelBusinessFromQueue(msgFromControl *busin);
-};
 
-void networkToMacBufferHandle(uint8_t *rBuffer_mac);
-void macToNetworkBufferHandle(void *data, uint8_t type, uint16_t len);
-void macParameterInitialization();
+    // 层间缓冲区操作函数
+    void networkToMacBufferHandle(uint8_t *rBuffer_mac);
+    void macToNetworkBufferHandle(void *data, uint8_t type, uint16_t len);
+};
 
 uint64_t getTime();
 void printTime_ms();

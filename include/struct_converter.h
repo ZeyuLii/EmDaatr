@@ -23,17 +23,19 @@ public:
     bool set_length(int length);                                      // 设置比特序列长度
     bool set_struct(uint8_t *daatr_struc, unsigned char type);        // 设置结构体
     bool set_bit_sequence(uint8_t *bit_sequence, unsigned char type); // 设置0/1序列
-    uint8_t *get_sequence();                                          // 返回0/1序列
-    uint8_t *get_struct();                                            // 返回结构体
-    char get_type();                                                  // 返回结构体类型
-    uint32_t get_length();                                                 // 返回长度
-    int get_sequence_length(uint8_t *bit_seq);                        // 返回此比特序列长度(从包头得到) type: 0 PDU1包  1 PDU2
-    int get_PDU2_sequence_length(uint8_t *pkt);                       // 返回PDU1包头类型数据包长度
+
+    uint8_t *get_sequence();                        // 返回0/1序列
+    uint8_t *get_struct();                          // 返回结构体
+    char get_type();                                // 返回结构体类型
+    uint32_t get_length();                          // 返回长度
+    int get_PDU1_sequence_length(uint8_t *bit_seq); // 返回此比特序列长度(从包头得到) type: 0 PDU1包  1 PDU2
+    int get_PDU2_sequence_length(uint8_t *pkt);     // 返回PDU1包头类型数据包长度
     // bool daatr_MFC_to_0_1(msgFromControl *packet);
     // bool daatr_MFC_to_0_1(msgFromControl *packet);
-    bool daatr_MFCvector_to_0_1(std::vector<uint8_t> *MFC_vector_temp, int packetlength);
-    std::vector<uint8_t> *daatr_0_1_to_MFCvector();
-    std::vector<uint8_t> *Get_Single_MFC();
+
+    bool daatr_MFCvector_to_0_1(vector<uint8_t> *MFC_vector_temp, int packetlength);
+    vector<uint8_t> *daatr_0_1_to_MFCvector();
+    vector<uint8_t> *Get_Single_MFC();
 
     bool daatr_PDU1_to_0_1(); // PDU1转化为0/1序列
     bool daatr_PDU2_to_0_1(); // PDU2转化为0/1序列
@@ -77,10 +79,9 @@ public:
     MacDaatr_struct_converter &operator=(const MacDaatr_struct_converter &packet1);
 };
 
-msgFromControl *AnalysisLayer2MsgFromControl(std::vector<uint8_t> *dataPacket);
-uint16_t CRC16(std::vector<uint8_t> *buffer);
-std::vector<uint8_t> *PackMsgFromControl(msgFromControl *packet);
+msgFromControl *AnalysisLayer2MsgFromControl(vector<uint8_t> *dataPacket);
+uint16_t CRC16(vector<uint8_t> *buffer);
+vector<uint8_t> *PackMsgFromControl(msgFromControl *packet);
 uint8_t *deepcopy(uint8_t *frame_ptr, int length);
-
 
 #endif

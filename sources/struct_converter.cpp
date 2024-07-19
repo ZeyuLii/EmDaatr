@@ -65,7 +65,7 @@ uint32_t MacDaatr_struct_converter::get_length()
 }
 
 // 返回此比特序列长度(从PDU包头得到)type: 0 PDU1包  1 PDU2
-int MacDaatr_struct_converter::get_sequence_length(uint8_t *bit_seq)
+int MacDaatr_struct_converter::get_PDU1_sequence_length(uint8_t *bit_seq)
 {
     return ((bit_seq[1] << 8) | (bit_seq[2]));
 }
@@ -244,8 +244,8 @@ bool MacDaatr_struct_converter::set_struct(uint8_t *daatr_struc, unsigned char t
             delete Daatr_struct_ptr_;
             Daatr_struct_ptr_ = NULL;
         }
-        Send_slottable *ptr_temp = new Send_slottable;
-        Send_slottable *ptr_temp2 = (Send_slottable *)daatr_struc;
+        highFreqSlottable *ptr_temp = new highFreqSlottable;
+        highFreqSlottable *ptr_temp2 = (highFreqSlottable *)daatr_struc;
         *ptr_temp = *ptr_temp2;
         Daatr_struct_ptr_ = (uint8_t *)ptr_temp;
         break;
@@ -1246,7 +1246,7 @@ bool MacDaatr_struct_converter::daatr_slottable_to_0_1()
         bit_sequence_ptr_ = NULL;
     }
 
-    Send_slottable *slottable_temp = (Send_slottable *)Daatr_struct_ptr_;
+    highFreqSlottable *slottable_temp = (highFreqSlottable *)Daatr_struct_ptr_;
     uint8_t *packet = new uint8_t[number]; // 生成新空间
 
     for (i = 0; i < 50; i++)
@@ -1309,8 +1309,8 @@ bool MacDaatr_struct_converter::daatr_0_1_to_slottable()
         Daatr_struct_ptr_ = NULL;
     }
 
-    Send_slottable *slottable_temp = new Send_slottable;
-    memset(slottable_temp, 0, sizeof(Send_slottable));
+    highFreqSlottable *slottable_temp = new highFreqSlottable;
+    memset(slottable_temp, 0, sizeof(highFreqSlottable));
 
     for (i = 0; i < 50; i++)
     {
@@ -2198,12 +2198,12 @@ MacDaatr_struct_converter &MacDaatr_struct_converter::operator-(const MacDaatr_s
     case 6:
     { // 想要建链请求
         number = 2;
-        // int number2 = 17;//PDU2大小
+        int number2 = 25; // PDU2大小
         length_ = number;
         bit_sequence_ptr_ = new uint8_t[number];
         for (i = 0; i < number; i++)
         {
-            bit_sequence_ptr_[i] = packet1.bit_sequence_ptr_[i];
+            bit_sequence_ptr_[i] = packet1.bit_sequence_ptr_[number2 + i];
         }
         break;
     }

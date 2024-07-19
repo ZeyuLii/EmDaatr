@@ -1,8 +1,11 @@
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
+
 #include "macdaatr.h"
 #include "main.h"
-#include "fstream"
-#include <sstream>
+
 using namespace std;
 
 /*****************************此文件主要包含对本层协议结构体控制相关函数******************************/
@@ -34,7 +37,7 @@ void printTime_ms()
 {
     extern MacDaatr daatr_str;
     double time_ms = daatr_str.time / 1000.0;
-    cout << "time:" << time_ms << " ms" << endl;
+    cout << "Time: " << time_ms << " ms" << endl;
 }
 
 /**
@@ -77,22 +80,88 @@ void printTime_s()
  */
 MacDaatr::MacDaatr()
 {
-    // 初始化时钟触发器为0，表示尚未触发。
-    clock_trigger = 0;
+    clock_trigger = 0; // 初始化时钟触发器为0，表示尚未触发
+    time = 0;          // 绝对时间初始化为0
 
     // 初始化高频率MAC DAATR套接字文件描述符为-1，表示尚未打开套接字。
     mac_daatr_high_freq_socket_fid = -1;
 
     // 初始化低频率MAC DAATR套接字文件描述符为-1，表示尚未打开套接字。
     mac_daatr_low_freq_socket_fid = -1;
-
-    low_slottable_should_read = 0;
-    state_now = Mac_Initialization;         // 初试为建链阶段
-    time = 0;                               // 绝对时间初始化为0
-    access_state = DAATR_NO_NEED_TO_ACCESS; // 默认不需要接入
-    access_backoff_number = 0;              // 接入时隙
 }
 
+/// @brief 读取建链阶段时隙表
+void MacDaatr::LoadSlottable_setup()
+{
+    // cout << "Node " << nodeId << " 读入建链阶段时隙表" << endl;
+    string stlotable_state_filename = "../config/SlottableInitialization/Slottable_RXTX_State_" +
+                                      to_string(static_cast<long long>(nodeId)) + ".txt";
+    string stlotable_node_filename = "../config/SlottableInitialization/Slottable_RXTX_Node_" +
+                                     to_string(static_cast<long long>(nodeId)) + ".txt";
+    ifstream fin1(stlotable_state_filename);
+    ifstream fin2(stlotable_node_filename);
+
+    if (!fin1.is_open())
+        cout << "Could Not Open File1" << endl;
+
+    if (!fin2.is_open())
+        cout << "Could Not Open File2" << endl;
+
+    vector<int> RXTX_state;
+    vector<int> RXTX_node;
+    string str1, str2, temp;
+
+    getline(fin1, str1);
+    stringstream ss1(str1);
+    while (getline(ss1, temp, ','))
+    {
+        RXTX_state.push_back(stoi(temp));
+    }
+    getline(fin2, str2);
+    stringstream ss2(str2);
+    while (getline(ss2, temp, ','))
+    {
+        RXTX_node.push_back(stoi(temp));
+    }
+    fin1.close();
+    fin2.close();
+
+    for (int i = 0; i < TRAFFIC_SLOT_NUMBER; i++)
+    {
+        slottable_setup[i].state = RXTX_state[i];
+        if (slottable_setup[i].state == DAATR_STATUS_TX && RXTX_node[i] != 0)
+        {
+            slottable_setup[i].send_or_recv_node = RXTX_node[i];
+        }
+        else if (slottable_setup[i].state == DAATR_STATUS_RX && RXTX_node[i] != 0)
+        {
+            slottable_setup[i].send_or_recv_node = RXTX_node[i];
+        }
+        else
+        {
+            slottable_setup[i].send_or_recv_node = 0;
+        }
+    }
+
+    // cout << endl;
+    // cout << "Node " << nodeId << " 将时隙表切换为建链时隙表 " << endl;
+    // for (int i = 0; i < TRAFFIC_SLOT_NUMBER; i++)
+    // {
+    //     if (slottable_setup[i].state == DAATR_STATUS_TX &&
+    //         slottable_setup[i].send_or_recv_node != 0)
+    //     {
+    //         cout << "|TX:" << slottable_setup[i].send_or_recv_node;
+    //     }
+    //     else if (slottable_setup[i].state == DAATR_STATUS_RX &&
+    //              slottable_setup[i].send_or_recv_node != 0)
+    //     {
+    //         cout << "|RX:" << slottable_setup[i].send_or_recv_node;
+    //     }
+    //     else
+    //         cout << "|IDLE";
+    // }
+    // cout << endl;
+}
 msgFromControl MacDaatr::getBusinessFromHighChannel()
 {
     lock_buss_channel.lock();
@@ -114,9 +183,9 @@ msgFromControl MacDaatr::getBusinessFromHighChannel()
  * 具体的转换流程是，对数据添加帧头，第一位为数据类型，第二、三位为数据长度（采用大端），第四位开始为数据
  * 然后将转换后的数据插入缓冲区
  */
-void macToNetworkBufferHandle(void *data, uint8_t type, uint16_t len)
+void MacDaatr::macToNetworkBufferHandle(void *data, uint8_t type, uint16_t len)
 {
-    extern MacDaatr daatr_str; // mac层协议类
+    // extern MacDaatr daatr_str; // mac层协议类
     extern ringBuffer macToRouting_Buffer;
     uint8_t *ret = NULL; // 返回值
     ret = (uint8_t *)malloc(len + 3);
@@ -128,9 +197,9 @@ void macToNetworkBufferHandle(void *data, uint8_t type, uint16_t len)
     ret[2] |= (len & 0xff);
     memcpy((ret + 3), data, len);
     // 写进Mac->Net缓冲区
-    daatr_str.lock_Mac_to_Net.lock();
+    lock_Mac_to_Net.lock();
     macToRouting_Buffer.ringBuffer_put(ret, len + 3);
-    daatr_str.lock_Mac_to_Net.unlock();
+    lock_Mac_to_Net.unlock();
     free(ret);
 }
 
@@ -145,9 +214,9 @@ void macToNetworkBufferHandle(void *data, uint8_t type, uint16_t len)
  *
  * 注意：当前函数实现中，各个分支内的处理逻辑尚未实现，需要根据具体需求进行补充。
  */
-void networkToMacBufferHandle(uint8_t *rBuffer_mac)
+void MacDaatr::networkToMacBufferHandle(uint8_t *rBuffer_mac)
 {
-    extern MacDaatr daatr_str;     // mac层协议类
+    // extern MacDaatr daatr_str;     // mac层协议类
     uint8_t type = rBuffer_mac[0]; // 数据类型
     uint16_t len = 0;              // 数据长度（单位：字节）
     len |= rBuffer_mac[1];
@@ -159,7 +228,7 @@ void networkToMacBufferHandle(uint8_t *rBuffer_mac)
     case 0x01:
     { // 飞行状态信息
         FlightStatus *temp = (FlightStatus *)data;
-        daatr_str.local_node_position_info = *temp;
+        local_node_position_info = *temp;
         break;
     }
     case 0x0a:
@@ -185,103 +254,119 @@ void networkToMacBufferHandle(uint8_t *rBuffer_mac)
     }
 }
 
-void macParameterInitialization()
+void MacDaatr::macParameterInitialization(uint32_t idx)
 {
-    extern MacDaatr daatr_str; // mac层协议类
+    // extern MacDaatr daatr_str; // mac层协议类
     string filePath = "../config/daatr_config.txt";
     // 打开文件
     ifstream file(filePath);
     if (!file.is_open())
     {
-        std::cerr << "!!!!无法打开文件: " << filePath << std::endl;
+        cerr << "!!!!无法打开文件: " << filePath << endl;
     }
+
     // 读取文件内容
+    cout << "macInit " << idx << ": 从Config中读取配置信息" << endl;
     string line;
     while (getline(file, line))
-    {                            //
+    {
         istringstream iss(line); // 将读取的行放入字符串流中以便进一步分割
         vector<string> items;
         string item;
         while (getline(iss, item, ' '))
-        {                          // 使用空格分割每一项
+        {
+            // 使用空格分割每一项
             items.push_back(item); // 将分割出的项存入vector中
         }
         string type = items[0];
         items.erase(items.begin()); // 删除数据类型
         if (type == "SUBNET")
         { // 子网号
-            daatr_str.subnetId = stoi(items[0]);
+            subnetId = stoi(items[0]);
         }
         else if (type == "NODEID")
         { // 节点号
-            daatr_str.nodeId = stoi(items[0]);
+            // nodeId = stoi(items[0]);
+            nodeId = idx;
         }
         else if (type == "SUBNET_NODE_NUM")
         { // 子网节点数量
-            daatr_str.subnet_node_num = stoi(items[0]);
+            subnet_node_num = stoi(items[0]);
         }
         else if (type == "IMPORTANT_NODE")
-        {                                                    // 子网重要节点
-            daatr_str.mana_node = stoi(items[0]);            // n网管节点
-            daatr_str.gateway_node = stoi(items[1]);         // 网关节点
-            daatr_str.standby_gateway_node = stoi(items[2]); // 备份网关节点
+        {                                          // 子网重要节点
+            mana_node = stoi(items[0]);            // n网管节点
+            gateway_node = stoi(items[1]);         // 网关节点
+            standby_gateway_node = stoi(items[2]); // 备份网关节点
         }
         else if (type == "NODE_TYPE")
         { // 节点身份
             if (items[0] == "ORDINARY")
             { // 普通节点
-                daatr_str.node_type = Node_Ordinary;
+                node_type = Node_Ordinary;
             }
             else if (items[0] == "MANAGEMENT")
             { // 网管节点
-                daatr_str.node_type = Node_Management;
+                node_type = Node_Management;
             }
             else if (items[0] == "GATEWAY")
             { // 网关节点
-                daatr_str.node_type = Node_Gateway;
+                node_type = Node_Gateway;
             }
             else if (items[0] == "STANDBY_GATEWAY")
             { // 备份网关节点
-                daatr_str.node_type = Node_Standby_Gateway;
+                node_type = Node_Standby_Gateway;
             }
         }
         else if (type == "MANA_CHANEL_BUILD_STATE_SLOT_NODE_ID")
         { // 低频信道建链阶段初始化
             for (int i = 0; i < items.size(); i++)
             {
-                daatr_str.low_freq_link_build_slot_table[i].nodeId = stoi(items[i]);
+                low_freq_link_build_slot_table[i].nodeId = stoi(items[i]);
             }
         }
         else if (type == "MANA_CHANEL_BUILD_STATE_SLOT_STATE")
         { // 低频信道非建链阶段初始化
             for (int i = 0; i < items.size(); i++)
             {
-                daatr_str.low_freq_link_build_slot_table[i].state = stoi(items[i]);
+                low_freq_link_build_slot_table[i].state = stoi(items[i]);
             }
         }
         else if (type == "MANA_CHANEL_OTHER_STATE_SLOT_NODE_ID")
         { // 低频信道非建链阶段初始化
             for (int i = 0; i < items.size(); i++)
             {
-                daatr_str.low_freq_other_stage_slot_table[i].nodeId = stoi(items[i]);
+                low_freq_other_stage_slot_table[i].nodeId = stoi(items[i]);
             }
         }
         else if (type == "MANA_CHANEL_OTHER_STATE_SLOT_STATE")
         { // 低频信道非建链阶段初始化
             for (int i = 0; i < items.size(); i++)
             {
-                daatr_str.low_freq_other_stage_slot_table[i].state = stoi(items[i]);
+                low_freq_other_stage_slot_table[i].state = stoi(items[i]);
             }
         }
     }
-
-    // 关闭文件
     file.close();
-    
+
+    cout << "macInit " << nodeId << ": 配置 IP_Addr" << endl;
     // 配置ip地址，ip地址配置策略为'192.168.'+ 子网号 + 节点ID
-    for (int i = 2; i <= daatr_str.subnet_node_num + 1; i++)
-    {
-        daatr_str.in_subnet_id_to_ip[i - 1] = "192.168." + to_string(daatr_str.subnetId) + "." + to_string(i);
-    }
+    for (int i = 2; i <= subnet_node_num + 1; i++)
+        in_subnet_id_to_ip[i - 1] = "192.168." + to_string(subnetId) + "." + to_string(i);
+
+    cout << "macInit " << nodeId << ": 配置业务信道信息" << endl;
+    need_change_state = 0;                // 不需要改变状态
+    state_now = Mac_Initialization;       // 初始为建链阶段
+    receivedChainBuildingRequest = false; // 初始未发送建链请求
+
+    currentSlotId = 0;
+    currentStatus = DAATR_STATUS_IDLE;
+    LoadSlottable_setup();
+
+    cout << "macInit " << nodeId << ": 配置网管信道信息" << endl;
+    access_state = DAATR_NO_NEED_TO_ACCESS; // 默认不需要接入
+    access_backoff_number = 0;              // 接入时隙
+    low_slottable_should_read = 0;
+
     cout << endl;
 }
