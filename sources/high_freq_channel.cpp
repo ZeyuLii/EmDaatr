@@ -3,10 +3,32 @@
 #include "socket_control.h"
 #include "struct_converter.h"
 #include "beam_maintenance.h"
+#include "highFreqToolFunc.h"
 #include "timer.h"
 
 using namespace std;
 /*****************************此文件主要包含对高频信道通信相关函数实现******************************/
+
+/*
+ TODO 0720:
+    1. 调整阶段的数据收发(补充发函数与收函数的事件处理函数) & 频域调整阶段(+ 干扰频点汇总 新调频图案等数据包的发送)
+    2. 状态的切换 Setup->Exe->Adj 标志位的更改 在macdaatr.cpp中
+    3. 执行阶段的读取数据包时，需要给数据加锁 并把队列放进到 private 中
+    4. 接收上层缓冲区数据包并处理的事件处理函数
+        - 数据包——放入队列 MSG_NETWORK_ReceiveNetworkPkt
+        - 链路构建需求——调整阶段
+        - 身份配置信息调整与下发
+        - 转发表与路由表
+        - 本地飞行状态信息
+    5. 周期性向网络层缓冲区发送数据包
+        - 其他节点飞行状态信息
+        - 本地链路状态信息
+    6. 核对 身份配置信息变更后，其他节点的定时器修改问题
+    7. 射前时隙表生成函数 根据 node_num
+    8. 接入相关
+    9. 接收和生成频谱感知结果数据包 MAC_DAATR_SpectrumSensing (from PHY)
+    0. 如需必要 将队列更改为set 重写出入队的操作
+*/
 
 /// @brief 高频信道发送线程函数
 void MacDaatr::highFreqSendThread()
@@ -26,6 +48,7 @@ void MacDaatr::highFreqSendThread()
     currentSlotId = (currentSlotId == TRAFFIC_SLOT_NUMBER - 1) ? 0 : currentSlotId + 1;
 
     // TODO 未考虑全连接时隙
+    // -- 如果是 Mac_Initialiation 则发送内容为 建链请求/建链回复
     if (state_now == Mac_Initialization)
     {
         currentStatus = slottable_setup[currentSlotId].state;
@@ -115,6 +138,179 @@ void MacDaatr::highFreqSendThread()
             // IDLE
         }
     }
+    // -- 如果是 Mac_Exucation 则发送内容为 业务数据包
+    else if (state_now == Mac_Execution)
+    {
+        currentStatus = slottable_execution[currentSlotId].state;
+        int dest_node = slottable_execution[currentSlotId].send_or_recv_node;
+
+        if (currentStatus == DAATR_STATUS_TX && dest_node != 0) // TX
+        {
+            double transSpeed = Calculate_Transmission_Rate_by_Distance(businessQueue[dest_node - 1].distance);
+            double transData = transSpeed * HIGH_FREQ_SLOT_LEN / 8 - MAC_HEADER1_LENGTH;
+            // 减去PDU1的包头数据量,才是真正一帧可传输的数据量
+
+            int multi = 0;
+            int skip_pkt = 0; // 表示这是大数据包(的个数), 无法放入此PDU, 跳过
+            vector<msgFromControl> MFC_list_temp;
+
+            for (int i = 0; i < TRAFFIC_CHANNEL_PRIORITY; i++)
+            {
+                // i对应不同优先级
+                skip_pkt = 0;
+                for (int j = 0; j < TRAFFIC_MAX_BUSINESS_NUMBER; j++)
+                {
+                    if (businessQueue[dest_node - 1].business[i][skip_pkt].priority == -1)
+                        break;
+
+                    if (businessQueue[dest_node - 1].business[i][0].busin_data.backup == 0)
+                    // 第一个可发送业务是网络层下发的业务
+                    // 向后遍历每一个业务,
+                    // 查看1.是否继续发送会大于可传输量 2.是否下一个业务是链路层业务
+                    // 有任何一个条件不满足, 则停止遍历, 并将此前的所有业务打包发送
+                    {
+                        if ((transData >= businessQueue[dest_node - 1].business[i][skip_pkt].data_kbyte_sum) &&
+                            Judge_If_Include_ReTrans(businessQueue[dest_node - 1].business[i][skip_pkt].busin_data, MFC_list_temp) == false)
+                        {
+                            transData -= businessQueue[dest_node - 1].business[i][skip_pkt].data_kbyte_sum;
+                            multi += 1;
+                            MFC_list_temp.push_back(businessQueue[dest_node - 1].business[i][skip_pkt].busin_data);
+
+                            Business_Lead_Forward(this, dest_node, i, skip_pkt); // 此业务发送成功, 更新当前业务队列
+                        }
+                        else
+                        {
+                            skip_pkt += 1;
+                            continue;
+                        }
+                    }
+                    else
+                    // 队列中第一个业务是链路层自行下发的业务
+                    // 此时的macpacket的包头应该和mfc包头的destAddr是一致的
+                    {
+                        msgFromControl busin_data = businessQueue[dest_node - 1].business[i][0].busin_data;
+                        if (busin_data.packetLength == 73 && busin_data.msgType == 15 && busin_data.fragmentNum == 15) // 说明待发送的是频谱感知结果
+                        {
+                            // 设置包头
+                            MacHeader *mac_header = new MacHeader;
+                            mac_header->PDUtype = 0;
+                            mac_header->is_mac_layer = 0;
+                            mac_header->backup = 0;
+                            mac_header->mac_backup = 1;
+                            mac_header->packetLength = 73 + 25; // MFC_Spec + 包头25
+                            mac_header->destAddr = mana_node;
+                            mac_header->srcAddr = nodeId;
+
+                            // 包头的 converter
+                            MacDaatr_struct_converter mac_converter_PDU1(1);
+                            mac_converter_PDU1.set_struct((uint8_t *)mac_header, 1);
+                            mac_converter_PDU1.daatr_struct_to_0_1();
+
+                            // 包头后的内容
+                            vector<uint8_t> *MFC_Spec_temp = new vector<uint8_t>; // 存储盛放频谱感知结果的MFC的vector序列
+                            MFC_Spec_temp = PackMsgFromControl(&busin_data);      // 将MFC转换为 01 seq, 使用vector存放
+                            MacDaatr_struct_converter mac_converter_Spec(255);    // 设定converter, 类别为255
+                            // (由于没有header + MFC的type, 所以设为255)
+                            mac_converter_Spec.set_length(busin_data.packetLength);                            // 设定此converter的长度为MFC的长度73(固定长度)
+                            mac_converter_Spec.daatr_MFCvector_to_0_1(MFC_Spec_temp, busin_data.packetLength); // 将MFC的vector加入converter的seq中
+                            mac_converter_PDU1 + mac_converter_Spec;                                           // 将两个包拼接进 PDU
+
+                            uint8_t *frame_ptr = mac_converter_PDU1.get_sequence(); // 将拼接好的PDU的seq提出 待发送
+                            uint32_t len = mac_converter_PDU1.get_length();
+                            uint8_t *temp_buf = new uint8_t[len];
+                            memcpy(temp_buf, frame_ptr, len);
+                            macDaatrSocketHighFreq_Send(temp_buf, len, dest_node); // 此处的的dest_node为网管节点
+
+                            cout << "[" << currentSlotId << "] Node " << nodeId << " 发送频谱感知结果 ";
+                            printTime_ms();
+
+                            Business_Lead_Forward(this, dest_node, i, 0);
+
+                            delete mac_header;
+                            delete temp_buf;
+                        }
+                    }
+                }
+            }
+
+            if (MFC_list_temp.size() != 0)
+            {
+                MacHeader *mac_header = new MacHeader;
+                mac_header->PDUtype = 0;
+                mac_header->is_mac_layer = 0;
+                mac_header->backup = 0;
+                mac_header->mac_backup = multi;
+                // cout << "节点 " << node->nodeId << " 向节点 " << dest_node << "
+                // 本次发送合包 " << multi << " 个" << endl;
+                mac_header->packetLength = 25; // 设定PDU包头的初始长度
+                mac_header->destAddr = dest_node;
+                mac_header->srcAddr = nodeId;
+
+                // 首先遍历所有待发送的MFC, 计算即将生成的PDU的长度,
+                // 更新包头位置的pktlength字段
+                for (auto mfc_t : MFC_list_temp)
+                    mac_header->packetLength += mfc_t.packetLength;
+
+                MacDaatr_struct_converter mac_converter_PDU1(1);         // 此 converter 用来盛放包头, 设置类别为 1
+                mac_converter_PDU1.set_struct((uint8_t *)mac_header, 1); // 将上述包头与converter相关联
+                mac_converter_PDU1.daatr_struct_to_0_1();                // 将包头转换为01序列
+
+                vector<uint8_t> *MFC_Trans_temp = new vector<uint8_t>; // 盛放MFC转换的01序列
+                int PDU_TotalLength = mac_converter_PDU1.get_length(); // PDU_TotalLength 此时的长度只有 25 (是converter1的设定长度)
+                for (auto mfc_temp : MFC_list_temp)                    // 遍历待发送队列中的每个MFC
+                {
+                    MFC_Trans_temp = PackMsgFromControl(&mfc_temp);    // 将MFC转换为01序列(使用vector盛放)
+                    MacDaatr_struct_converter mac_converter_temp(255); // 设定混合类型的converter,
+                    // 用来容纳MFC转换的01序列的seq
+                    mac_converter_temp.set_length(mfc_temp.packetLength);
+                    mac_converter_temp.daatr_MFCvector_to_0_1(MFC_Trans_temp, mfc_temp.packetLength);
+
+                    mac_converter_PDU1 + mac_converter_temp; // 将新生成的MFC的seq添加至PDU1包头之后
+                    PDU_TotalLength += mfc_temp.packetLength;
+                    MFC_Trans_temp->clear();
+                }
+                MFC_list_temp.clear(); // 清空待发送队列
+
+                mac_converter_PDU1.set_length(PDU_TotalLength);
+                uint8_t *frame_ptr = mac_converter_PDU1.get_sequence();
+                uint32_t len = mac_converter_PDU1.get_length();
+                uint8_t *temp_buf = new uint8_t[len];
+                memcpy(temp_buf, frame_ptr, len);
+                macDaatrSocketHighFreq_Send(temp_buf, len, dest_node); // 此处的的dest_node为网管节点
+
+                cout << "[" << currentSlotId << "] Node " << nodeId << " 发送数据包合包 ";
+                printTime_ms();
+
+                delete mac_header;
+                delete temp_buf;
+
+                //  cout << "节点 " << node->nodeId << " 结束当前时隙发送任务,
+                //  调整业务队列的等待时间与优先级" << endl;
+            }
+
+            // for (int i = 0; i < SUBNET_NODE_NUMBER_MAX; i++)
+            // {
+            //     for (int j = 0; j < TRAFFIC_CHANNEL_PRIORITY; j++)
+            //     {
+            //         for (int k = 0; k < TRAFFIC_MAX_BUSINESS_NUMBER; k++)
+            //         {
+            //             if (businessQueue[i].business[j][k].priority != -1)
+            //                 businessQueue[i].business[j][k].waiting_time += 1;
+            //         }
+            //     }
+            // }
+
+            // MFC_Priority_Adjustment(this);
+        }
+        else if (currentStatus == DAATR_STATUS_RX && dest_node != 0)
+        {
+            // 在执行阶段 收到的内容是 数据包 和 频谱感知结果
+        }
+        else
+        {
+            // IDLE
+        }
+    }
 }
 /// @brief 处理高频信道接收到的数据包 (格式均为 PDU1 + 后续内容)
 /// @param bit_seq 指向接收到的位序列的指针
@@ -131,8 +327,72 @@ void MacDaatr::highFreqChannelHandle(uint8_t *bit_seq, uint64_t len)
     mac_converter_PDU1.daatr_0_1_to_struct();
     MacHeader *mac_header_ptr = (MacHeader *)mac_converter_PDU1.get_struct();
     MacHeader mac_header = *mac_header_ptr;
-    if (mac_header.is_mac_layer == 0) // 上层数据包+频谱感知
+
+    if (mac_header.is_mac_layer == 0) // 上层数据包 + 频谱感知
     {
+        int Total_MFC_num = mac_header.mac_backup; // 读取backup字段得到PDU中的MFC数量
+
+        MacDaatr_struct_converter mac_converter_MFCs(99); // 用来盛放PDU中除去包头外的若干紧邻的MFC的01序列
+        mac_converter_MFCs - mac_converter_PDU1;
+        mac_converter_MFCs.set_length(frame_length - 25);
+
+        vector<uint8_t> *MFC_vector_temp = new vector<uint8_t>;
+        msgFromControl *MFC_temp = new msgFromControl;
+        int mfc_count_upper = 0, mfc_count_trans = 0;
+
+        for (int i = 0; i < Total_MFC_num; i++)
+        {
+            MFC_vector_temp = mac_converter_MFCs.Get_Single_MFC();
+            MFC_temp = AnalysisLayer2MsgFromControl(MFC_vector_temp); // 将vector形式的01序列转为MFC
+            if (MFC_temp->destAddr == nodeId)
+            {
+                if (MFC_temp->packetLength == 73 && MFC_temp->msgType == 15 && MFC_temp->fragmentNum == 15) // 频谱感知结果
+                {
+                    msgFromControl *Spec_MFC = AnalysisLayer2MsgFromControl(MFC_vector_temp);
+                    vector<uint8_t> *sensing_vector = (vector<uint8_t> *)Spec_MFC->data; // 将data字段提取出来, 按照西电的标准是vector
+
+                    uint8_t *sensing_seq = new uint8_t[63];
+                    for (int i = 0; i < 63; i++)
+                    {
+                        sensing_seq[i] = (*sensing_vector)[i];
+                    }
+                    MacDaatr_struct_converter mac_converter_Spec_2(5);     // 存放 SpecSensing 的converter
+                    mac_converter_Spec_2.set_bit_sequence(sensing_seq, 5); // 此行为了兼容 type 5 的写法,
+                    // 将01序列的频谱感知结果赋给converter
+                    mac_converter_Spec_2.daatr_0_1_to_struct(); // 将频谱感知结果的01序列转换为结构体
+                    spectrum_sensing_struct *Spec_struct = (spectrum_sensing_struct *)mac_converter_Spec_2.get_struct();
+
+                    int sendnode = Spec_MFC->srcAddr;
+                    cout << "网管节点收到来自 Node " << sendnode << " 的频谱感知结果  ";
+                    printTime_ms();
+
+                    for (int i = 0; i < TOTAL_FREQ_POINT; i++)
+                    {
+                        spectrum_sensing_sum[sendnode - 1][i] = Spec_struct->spectrum_sensing[i];
+                    }
+                    spectrum_sensing_sum[sendnode - 1][TOTAL_FREQ_POINT] = 1;
+                }
+                else
+                {
+                    macToNetworkBufferHandle(MFC_vector_temp->data(), 0x10, MFC_vector_temp->size());
+                    mfc_count_upper++;
+                    // cout << "MAC 收到本层数据包并传往上层. " << mfc_count_upper << " /
+                    // " << Total_MFC_num << endl;
+                }
+            }
+            else
+            {
+                // 查询路由表 mfc_temp->destaddr --->>> macpacket->destaddr
+                // 更改MFC的destAddr, 并将其放入对应的业务信道队列中
+
+                MAC_NetworkLayerHasPacketToSend(MFC_temp);
+                mfc_count_trans++;
+                // cout << node->nodeId << ": " << MFC_temp->srcAddr << "-" << MFC_temp->destAddr << endl;
+                // cout << "MAC 收到非本节点消息 转发对应节点. " << mfc_count_trans << " / " << Total_MFC_num << endl;
+            }
+        }
+        delete MFC_vector_temp;
+        delete MFC_temp;
     }
     else // 本层数据包
     {
@@ -159,7 +419,7 @@ void MacDaatr::highFreqChannelHandle(uint8_t *bit_seq, uint64_t len)
             BuildLink_Request *blRequest_ptr = (BuildLink_Request *)mac_converter_BLRequest.get_struct();
             BuildLink_Request blRequest = *blRequest_ptr;
 
-            cout << "网管节点收到 Node " << blRequest.nodeID << " 的建链请求--" << mac_header.seq + 1 << "  ";
+            cout << "[" << currentSlotId << "] 网管节点收到 Node " << blRequest.nodeID << " 的建链请求--" << mac_header.seq + 1 << "  ";
             printTime_ms();
 
             break;
@@ -187,12 +447,12 @@ void MacDaatr::highFreqChannelHandle(uint8_t *bit_seq, uint64_t len)
 
             if (blRequest.if_build == 1)
             {
-                cout << "Node " << nodeId << " 收到建链许可--" << mac_header.seq << "  ";
+                cout << "[" << currentSlotId << "] Node " << nodeId << " 收到建链许可--" << mac_header.seq << "  ";
                 printTime_ms();
             }
             else
             {
-                cout << "Node " << nodeId << " 收到建链不许可--" << mac_header.seq << "  ";
+                cout << "[" << currentSlotId << "] Node " << nodeId << " 收到建链不许可--" << mac_header.seq << "  ";
                 printTime_ms();
             }
 

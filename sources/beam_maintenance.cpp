@@ -48,13 +48,13 @@ void UpdatePosition(MacPacket_Daatr *macpacket_daatr, MacDaatr *macdata_daatr)
         }
     }
     int node_temp = macpacket_daatr->node_position.nodeId;
-    macdata_daatr->traffic_channel_business[node_temp - 1].distance =
+    macdata_daatr->businessQueue[node_temp - 1].distance =
         calculateLinkDistance(macdata_daatr->local_node_position_info.positionX,
                               macdata_daatr->local_node_position_info.positionY,
                               macdata_daatr->local_node_position_info.positionZ,
                               macpacket_daatr->node_position.positionX,
                               macpacket_daatr->node_position.positionY,
                               macpacket_daatr->node_position.positionZ);
-    // cout << "Node " << node_temp << " distance: " << macdata_daatr->traffic_channel_business[node_temp - 1].distance << " km " << endl;
+    // cout << "Node " << node_temp << " distance: " << macdata_daatr->businessQueue[node_temp - 1].distance << " km " << endl;
     // system("pause");
 }

@@ -8,6 +8,7 @@
 #include <condition_variable>
 #include <unordered_map>
 #include <map>
+#include <set>
 #include "common_struct.h" // define namespace
 
 // 嵌入式Daatr 相关配置信息
@@ -67,6 +68,9 @@
 #define RADIS_B 6356752.3142 //(单位m)基准椭球体短半径
 #define PI 3.1415926
 
+#define MAC_HEADER1_LENGTH 25 // 链路层PDU1大小(单位:byte)
+#define MAC_HEADER2_LENGTH 17 // 链路层PDU2大小(单位:byte)
+
 enum MacState
 {
     // Mac层节点当前所处状态  分为初始化(Mac_Initialization)、调整(Mac_Adjustment)、执行(Mac_Execution)
@@ -77,7 +81,7 @@ enum MacState
     Mac_Access // 接入阶段
 };
 
-enum
+enum SlotState
 {
     DAATR_STATUS_TX,
     DAATR_STATUS_RX,
@@ -203,8 +207,9 @@ typedef struct highFreqBusinessQueue
 {                                                                                     // 业务信道业务
     int recv_node;                                                                    // 下一跳节点
     highFreqBusiness business[TRAFFIC_CHANNEL_PRIORITY][TRAFFIC_MAX_BUSINESS_NUMBER]; // 接收节点对应的各优先级业务
-    double distance;                                                                  // 两节点距离(收发节点)
-    int state;                                                                        // 0: 子网内通信  1: 子网间通信
+    // set<highFreqBusiness> businessSet[TRAFFIC_CHANNEL_PRIORITY];
+    double distance; // 两节点距离(收发节点)
+    int state;       // 0: 子网内通信  1: 子网间通信
 } highFreqBusinessQueue;
 
 // Mac层包头PDU1
@@ -297,15 +302,15 @@ public:
     bool has_received_slottable;                      // 时隙表是否已收到一次
     bool has_received_sequence;
     bool receivedChainBuildingRequest;
-    uint32_t blTimes; // 已经发送建链请求的数量 与MacHeader seq相关
+    uint32_t blTimes;                                     // 已经发送建链请求的数量 与MacHeader seq相关
+    uint16_t Forwarding_Table[SUBNET_NODE_NUMBER_MAX][2]; // 转发表
 
-    highFreqSlottableUnit slotTable[TRAFFIC_SLOT_NUMBER];                                          // 当前在用的时隙表 切换阶段时将其他时隙表赋给这个变量
-    highFreqSlottableUnit slot_traffic_execution[TRAFFIC_SLOT_NUMBER];                             // 业务信道时隙表(执行阶段)
+    highFreqSlottableUnit slottable_execution[TRAFFIC_SLOT_NUMBER];                                // 业务信道时隙表(执行阶段)
     highFreqSlottableUnit slottable_setup[TRAFFIC_SLOT_NUMBER];                                    // 业务信道时隙表(建链阶段)
-    highFreqSlottableUnit slot_traffic_adjustment[TRAFFIC_SLOT_NUMBER];                            // 业务信道时隙表(调整阶段)
+    highFreqSlottableUnit slottable_adjustment[TRAFFIC_SLOT_NUMBER];                               // 业务信道时隙表(调整阶段)
     highFreqSlottableUnit slot_traffic_execution_new[SUBNET_NODE_NUMBER_MAX][TRAFFIC_SLOT_NUMBER]; // 存储子网内所有节点的业务信道时隙表
 
-    highFreqBusinessQueue traffic_channel_business[SUBNET_NODE_NUMBER_MAX]; // 业务信道的待发送队列
+    highFreqBusinessQueue businessQueue[SUBNET_NODE_NUMBER_MAX]; // 业务信道的待发送队列
 
     /*随遇接入相关*/
     NodeAccess access_state;         // 当前节点接入状态
@@ -334,12 +339,17 @@ public:
     void macDaatrControlThread();
 
     // 业务信道相关函数
-    msgFromControl getBusinessFromHighChannel();                                    // 从业务信道队列取业务
-    void LoadSlottable_setup();                                                     // 读取建链阶段时隙表
+    msgFromControl getBusinessFromHighChannel(); // 从业务信道队列取业务
+    void LoadSlottable_setup();                  // 读取建链阶段时隙表
+    void LoadSlottable_Execution();
+    void LoadSlottable_Adjustment();
+
     void highFreqSendThread();                                                      // 高频信道发送线程函数
     void macDaatrSocketHighFreq_Send(uint8_t *data, uint32_t len, uint16_t nodeId); // 高频信道Socket发送
     void macDaatrSocketHighFreq_Recv(bool IF_NOT_BLOCKED);                          // 高频信道Socket接收数据包
     void highFreqChannelHandle(uint8_t *bit_seq, uint64_t len);                     // 高频信道处理数据包
+
+    bool MAC_NetworkLayerHasPacketToSend(msgFromControl *busin);
 
     // 网管信道相关函数
     bool MacDaatNetworkHasLowFreqChannelPacketToSend(msgFromControl *busin);

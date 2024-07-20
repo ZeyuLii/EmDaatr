@@ -25,12 +25,12 @@ ringBuffer macToRouting_Buffer; // MAC->网络层缓存队列
 
 int main()
 {
-    cout << "===== Simulation Start =====" << endl;
+    cout << "======== Simulation Start ========" << endl;
     uint32_t idx = 1;
 
     // 创建新的进程以模拟多节点
     pid_t pid;
-    for (int i = 1; i < 4; i++)
+    for (int i = 1; i < 6; i++)
     {
         pid = fork();
         if (pid == 0)
@@ -56,7 +56,7 @@ int main()
 
         // if (idx == 1)
         // {
-        for (int i = 0; i < 1600; i++)
+        for (int i = 0; i < 10100; i++)
         {
             daatr_str.macDaatrControlThread();
             usleep(1e3);

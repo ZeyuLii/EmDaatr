@@ -4,6 +4,7 @@
 #include <string>
 
 #include "macdaatr.h"
+#include "highFreqToolFunc.h"
 #include "main.h"
 
 using namespace std;
@@ -71,13 +72,9 @@ void printTime_s()
 
 /*****************************************MacDaatr类函数**********************************************/
 
-/**
- * @brief 构造函数MacDaatr
- *
- * 该构造函数用于初始化MacDaatr类的实例。
- * 它设置了节点ID和子网ID，同时初始化了时钟触发器和两个MAC DAATR套接字的文件描述符。
- *
- */
+///  @brief 构造函数MacDaatr
+//   该构造函数用于初始化MacDaatr类的实例。
+//   它设置了节点ID和子网ID，同时初始化了时钟触发器和两个MAC DAATR套接字的文件描述符。
 MacDaatr::MacDaatr()
 {
     clock_trigger = 0; // 初始化时钟触发器为0，表示尚未触发
@@ -162,6 +159,261 @@ void MacDaatr::LoadSlottable_setup()
     // }
     // cout << endl;
 }
+
+/// @brief 读取执行阶段射前时隙表
+void MacDaatr::LoadSlottable_Execution()
+{
+    // cout << "Node " << nodeId << " 读入建链阶段时隙表" << endl;
+    string stlotable_state_filename = "../config/SlottableExecution/Slottable_RXTX_State_" +
+                                      to_string(static_cast<long long>(nodeId)) + ".txt";
+    string stlotable_node_filename = "../config/SlottableExecution/Slottable_RXTX_Node_" +
+                                     to_string(static_cast<long long>(nodeId)) + ".txt";
+    ifstream fin1(stlotable_state_filename);
+    ifstream fin2(stlotable_node_filename);
+
+    if (!fin1.is_open())
+        cout << "Could Not Open File1" << endl;
+
+    if (!fin2.is_open())
+        cout << "Could Not Open File2" << endl;
+
+    vector<int> RXTX_state;
+    vector<int> RXTX_node;
+    string str1, str2, temp;
+
+    getline(fin1, str1);
+    stringstream ss1(str1);
+    while (getline(ss1, temp, ','))
+    {
+        RXTX_state.push_back(stoi(temp));
+    }
+    getline(fin2, str2);
+    stringstream ss2(str2);
+    while (getline(ss2, temp, ','))
+    {
+        RXTX_node.push_back(stoi(temp));
+    }
+    fin1.close();
+    fin2.close();
+
+    for (int i = 0; i < TRAFFIC_SLOT_NUMBER; i++)
+    {
+        slottable_execution[i].state = RXTX_state[i];
+        if (slottable_execution[i].state == DAATR_STATUS_TX && RXTX_node[i] != 0)
+        {
+            slottable_execution[i].send_or_recv_node = RXTX_node[i];
+        }
+        else if (slottable_execution[i].state == DAATR_STATUS_RX && RXTX_node[i] != 0)
+        {
+            slottable_execution[i].send_or_recv_node = RXTX_node[i];
+        }
+        else
+        {
+            slottable_execution[i].send_or_recv_node = 0;
+        }
+    }
+
+    // cout << endl;
+    // cout << "Node " << nodeId << " 将时隙表切换为建链时隙表 " << endl;
+    // for (int i = 0; i < TRAFFIC_SLOT_NUMBER; i++)
+    // {
+    //     if (slottable_execution[i].state == DAATR_STATUS_TX &&
+    //         slottable_execution[i].send_or_recv_node != 0)
+    //     {
+    //         cout << "|TX:" << slottable_execution[i].send_or_recv_node;
+    //     }
+    //     else if (slottable_execution[i].state == DAATR_STATUS_RX &&
+    //              slottable_execution[i].send_or_recv_node != 0)
+    //     {
+    //         cout << "|RX:" << slottable_execution[i].send_or_recv_node;
+    //     }
+    //     else
+    //         cout << "|IDLE";
+    // }
+    // cout << endl;
+}
+
+/// @brief 读取调整阶段时隙表
+void MacDaatr::LoadSlottable_Adjustment()
+{
+    // cout << "Node " << nodeId << " 读入建链阶段时隙表" << endl;
+    string stlotable_state_filename = "../config/SlottableAdjustment/Slottable_RXTX_State_" +
+                                      to_string(static_cast<long long>(nodeId)) + ".txt";
+    string stlotable_node_filename = "../config/SlottableAdjustment/Slottable_RXTX_Node_" +
+                                     to_string(static_cast<long long>(nodeId)) + ".txt";
+    ifstream fin1(stlotable_state_filename);
+    ifstream fin2(stlotable_node_filename);
+
+    if (!fin1.is_open())
+        cout << "Could Not Open File1" << endl;
+
+    if (!fin2.is_open())
+        cout << "Could Not Open File2" << endl;
+
+    vector<int> RXTX_state;
+    vector<int> RXTX_node;
+    string str1, str2, temp;
+
+    getline(fin1, str1);
+    stringstream ss1(str1);
+    while (getline(ss1, temp, ','))
+    {
+        RXTX_state.push_back(stoi(temp));
+    }
+    getline(fin2, str2);
+    stringstream ss2(str2);
+    while (getline(ss2, temp, ','))
+    {
+        RXTX_node.push_back(stoi(temp));
+    }
+    fin1.close();
+    fin2.close();
+
+    for (int i = 0; i < TRAFFIC_SLOT_NUMBER; i++)
+    {
+        slottable_adjustment[i].state = RXTX_state[i];
+        if (slottable_adjustment[i].state == DAATR_STATUS_TX && RXTX_node[i] != 0)
+        {
+            slottable_adjustment[i].send_or_recv_node = RXTX_node[i];
+        }
+        else if (slottable_adjustment[i].state == DAATR_STATUS_RX && RXTX_node[i] != 0)
+        {
+            slottable_adjustment[i].send_or_recv_node = RXTX_node[i];
+        }
+        else
+        {
+            slottable_adjustment[i].send_or_recv_node = 0;
+        }
+    }
+
+    // cout << endl;
+    // cout << "Node " << nodeId << " 将时隙表切换为建链时隙表 " << endl;
+    // for (int i = 0; i < TRAFFIC_SLOT_NUMBER; i++)
+    // {
+    //     if (slottable_adjustment[i].state == DAATR_STATUS_TX &&
+    //         slottable_adjustment[i].send_or_recv_node != 0)
+    //     {
+    //         cout << "|TX:" << slottable_adjustment[i].send_or_recv_node;
+    //     }
+    //     else if (slottable_adjustment[i].state == DAATR_STATUS_RX &&
+    //              slottable_adjustment[i].send_or_recv_node != 0)
+    //     {
+    //         cout << "|RX:" << slottable_adjustment[i].send_or_recv_node;
+    //     }
+    //     else
+    //         cout << "|IDLE";
+    // }
+    // cout << endl;
+}
+
+/// @brief 该函数由网络层在有业务要发送时进行调用,
+//         实现向业务信道队列和网管信道队列内添加待发送业务的目标
+bool MacDaatr::MAC_NetworkLayerHasPacketToSend(msgFromControl *busin)
+{
+    /*
+        1.检查busin的接收节点和优先级
+        2.检查此时该节点的优先级队列是否已满
+        3.(若满, 则将其放于下一优先级队列的top)
+        4.(若未满, 则将其放于本优先级队列的last)
+        5.更新此时的优先级 & waiting_time
+    */
+    int i, new_loc, loc;
+    int flag = false; // 表征是否成功将busin插入业务队列
+    int next_hop_node;
+
+    if ((busin->packetLength == 73 && busin->msgType == 15 && busin->fragmentNum == 15))
+    {
+        // 如果是链路层自己的数据包, 那么不需要经过转发表
+        loc = getAvailableLocationOfQueue(this, busin->destAddr, busin->priority);
+    }
+    else
+    {
+        // 如果是网络层数据包, 那么需要查看路由表对应节点的队列是否已满
+        next_hop_node = searchNextHopAddr(this, busin->destAddr);
+
+        if (busin->msgType == 2)
+            next_hop_node = 0;
+
+        if (next_hop_node == 0) // 即转发节点为 0 的情况
+        {
+            if (busin->msgType != 2) // 一般数据包
+            {
+                cout << "此时数据包的接收节点 " << busin->destAddr << " 不存在转发节点, 丢弃业务" << endl;
+                return false;
+            }
+            else // type = 2 的探测包
+            {
+                loc = getAvailableLocationOfQueue(this, busin->destAddr, busin->priority);
+            }
+        }
+        else
+        {
+            loc = getAvailableLocationOfQueue(this, next_hop_node, busin->priority);
+            // cout << "节点 " << node->nodeId << " 收到目的地址为: " <<
+            // busin->destAddr << " 的数据包, 下一跳转发节点为 " << next_hop_node << endl;
+        }
+    }
+
+    if (loc == TRAFFIC_MAX_BUSINESS_NUMBER) // 这说明队列全满
+    {
+        printf("the sequence of node %d of priority %d is full!\n", busin->destAddr, busin->priority);
+
+        if ((busin->packetLength == 73 && busin->msgType == 15 && busin->fragmentNum == 15))
+        // 这是频谱感知结果数据包
+        {
+            // 在此处, 说明优先级0的队列已经全满, 只能丢弃最后一个业务,
+            // 腾出第一个位置来放置频谱感知结果 loc - 1 = 59, 将 1-59 的业务后移一位
+            Insert_MFC_to_Queue(this, busin, busin->priority, loc - 1, 0, 0);
+        }
+        else if (busin->msgType == 2)
+        {
+            for (i = busin->priority + 1; i < TRAFFIC_CHANNEL_PRIORITY; i++)
+            {
+                new_loc = getAvailableLocationOfQueue(this, busin->destAddr, i);
+                if (new_loc != TRAFFIC_MAX_BUSINESS_NUMBER)
+                {
+                    Insert_MFC_to_Queue(this, busin, i, new_loc, 0, 0); // 不查看路由表
+                    flag = true;
+                    break;
+                }
+                printf("the sequence of node %d of priority %d is full!\n", i, busin->priority);
+            }
+        }
+        else
+        {
+            // 需要将busin加到busin->priority + 1或更低优先级的队列中去的首位
+            // 依次检索之后每个优先级的业务队列
+            for (i = busin->priority + 1; i < TRAFFIC_CHANNEL_PRIORITY; i++)
+            {
+                new_loc = getAvailableLocationOfQueue(this, searchNextHopAddr(this, busin->destAddr), i);
+                if (new_loc != TRAFFIC_MAX_BUSINESS_NUMBER)
+                {
+                    Insert_MFC_to_Queue(this, busin, i, new_loc, 0, 1);
+                    flag = true;
+                    break;
+                }
+                printf("the sequence of node %d of priority %d is full!\n", i, busin->priority);
+            }
+        }
+    }
+    else
+    {
+        if (busin->packetLength == 73 && busin->msgType == 15 && busin->fragmentNum == 15)
+            // 这是频谱感知结果数据包
+            Insert_MFC_to_Queue(this, busin, busin->priority, loc, 0, 0);
+
+        else if (busin->msgType == 2)
+            Insert_MFC_to_Queue(this, busin, busin->priority, loc, 1, 0);
+
+        else
+            Insert_MFC_to_Queue(this, busin, busin->priority, loc, 1, 1);
+
+        flag = true;
+    }
+
+    return flag;
+}
+
 msgFromControl MacDaatr::getBusinessFromHighChannel()
 {
     lock_buss_channel.lock();
@@ -170,9 +422,8 @@ msgFromControl MacDaatr::getBusinessFromHighChannel()
     lock_buss_channel.unlock();
 }
 
-/***********************************************buffer缓冲区写函数************************************************/
 /**
- * 将输入结构体转换为缓冲区帧并插入
+ * @brief buffer缓冲区写函数，将输入结构体转换为缓冲区帧并插入
  *
  * @param data 数据
  * @param type 数据类型
@@ -182,6 +433,14 @@ msgFromControl MacDaatr::getBusinessFromHighChannel()
  * 该函数首先对输入数据进行设定帧格式转换
  * 具体的转换流程是，对数据添加帧头，第一位为数据类型，第二、三位为数据长度（采用大端），第四位开始为数据
  * 然后将转换后的数据插入缓冲区
+ *
+ * 0x0C表示其它节点飞行状态信息 12 |
+ * 0x0D表示本地链路状态信息 13 |
+ * 0x10表示网络数据包（业务+信令）16 |
+ * 0x13表示网管信道传输参数 unused |
+ * 0x14表示业务信道传输参数 unused |
+ * 0X17表示链路运行状态 ? |
+ * 0x18表示身份配置信息发送指示 ?
  */
 void MacDaatr::macToNetworkBufferHandle(void *data, uint8_t type, uint16_t len)
 {
@@ -191,11 +450,12 @@ void MacDaatr::macToNetworkBufferHandle(void *data, uint8_t type, uint16_t len)
     ret = (uint8_t *)malloc(len + 3);
     memset(ret, 0, sizeof(ret)); // 清零
     ret[0] = type;
-    // memcpy((ret+1),&len,2); // 小端序
+    // memcpy((ret + 1), &len, 2); // 小端序
     // 大端序
     ret[1] |= ((len >> 8) & 0xff);
     ret[2] |= (len & 0xff);
     memcpy((ret + 3), data, len);
+
     // 写进Mac->Net缓冲区
     lock_Mac_to_Net.lock();
     macToRouting_Buffer.ringBuffer_put(ret, len + 3);
@@ -213,10 +473,16 @@ void MacDaatr::macToNetworkBufferHandle(void *data, uint8_t type, uint16_t len)
  * 对于每种数据类型，函数会在switch语句中根据类型值进行分支，并在每个分支中提供一个处理逻辑的框架。
  *
  * 注意：当前函数实现中，各个分支内的处理逻辑尚未实现，需要根据具体需求进行补充。
+ *
+ * 0x01表示本地飞行状态信息 |
+ * 0x0A表示身份配置信息 |
+ * 0x0B表示链路构建要求 |
+ * 0x0E表示转发表信息 |
+ * 0x0F表示拓扑信息 |
+ * 0x10表示网络数据包（业务+信令 |
  */
 void MacDaatr::networkToMacBufferHandle(uint8_t *rBuffer_mac)
 {
-    // extern MacDaatr daatr_str;     // mac层协议类
     uint8_t type = rBuffer_mac[0]; // 数据类型
     uint16_t len = 0;              // 数据长度（单位：字节）
     len |= rBuffer_mac[1];
@@ -256,7 +522,7 @@ void MacDaatr::networkToMacBufferHandle(uint8_t *rBuffer_mac)
 
 void MacDaatr::macParameterInitialization(uint32_t idx)
 {
-    // extern MacDaatr daatr_str; // mac层协议类
+    cout << "===== Node " << idx << " macInitialization Start =====" << endl;
     string filePath = "../config/daatr_config.txt";
     // 打开文件
     ifstream file(filePath);
@@ -362,11 +628,31 @@ void MacDaatr::macParameterInitialization(uint32_t idx)
     currentSlotId = 0;
     currentStatus = DAATR_STATUS_IDLE;
     LoadSlottable_setup();
+    LoadSlottable_Execution();
+    LoadSlottable_Adjustment();
+
+    // 初始化子网内节点路由表
+    for (int i = 1; i <= subnet_node_num; i++)
+    {
+        Forwarding_Table[i - 1][0] = i; // 路由表全设置为自己节点
+        Forwarding_Table[i - 1][1] = i;
+    }
+    // 对业务信道队列进行初始化
+    for (int k = 0; k < SUBNET_NODE_NUMBER_MAX; k++)
+    {
+        for (int i = 0; i < TRAFFIC_CHANNEL_PRIORITY; i++)
+        {
+            for (int j = 0; j < TRAFFIC_MAX_BUSINESS_NUMBER; j++)
+            {
+                businessQueue[k].business[i][j].priority = -1;
+            }
+        }
+    }
 
     cout << "macInit " << nodeId << ": 配置网管信道信息" << endl;
     access_state = DAATR_NO_NEED_TO_ACCESS; // 默认不需要接入
     access_backoff_number = 0;              // 接入时隙
     low_slottable_should_read = 0;
 
-    cout << endl;
+    cout << "===== Node " << nodeId << " macInitialization Completed =====" << endl;
 }
