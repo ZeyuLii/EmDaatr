@@ -143,7 +143,7 @@ void lowFreqSendThread()
             if (daatr_str.low_freq_link_build_slot_table[slot_num].nodeId == daatr_str.nodeId &&
                 daatr_str.low_freq_link_build_slot_table[slot_num].state == DAATR_STATUS_FLIGHTSTATUS_SEND)
             { // 飞行状态信息广播时隙
-                macDaatrSocketLowFreq_Send((uint8_t *)(&daatr_str.local_node_position_info), sizeof(FlightStatus));
+                daatr_str.macDaatrSocketLowFreq_Send((uint8_t *)(&daatr_str.local_node_position_info), sizeof(FlightStatus));
             }
             else
             { // 接收，向物理层发送信道参数
@@ -202,7 +202,7 @@ void lowFreqSendThread()
                             uint8_t *temp_buf = new uint8_t[len]; // 此处只是为了防止转换类中的bit指针被释放，所以保险起见复制一份，也可以尝试直接使用
                             memcpy(temp_buf, frame_ptr, len);
 
-                            macDaatrSocketLowFreq_Send(temp_buf, len); // 发送
+                            daatr_str.macDaatrSocketLowFreq_Send(temp_buf, len); // 发送
                             delete temp_buf;
                             delete mac_header2_ptr;
                             daatr_str.access_state = DAATR_HAS_SENT_ACCESS_REQUEST; // 断开节点已发送接入请求
@@ -289,7 +289,7 @@ void lowFreqSendThread()
                         uint32_t len = mac_converter1.get_length();
                         uint8_t *temp_buf = new uint8_t[len]; // 此处只是为了防止转换类中的bit指针被释放，所以保险起见复制一份，也可以尝试直接使用
                         memcpy(temp_buf, frame_ptr, len);
-                        macDaatrSocketLowFreq_Send(temp_buf, len); // 发送
+                        daatr_str.macDaatrSocketLowFreq_Send(temp_buf, len); // 发送
                         delete temp_buf;
                         delete mac_header2_ptr;
                         daatr_str.access_state = DAATR_WAITING_TO_SEND_HOPPING_PARTTERN;
@@ -320,7 +320,7 @@ void lowFreqSendThread()
                         uint32_t len = mac_converter1.get_length();
                         uint8_t *temp_buf = new uint8_t[len]; // 此处只是为了防止转换类中的bit指针被释放，所以保险起见复制一份，也可以尝试直接使用
                         memcpy(temp_buf, frame_ptr, len);
-                        macDaatrSocketLowFreq_Send(temp_buf, len); // 发送
+                        daatr_str.macDaatrSocketLowFreq_Send(temp_buf, len); // 发送
                         delete temp_buf;
                         delete mac_header2_ptr;
                         daatr_str.waiting_to_access_node = 0;
@@ -367,7 +367,7 @@ void lowFreqSendThread()
                     uint32_t len = mac_converter1.get_length();
                     uint8_t *temp_buf = new uint8_t[len]; // 此处只是为了防止转换类中的bit指针被释放，所以保险起见复制一份，也可以尝试直接使用
                     memcpy(temp_buf, frame_ptr, len);
-                    macDaatrSocketLowFreq_Send(temp_buf, len); // 发送
+                    daatr_str.macDaatrSocketLowFreq_Send(temp_buf, len); // 发送
                     delete temp_buf;
                     delete mac_header2_ptr;
                     break;
@@ -441,7 +441,7 @@ void lowFreqSendThread()
                     uint32_t len = mac_converter1.get_length();
                     uint8_t *temp_buf = new uint8_t[len]; // 此处只是为了防止转换类中的bit指针被释放，所以保险起见复制一份
                     memcpy(temp_buf, frame_ptr, len);
-                    macDaatrSocketLowFreq_Send(temp_buf, len); // 发送
+                    daatr_str.macDaatrSocketLowFreq_Send(temp_buf, len); // 发送
                     delete temp_buf;
                     delete mac_header2_ptr;
                     break;
@@ -481,7 +481,7 @@ void lowFreqSendThread()
                         uint32_t len = mac_converter1.get_length();
                         uint8_t *temp_buf = new uint8_t[len]; // 此处只是为了防止转换类中的bit指针被释放，所以保险起见复制一份
                         memcpy(temp_buf, frame_ptr, len);
-                        macDaatrSocketLowFreq_Send(temp_buf, len); // 发送
+                        daatr_str.macDaatrSocketLowFreq_Send(temp_buf, len); // 发送
                         delete temp_buf;
                         delete mac_header2_ptr;
                         break;

@@ -314,6 +314,7 @@ void MacDaatr::highFreqSendThread()
         }
     }
 }
+
 /// @brief 处理高频信道接收到的数据包 (格式均为 PDU1 + 后续内容)
 /// @param bit_seq 指向接收到的位序列的指针
 /// @param len 位序列的长度
@@ -374,7 +375,7 @@ void MacDaatr::highFreqChannelHandle(uint8_t *bit_seq, uint64_t len)
                     }
                     spectrum_sensing_sum[sendnode - 1][TOTAL_FREQ_POINT] = 1;
                 }
-                else
+                else // 上层数据包
                 {
                     macToNetworkBufferHandle(MFC_vector_temp->data(), 0x10, MFC_vector_temp->size());
                     mfc_count_upper++;
@@ -434,7 +435,6 @@ void MacDaatr::highFreqChannelHandle(uint8_t *bit_seq, uint64_t len)
 
             MacDaatr_struct_converter mac_converter_BLRequest(6);
             mac_converter_BLRequest - mac_converter;
-            // mac_converter_BLRequest.set_length(2);
             mac_converter_BLRequest.daatr_0_1_to_struct();
 
             // uint8_t *frame = mac_converter_BLRequest.get_sequence();

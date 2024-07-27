@@ -52,7 +52,6 @@ int main()
     {
         daatr_str.macParameterInitialization(idx); // mac层参数初始化
         thread highRecvThread(&MacDaatr::macDaatrSocketHighFreq_Recv, &daatr_str, false);
-        highRecvThread.detach();
 
         // if (idx == 1)
         // {
@@ -62,6 +61,8 @@ int main()
             usleep(1e3);
         }
         // }
+
+        highRecvThread.join();
     }
 
     return 0;

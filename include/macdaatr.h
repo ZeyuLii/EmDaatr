@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <map>
 #include <set>
+#include <arpa/inet.h>
 #include "common_struct.h" // define namespace
 
 // 嵌入式Daatr 相关配置信息
@@ -338,6 +339,9 @@ public:
     // 管控线程
     void macDaatrControlThread();
 
+    // Socket 相关
+    int macDaatrCreateUDPSocket(string ip, int port, bool if_not_block);
+    void initializeNodeIP(sockaddr_in &receiver, uint16_t dest_node, int port);
     // 业务信道相关函数
     msgFromControl getBusinessFromHighChannel(); // 从业务信道队列取业务
     void LoadSlottable_setup();                  // 读取建链阶段时隙表
@@ -352,8 +356,11 @@ public:
     bool MAC_NetworkLayerHasPacketToSend(msgFromControl *busin);
 
     // 网管信道相关函数
+    // void lowFreqSendThread();
     bool MacDaatNetworkHasLowFreqChannelPacketToSend(msgFromControl *busin);
     bool getLowChannelBusinessFromQueue(msgFromControl *busin);
+    void macDaatrSocketLowFreq_Send(uint8_t *data, uint32_t len);
+    void macDaatrSocketLowFreq_Recv(bool IF_NOT_BLOCKED);
 
     // 层间缓冲区操作函数
     void networkToMacBufferHandle(uint8_t *rBuffer_mac);

@@ -1,4 +1,3 @@
-#include <arpa/inet.h>
 #include <fcntl.h>
 #include <string>
 #include <unistd.h>
@@ -23,12 +22,12 @@ using namespace std;
  *   @param dest_node 节点ID，用于索引IP地址
  *   @param port 端口号，用于设置服务端口
  **/
-void initializeNodeIP(sockaddr_in &receiver, uint16_t dest_node, int port)
+void MacDaatr::initializeNodeIP(sockaddr_in &receiver, uint16_t dest_node, int port)
 {
     /* 引入mac层数据结构类，用于获取节点IP地址 */
-    extern MacDaatr daatr_str; // mac层数据结构信息保存类
+    // extern MacDaatr daatr_str; // mac层数据结构信息保存类
     // struct sockaddr_in addr_serv; // 服务端地址结构体
-    string ip = daatr_str.in_subnet_id_to_ip[dest_node]; // 根据节点ID获取对应的IP地址
+    string ip = in_subnet_id_to_ip[dest_node]; // 根据节点ID获取对应的IP地址
 
     /* 初始化服务端地址结构体 */
     memset(&receiver, 0, sizeof(sockaddr_in)); // 清零地址结构体
@@ -46,7 +45,7 @@ void initializeNodeIP(sockaddr_in &receiver, uint16_t dest_node, int port)
  *
  *   @return 成功创建并绑定套接字后返回套接字文件描述符，否则退出程序
  **/
-int macDaatrCreateUDPSocket(string ip, int port, bool if_not_block)
+int MacDaatr::macDaatrCreateUDPSocket(string ip, int port, bool if_not_block)
 {
     /* 创建一个IPv4地址族的UDP套接字 */
     int sock_fd = socket(AF_INET, SOCK_DGRAM, 0); // 建立套接字
@@ -69,7 +68,7 @@ int macDaatrCreateUDPSocket(string ip, int port, bool if_not_block)
     }
     /* 初始化服务器地址结构体 */
     /* 将套接字和IP、端口绑定 */
-    struct sockaddr_in addr_serv;
+    sockaddr_in addr_serv;
     socklen_t len;
     memset(&addr_serv, 0, sizeof(struct sockaddr_in)); // 每个字节都用0填充
     addr_serv.sin_family = AF_INET;                    // 使用IPV4地址
@@ -164,14 +163,14 @@ void MacDaatr::macDaatrSocketHighFreq_Recv(bool IF_NOT_BLOCKED = false)
  *   @brief 创建一个用于MAC DAATR协议低频信道的UDP socket线程 ，此线程抛出去以后开启默认开启接收功能
  *   @param IF_NOT_BLOCKED: 指示套接字是否应该被设置为非阻塞模式
  **/
-void macDaatrSocketLowFreq_Recv(bool IF_NOT_BLOCKED = false)
+void MacDaatr::macDaatrSocketLowFreq_Recv(bool IF_NOT_BLOCKED = false)
 {
     extern bool end_simulation;
-    extern MacDaatr daatr_str; // mac层协议类
+    // extern MacDaatr daatr_str; // mac层协议类
     // extern condition_variable lowthreadcondition_variable;
-    string IP = daatr_str.in_subnet_id_to_ip[daatr_str.nodeId];
+    string IP = in_subnet_id_to_ip[nodeId];
     int sock_fd = macDaatrCreateUDPSocket(IP, LOW_FREQ_SOCKET_PORT, IF_NOT_BLOCKED);
-    daatr_str.mac_daatr_low_freq_socket_fid = sock_fd;
+    mac_daatr_low_freq_socket_fid = sock_fd;
     int recv_num;
     int send_num;
     uint8_t send_buf[60000] = "i am server!";
@@ -193,9 +192,9 @@ void macDaatrSocketLowFreq_Recv(bool IF_NOT_BLOCKED = false)
             // if (!strcmp("仿真结束", recv_buf))
             // {
             //     end_simulation = true;
-            //     daatr_str.central_control_thread_var.notify_one();
+            //     central_control_thread_var.notify_one();
             //     // lowthreadcondition_variable.notify_one();
-            //     printf("NODE %2d is over\n", daatr_str.nodeId);
+            //     printf("NODE %2d is over\n", nodeId);
             //     break;
             // }
         }
@@ -279,20 +278,20 @@ void MacDaatr::macDaatrSocketHighFreq_Send(uint8_t *data, uint32_t len, uint16_t
  * @param data 发送的数据指针
  * @param len 发送的数据长度
  */
-void macDaatrSocketLowFreq_Send(uint8_t *data, uint32_t len)
+void MacDaatr::macDaatrSocketLowFreq_Send(uint8_t *data, uint32_t len)
 {
     sockaddr_in recever; // 接收端地址
     // 引入外部定义的MacDaatr类实例，用于获取socket文件描述符
-    extern MacDaatr daatr_str;
+    // extern MacDaatr daatr_str;
     // 获取mac_daatr_low_freq_socket_fid的值，用于后续的发送操作
-    int sock_fd = daatr_str.mac_daatr_low_freq_socket_fid;
+    int sock_fd = mac_daatr_low_freq_socket_fid;
     int send_num = 0;
     // 检查socket文件描述符是否大于等于0，即检查socket是否已成功创建
     if (sock_fd >= 0)
     {
-        for (const auto &sendid : daatr_str.in_subnet_id_to_ip)
+        for (const auto &sendid : in_subnet_id_to_ip)
         {
-            if (sendid.first == daatr_str.nodeId)
+            if (sendid.first == nodeId)
                 continue;                                                  // 跳过本节点
             initializeNodeIP(recever, sendid.first, LOW_FREQ_SOCKET_PORT); // 初始化接收端地址
             // 尝试发送数据到指定接收者，sendto函数用于向特定地址发送数据
