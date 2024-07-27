@@ -119,11 +119,11 @@ void lowFreqSendThread()
     extern bool end_simulation;
     MacState state_now = daatr_str.state_now;
 
-    // unique_lock<mutex> lowthreadlock(lowthreadmutex);
+    unique_lock<mutex> lowthreadlock(daatr_str.lowthreadmutex);
 
     while (1)
     {
-        // lowthreadcondition_variable.wait(lowthreadlock);
+        daatr_str.lowthreadcondition_variable.wait(lowthreadlock);
 
         if (end_simulation)
         {

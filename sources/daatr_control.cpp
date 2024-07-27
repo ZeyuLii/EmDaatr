@@ -41,17 +41,16 @@ void MacDaatr::macDaatrControlThread()
 
     if (clock_trigger % (int)HIGH_FREQ_CHANNEL_TRIGGER_LEN == 0) // 25
     {
-
         // 业务信道线程触发(节点间的收发线程)
-        // highThread_condition_variable.notify_one(); // 唤醒阻塞在发送线程的wait
-        thread highSendThread(&MacDaatr::highFreqSendThread, this);
-        highSendThread.join();
+        highThread_condition_variable.notify_one(); // 唤醒阻塞在发送线程 highFreqSendThread() 的 wait()
+        // thread highSendThread(&MacDaatr::highFreqSendThread, this); // 直接创建一个新的进程
 
         if (clock_trigger % (int)LOW_FREQ_CHANNEL_TRIGGER_LEN == 0) // 200
         {
             // 网管信道线程触发(网管信道 节点间 收发线程)
             clock_trigger = 0; // 每次网管信道发送时为一个周期，清空计数}
         }
+        // highSendThread.join();
     }
     else
     {

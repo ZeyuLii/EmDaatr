@@ -286,8 +286,10 @@ public:
     uint8_t clock_trigger;                         // 时帧触发数目
 
     /*低频信道线程相关*/
-    int mac_daatr_low_freq_socket_fid;                                                 // daatr协议低频信道socket句柄
-    mutex lock_mana_channel;                                                           // 网管信道待发送队列访问锁
+    int mac_daatr_low_freq_socket_fid; // daatr协议低频信道socket句柄
+    mutex lock_mana_channel;           // 网管信道待发送队列访问锁
+    mutex lowthreadmutex;
+    condition_variable lowthreadcondition_variable;
     uint8_t low_slottable_should_read;                                                 // 低频信道时隙位置(时隙表最大时隙数)
     low_freq_slot low_freq_link_build_slot_table[MANAGEMENT_SLOT_NUMBER_LINK_BUILD];   // 建链阶段网管信道时隙表
     low_freq_slot low_freq_other_stage_slot_table[MANAGEMENT_SLOT_NUMBER_OTHER_STAGE]; // 其他阶段网管信道时隙表
@@ -342,6 +344,7 @@ public:
     // Socket 相关
     int macDaatrCreateUDPSocket(string ip, int port, bool if_not_block);
     void initializeNodeIP(sockaddr_in &receiver, uint16_t dest_node, int port);
+
     // 业务信道相关函数
     msgFromControl getBusinessFromHighChannel(); // 从业务信道队列取业务
     void LoadSlottable_setup();                  // 读取建链阶段时隙表

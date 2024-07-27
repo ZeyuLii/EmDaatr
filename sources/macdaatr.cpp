@@ -444,7 +444,6 @@ msgFromControl MacDaatr::getBusinessFromHighChannel()
  */
 void MacDaatr::macToNetworkBufferHandle(void *data, uint8_t type, uint16_t len)
 {
-    // extern MacDaatr daatr_str; // mac层协议类
     extern ringBuffer macToRouting_Buffer;
     uint8_t *ret = NULL; // 返回值
     ret = (uint8_t *)malloc(len + 3);

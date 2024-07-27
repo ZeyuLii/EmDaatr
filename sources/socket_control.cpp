@@ -110,8 +110,14 @@ void MacDaatr::macDaatrSocketHighFreq_Recv(bool IF_NOT_BLOCKED = false)
     { // 阻塞模式
         while (1)
         {
-            // printf("high server wait:\n");
-            recv_num = recvfrom(sock_fd, recv_buf, sizeof(recv_buf), 0, (sockaddr *)&addr_client, (socklen_t *)&len);
+            if (end_simulation == true)
+            {
+                cout << "Node " << nodeId << " HighRecvThread is Over" << endl;
+                break;
+            }
+
+            recv_num = recvfrom(sock_fd, recv_buf, sizeof(recv_buf), 0,
+                                (sockaddr *)&addr_client, (socklen_t *)&len);
             recv_buf[recv_num] = '\0';
 
             // cout << nodeId << " Recv -- ";
@@ -122,9 +128,6 @@ void MacDaatr::macDaatrSocketHighFreq_Recv(bool IF_NOT_BLOCKED = false)
             // cout << dec << endl;
 
             highFreqChannelHandle((uint8_t *)recv_buf, recv_num);
-
-            if (end_simulation)
-                break;
         }
     }
     else
@@ -174,7 +177,7 @@ void MacDaatr::macDaatrSocketLowFreq_Recv(bool IF_NOT_BLOCKED = false)
     int recv_num;
     int send_num;
     uint8_t send_buf[60000] = "i am server!";
-    uint8_t recv_buf[60000];
+    char recv_buf[60000];
     struct sockaddr_in addr_client;
     socklen_t len = sizeof(sockaddr_in);
     if (!IF_NOT_BLOCKED)
@@ -182,21 +185,22 @@ void MacDaatr::macDaatrSocketLowFreq_Recv(bool IF_NOT_BLOCKED = false)
         while (1)
         {
             printf("low server wait:\n");
-            recv_num = recvfrom(sock_fd, recv_buf, sizeof(recv_buf), 0, (struct sockaddr *)&addr_client, (socklen_t *)&len);
+            recv_num = recvfrom(sock_fd, recv_buf, sizeof(recv_buf), 0,
+                                (struct sockaddr *)&addr_client, (socklen_t *)&len);
             recv_buf[recv_num] = '\0';
 
             // lowFreqChannelRecvHandle((uint8_t *)recv_buf, recv_num);
 
             // if (end_simulation)
             //     break;
-            // if (!strcmp("仿真结束", recv_buf))
-            // {
-            //     end_simulation = true;
-            //     central_control_thread_var.notify_one();
-            //     // lowthreadcondition_variable.notify_one();
-            //     printf("NODE %2d is over\n", nodeId);
-            //     break;
-            // }
+            if (!strcmp("End Simulation", recv_buf))
+            {
+                end_simulation = true;
+                central_control_thread_var.notify_one();
+                // lowthreadcondition_variable.notify_one();
+                printf("NODE %2d is over\n", nodeId);
+                break;
+            }
         }
     }
     else
