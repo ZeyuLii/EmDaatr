@@ -56,5 +56,4 @@ void UpdatePosition(MacPacket_Daatr *macpacket_daatr, MacDaatr *macdata_daatr)
                               macpacket_daatr->node_position.positionY,
                               macpacket_daatr->node_position.positionZ);
     // cout << "Node " << node_temp << " distance: " << macdata_daatr->businessQueue[node_temp - 1].distance << " km " << endl;
-    // system("pause");
 }

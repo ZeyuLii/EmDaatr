@@ -756,10 +756,7 @@ bool MacDaatr_struct_converter::daatr_MFCvector_to_0_1(vector<uint8_t> *MFC_vect
     }
 
     if (packetlength != (*MFC_vector_temp).size())
-    {
-        cout << "MFC sequence doesn't match given length";
-        system("pause");
-    }
+        cout << "MFC sequence doesn't match given length" << (*MFC_vector_temp).size();
 
     length_ = packetlength;
     uint8_t *packet = new uint8_t[length_];
@@ -2424,13 +2421,7 @@ bool MacDaatr_struct_converter::daatr_0_1_to_struct()
     return flag;
 }
 
-/*********************************************************网络层数据包转换函数*****************************************************************************/
-
-// 函数名: AnalysisLayer2MsgFromControl
-// 函数: 解析层2发来的业务数据包
-// 功能: 将数组内对应的内容存入msgFromControl结构体
-// 输入: uint8_t数组
-msgFromControl *AnalysisLayer2MsgFromControl(vector<uint8_t> *dataPacket)
+msgFromControl *convert_01_MFCPtr(vector<uint8_t> *dataPacket)
 {
     msgFromControl *temp_msgFromControl = new msgFromControl();
     vector<uint8_t> *cur_data = new vector<uint8_t>;
@@ -2457,11 +2448,7 @@ msgFromControl *AnalysisLayer2MsgFromControl(vector<uint8_t> *dataPacket)
     return temp_msgFromControl;
 }
 
-// 函数名: CRC16
-// 函数: CRC-16/MODBUS
-// 功能: 计算CRC校验码
-// 输入: uint8_t数组
-uint16_t CRC16(vector<uint8_t> *buffer)
+static uint16_t CRC16_L2(vector<uint8_t> *buffer)
 {
     uint16_t crc = 0xFFFF; // 初始化计算值
     for (int i = 0; i < buffer->size(); i++)
@@ -2475,19 +2462,13 @@ uint16_t CRC16(vector<uint8_t> *buffer)
                 crc ^= 0xA001;
             }
             else
-            {
                 crc >>= 1;
-            }
         }
     }
     return crc;
 }
 
-// 函数名: PackMsgFromControl
-// 函数: 封装业务数据包
-// 功能: 封装业务数据包以便进行CRC校验
-// 输入: 业务数据包指针
-vector<uint8_t> *PackMsgFromControl(msgFromControl *packet)
+vector<uint8_t> *convert_PtrMFC_01(msgFromControl *packet)
 {
     vector<uint8_t> *buffer = new vector<uint8_t>;
 
@@ -2514,32 +2495,18 @@ vector<uint8_t> *PackMsgFromControl(msgFromControl *packet)
 
     // 封装第八个字节
     buffer->push_back(((packet->fragmentNum << 4) | packet->fragmentSeq) & 0xFF);
-
     vector<uint8_t> *curData = new vector<uint8_t>;
     curData = (vector<uint8_t> *)(packet->data);
-
-    // 封装报文内容
-    for (int i = 0; i < curData->size(); i++)
-    {
-        buffer->push_back((*curData)[i]);
-    }
-
+    // 封装报文内容 0728改
+    // for (int i = 0; i < curData->size(); i++)
+    // {
+    //     buffer->push_back((*curData)[i]);
+    // }
     // 根据前面的字节计算CRC校验码
-    packet->CRC = CRC16(buffer);
+    packet->CRC = CRC16_L2(buffer);
 
     // 封装CRC
     buffer->push_back((packet->CRC >> 8) & 0xFF);
     buffer->push_back(packet->CRC & 0xFF);
-
     return buffer;
-}
-
-uint8_t *deepcopy(uint8_t *frame_ptr, int length)
-{
-    uint8_t *frame_ptr_new = new uint8_t[length];
-    for (int i = 0; i < length; i++)
-    {
-        frame_ptr_new[i] = frame_ptr[i];
-    }
-    return frame_ptr_new;
 }

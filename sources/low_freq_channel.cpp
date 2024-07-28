@@ -469,7 +469,7 @@ void lowFreqSendThread()
                         mac_header2_ptr->backup = 0;                       // 备用字段为0,网络层业务
                         mac_header2_ptr->fragment_tail_identification = 1; // 分片尾标识
                         vector<uint8_t> *MFC_Trans_temp;
-                        MFC_Trans_temp = PackMsgFromControl(&buss_to_be_sent); // 将MFC转换为01序列(使用vector盛放)
+                        MFC_Trans_temp = convert_PtrMFC_01(&buss_to_be_sent); // 将MFC转换为01序列(使用vector盛放)
                         MacDaatr_struct_converter mac_converter1(2);
                         mac_converter1.set_struct((uint8_t *)mac_header2_ptr, 2);
                         mac_converter1.daatr_struct_to_0_1();

@@ -368,6 +368,8 @@ public:
     // 层间缓冲区操作函数
     void networkToMacBufferHandle(uint8_t *rBuffer_mac);
     void macToNetworkBufferHandle(void *data, uint8_t type, uint16_t len);
+    void processPktFromNet(msgFromControl *MFC_temp);
+    void processNodeNotificationFromNet(NodeNotification *temp);
 };
 
 uint64_t getTime();

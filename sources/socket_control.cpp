@@ -252,13 +252,13 @@ void MacDaatr::macDaatrSocketHighFreq_Send(uint8_t *data, uint32_t len, uint16_t
     {
         // 尝试发送数据到指定接收者，sendto函数用于向特定地址发送数据
         send_num = sendto(sock_fd, data, len, 0, (struct sockaddr *)&recever, sizeof(recever));
-        // cout << nodeId << " Send -- ";
 
-        // for (int i; i < send_num; i++)
-        // {
-        //     cout << hex << (int)data[i] << " ";
-        // }
-        // cout << dec << endl;
+        cout << nodeId << " Send -- ";
+        for (int i; i < send_num; i++)
+        {
+            cout << hex << (int)data[i] << " ";
+        }
+        cout << dec << endl;
 
         // 如果发送字节数小于0，说明发送失败，输出错误信息
         if (send_num < 0)

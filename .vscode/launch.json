@@ -25,7 +25,15 @@
                     "description": "将反汇编风格设置为 Intel",
                     "text": "-gdb-set disassembly-flavor intel",
                     "ignoreFailures": true
-                }
+                },
+                {
+                    "text": "-gdb-set follow-fork-mode child"
+                },
+                {
+                    "description": "只调试子进程",
+                    "text": "-gdb-set detach-on-fork on",
+                    "ignoreFailures": true
+                },
             ],
             "preLaunchTask": "C/C++: gcc 生成活动文件",
             "miDebuggerPath": "/usr/bin/gdb"

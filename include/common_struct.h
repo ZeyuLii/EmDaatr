@@ -139,7 +139,8 @@ struct LinkAssignment
 	unsigned short frequency[BUSSINE_TYPE_NUM];		// 业务频率，物理量范围为[2.5ms/次-5s/次],取值范围为[1-2000],业务频率=取值*2.5ms/次
 
 	// 一个默认初始化函数，全为0
-	LinkAssignment() {
+	LinkAssignment()
+	{
 		memset(this, 0, sizeof(LinkAssignment));
 	}
 };
@@ -167,7 +168,7 @@ struct FlightStatus
 struct msgFromControl
 {
 	unsigned int priority : 3;	  // 优先级，3bit
-	unsigned int backup : 1;	  // 备用，1bit
+	unsigned int backup : 1;	  // 0:上层|1:本层，1bit
 	unsigned int msgType : 4;	  // 消息类型，4bit
 	unsigned short packetLength;  // 整个数据包长度，16bit
 	unsigned int srcAddr : 10;	  // 始发地址，10bit
@@ -211,7 +212,8 @@ struct NodeNotification
 	unsigned int reserveintergroupgatewayNodeId; // 备用网关
 	unsigned int satellitebasedgatewayNodeId;
 	unsigned int reservesatellitebasedgatewayNodeId;
-	NodeNotification() {
+	NodeNotification()
+	{
 		nodeResponsibility = 0;
 		mastercontrolNodeId = 0;
 		reservemastercontrolNodeId = 0;
@@ -225,7 +227,8 @@ struct NodeNotification
 		reservesatellitebasedgatewayNodeId = 0;
 	}
 
-	NodeNotification(unsigned int index, unsigned int id, unsigned int responsibility) {
+	NodeNotification(unsigned int index, unsigned int id, unsigned int responsibility)
+	{
 		nodeIIndex = index;
 		groupID = id;
 		nodeResponsibility = responsibility;
@@ -282,7 +285,8 @@ struct NodeBroadcast
 	unsigned short reserveintergroupgatewayNodeId;	   // 所属群备用网关
 	unsigned short satellitebasedgatewayNodeId;		   // 所属群天基网关
 	unsigned short reservesatellitebasedgatewayNodeId; // 所属群备用天基网关
-	NodeBroadcast() {
+	NodeBroadcast()
+	{
 		groupID = 0;
 		intragroupcontrolNodeId = 0;
 		reserveintracontrolNodeId = 0;
@@ -308,8 +312,10 @@ struct ringBuffer
 	mutex lock;			 // 写时互斥锁，防止同时对缓冲区进行写操作
 
 	// 写缓冲区数据成员函数
-	void ringBuffer_put(const uint8_t wBuffer [], uint32_t write_len) { // uint32_t是根据MAX_DATA_LEN给出
-		if (recvFrmNum < MAX_BUFFER_NUM) {
+	void ringBuffer_put(const uint8_t wBuffer[], uint32_t write_len)
+	{ // uint32_t是根据MAX_DATA_LEN给出
+		if (recvFrmNum < MAX_BUFFER_NUM)
+		{
 			lock.lock();
 			// 将要写入的缓冲区置0
 			memset(recvFrmData[recvFrmHead], 0, MAX_DATA_LEN);
@@ -323,8 +329,10 @@ struct ringBuffer
 	}
 
 	// 读缓冲区数据成员函数
-	void ringBuffer_get(uint8_t rBuffer []) {
-		if (recvFrmNum > 0 && (sizeof(recvFrmData[recvFrmTail]) > 0)) {
+	void ringBuffer_get(uint8_t rBuffer[])
+	{
+		if (recvFrmNum > 0 && (sizeof(recvFrmData[recvFrmTail]) > 0))
+		{
 			// 读取缓冲区数据
 			memcpy(rBuffer, recvFrmData[recvFrmTail], sizeof(recvFrmData[recvFrmTail]));
 

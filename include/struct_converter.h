@@ -79,9 +79,7 @@ public:
     MacDaatr_struct_converter &operator=(const MacDaatr_struct_converter &packet1);
 };
 
-msgFromControl *AnalysisLayer2MsgFromControl(vector<uint8_t> *dataPacket);
-uint16_t CRC16(vector<uint8_t> *buffer);
-vector<uint8_t> *PackMsgFromControl(msgFromControl *packet);
-uint8_t *deepcopy(uint8_t *frame_ptr, int length);
+vector<uint8_t> *convert_PtrMFC_01(msgFromControl *packet);
+msgFromControl *convert_01_MFCPtr(vector<uint8_t> *dataPacket);
 
 #endif

@@ -4,10 +4,13 @@
 #include <string>
 
 #include "macdaatr.h"
+#include "struct_converter.h"
 #include "highFreqToolFunc.h"
 #include "main.h"
 
 using namespace std;
+
+// #define DEBUG_SETUP 1
 
 /*****************************此文件主要包含对本层协议结构体控制相关函数******************************/
 /**
@@ -321,6 +324,7 @@ bool MacDaatr::MAC_NetworkLayerHasPacketToSend(msgFromControl *busin)
     int flag = false; // 表征是否成功将busin插入业务队列
     int next_hop_node;
 
+    lock_buss_channel.lock();
     if ((busin->packetLength == 73 && busin->msgType == 15 && busin->fragmentNum == 15))
     {
         // 如果是链路层自己的数据包, 那么不需要经过转发表
@@ -349,8 +353,8 @@ bool MacDaatr::MAC_NetworkLayerHasPacketToSend(msgFromControl *busin)
         else
         {
             loc = getAvailableLocationOfQueue(this, next_hop_node, busin->priority);
-            // cout << "节点 " << node->nodeId << " 收到目的地址为: " <<
-            // busin->destAddr << " 的数据包, 下一跳转发节点为 " << next_hop_node << endl;
+            cout << "节点 " << nodeId << " 收到目的地址为: "
+                 << busin->destAddr << " 的数据包, 下一跳转发节点为 " << next_hop_node << endl;
         }
     }
 
@@ -410,16 +414,105 @@ bool MacDaatr::MAC_NetworkLayerHasPacketToSend(msgFromControl *busin)
 
         flag = true;
     }
+    cout << "插入成功" << endl;
+    lock_buss_channel.unlock();
 
     return flag;
 }
 
-msgFromControl MacDaatr::getBusinessFromHighChannel()
+/// @brief 对shomfcTemp进行处理
+void MacDaatr::processPktFromNet(msgFromControl *MFC_temp)
 {
-    lock_buss_channel.lock();
-    // 获取业务
+    if (MFC_temp->msgType == 1)
+        MacDaatNetworkHasLowFreqChannelPacketToSend(MFC_temp);
+    else
+    {
+        uint8_t temp_destAddr = MFC_temp->destAddr;
+        uint8_t temp_sourceAddr = MFC_temp->srcAddr;
 
-    lock_buss_channel.unlock();
+        if (MFC_temp->backup == 0)
+        {
+            if (MFC_temp->msgType == 3 && Forwarding_Table[MFC_temp->destAddr - 1][1] == 0)
+                cout << nodeId << "->" << MFC_temp->destAddr
+                     << " 无高速链路, 丢弃数据包 (msgType = 3)" << endl;
+
+            MAC_NetworkLayerHasPacketToSend(MFC_temp);
+            // cout << "MAC 将数据包放入队列. " << endl;
+        }
+        else
+            cout << "收到发给MAC的控制信息! " << endl;
+    }
+}
+
+void MacDaatr::processNodeNotificationFromNet(NodeNotification *temp)
+{
+    if (state_now == Mac_Execution)
+    {
+        switch (temp->nodeResponsibility)
+        {
+        case NODENORMAL:
+        {
+            node_type = Node_Ordinary;
+            break;
+        }
+        case INTRAGROUPCONTROL:
+        {
+            node_type = Node_Management;
+            break;
+        }
+        case INTERGROUPGATEWAY:
+        {
+            node_type = Node_Gateway;
+            break;
+        }
+        case ISOLATION:
+        { // 代表此节点脱网
+            state_now = Mac_Access;
+            access_state = DAATR_NEED_ACCESS;
+
+            node_type = Node_Ordinary; // 普通节点
+        }
+        }
+
+        if (mana_node != temp->intragroupcontrolNodeId)
+        { // 如果网管节点发生变化,
+            // 则需要修改网管信道时隙表
+            int mana_node_pre = mana_node;
+            int mana_node_now = temp->intragroupcontrolNodeId;
+            if (nodeId == mana_node_pre)
+            {
+                // TODO 更改检查进入频域调整阶段的定时器
+                // MESSAGE_CancelSelfMsg(node, macdata_daatr->ptr_to_period_judge_if_enter_adjustment);
+            }
+            else if (nodeId == mana_node_now)
+            {
+                // TODO 更改检查进入频域调整阶段的定时器
+                // Message *send_msg = MESSAGE_Alloc(node, MAC_LAYER, MAC_PROTOCOL_DAATR, MAC_DAATR_Mana_Judge_Enter_Freq_Adjustment_Stage);
+                // MESSAGE_Send(node, send_msg, SPEC_SENSING_PERIOD * MILLI_SECOND);
+                // macdata_daatr->ptr_to_period_judge_if_enter_adjustment = send_msg;
+            }
+
+            low_freq_other_stage_slot_table[0].nodeId = mana_node_now;
+            low_freq_other_stage_slot_table[26].nodeId = mana_node_now; // 若网管信道时隙表更改，此处更改(25)!!!!!!!!!
+            low_freq_other_stage_slot_table[9].nodeId = mana_node_now;
+            low_freq_other_stage_slot_table[21].nodeId = mana_node_now;
+            low_freq_other_stage_slot_table[34].nodeId = mana_node_now;
+            low_freq_other_stage_slot_table[46].nodeId = mana_node_now;
+        }
+
+        mana_node = temp->intragroupcontrolNodeId;
+        gateway_node = temp->intergroupgatewayNodeId;
+        standby_gateway_node = temp->reserveintergroupgatewayNodeId;
+        cout << "Node " << nodeId << " 新身份是 " << (int)temp->nodeResponsibility << endl;
+    }
+    else if (state_now == Mac_Initialization)
+    {
+        cout << "当前子网处于建链阶段, 不接受节点身份配置信息" << endl;
+    }
+    else
+    {
+        cout << "当前子网处于调整阶段, 不接受节点身份配置信息" << endl;
+    }
 }
 
 /**
@@ -497,8 +590,9 @@ void MacDaatr::networkToMacBufferHandle(uint8_t *rBuffer_mac)
         break;
     }
     case 0x0a:
-    { // 身份配置信息
-
+    { // 身份配置信息 MSG_MAC_POOL_ReceiveResponsibilityConfiguration
+        NodeNotification *temp = (NodeNotification *)data;
+        processNodeNotificationFromNet(temp);
         break;
     }
     case 0x0b:
@@ -513,7 +607,12 @@ void MacDaatr::networkToMacBufferHandle(uint8_t *rBuffer_mac)
     }
     case 0x10:
     { // 网络数据包（业务+信令）
+        vector<uint8_t> curPktPayload(data, data + len);
+        msgFromControl *MFC_temp = new msgFromControl();
+        MFC_temp = convert_01_MFCPtr(&curPktPayload); // 解析数组, 还原为包结构体类型
 
+        processPktFromNet(MFC_temp);
+        delete MFC_temp;
         break;
     }
     }
@@ -530,8 +629,10 @@ void MacDaatr::macParameterInitialization(uint32_t idx)
         cerr << "!!!!无法打开文件: " << filePath << endl;
     }
 
-    // 读取文件内容
+// 读取文件内容
+#ifdef DEBUG_SETUP
     cout << "macInit " << idx << ": 从Config中读取配置信息" << endl;
+#endif
     string line;
     while (getline(file, line))
     {
@@ -613,13 +714,15 @@ void MacDaatr::macParameterInitialization(uint32_t idx)
         }
     }
     file.close();
-
+#ifdef DEBUG_SETUP
     cout << "macInit " << nodeId << ": 配置 IP_Addr" << endl;
+#endif
     // 配置ip地址，ip地址配置策略为'192.168.'+ 子网号 + 节点ID
     for (int i = 2; i <= subnet_node_num + 1; i++)
         in_subnet_id_to_ip[i - 1] = "192.168." + to_string(subnetId) + "." + to_string(i);
-
+#ifdef DEBUG_SETUP
     cout << "macInit " << nodeId << ": 配置业务信道信息" << endl;
+#endif
     need_change_state = 0;                // 不需要改变状态
     state_now = Mac_Initialization;       // 初始为建链阶段
     receivedChainBuildingRequest = false; // 初始未发送建链请求
@@ -647,11 +750,46 @@ void MacDaatr::macParameterInitialization(uint32_t idx)
             }
         }
     }
-
+#ifdef DEBUG_SETUP
     cout << "macInit " << nodeId << ": 配置网管信道信息" << endl;
+#endif
     access_state = DAATR_NO_NEED_TO_ACCESS; // 默认不需要接入
     access_backoff_number = 0;              // 接入时隙
     low_slottable_should_read = 0;
 
     cout << "===== Node " << nodeId << " macInitialization Completed =====" << endl;
+
+    // 测试收发包
+    if (nodeId == 2)
+    {
+        // 测试收发包
+        msgFromControl *MFC_temp = new msgFromControl;
+        MFC_temp->priority = 0;
+        MFC_temp->backup = 0;
+        MFC_temp->msgType = 3;
+        MFC_temp->packetLength = 10;
+        MFC_temp->srcAddr = nodeId;
+        MFC_temp->destAddr = 1;
+        MFC_temp->backup = 0;
+        MFC_temp->repeat = 0;
+        MFC_temp->fragmentNum = 1;
+
+        MAC_NetworkLayerHasPacketToSend(MFC_temp);
+        delete MFC_temp;
+
+        // 测试收发包
+        msgFromControl *MFC_temp2 = new msgFromControl;
+        MFC_temp2->priority = 1;
+        MFC_temp2->backup = 0;
+        MFC_temp2->msgType = 3;
+        MFC_temp2->packetLength = 10;
+        MFC_temp2->srcAddr = nodeId;
+        MFC_temp2->destAddr = 1;
+        MFC_temp2->backup = 0;
+        MFC_temp2->repeat = 0;
+        MFC_temp->fragmentNum = 2;
+
+        MAC_NetworkLayerHasPacketToSend(MFC_temp2);
+        delete MFC_temp2;
+    }
 }

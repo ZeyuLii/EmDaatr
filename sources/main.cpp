@@ -56,7 +56,7 @@ int main()
         thread highRecvThread(&MacDaatr::macDaatrSocketHighFreq_Recv, &daatr_str, false);
         thread highSendThread(&MacDaatr::highFreqSendThread, &daatr_str);
 
-        for (int i = 0; i < 15100; i++)
+        for (int i = 0; i < 13000; i++)
         {
             daatr_str.macDaatrControlThread();
             usleep(1e3);
