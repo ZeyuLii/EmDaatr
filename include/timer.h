@@ -38,7 +38,7 @@ typedef struct myevent
 
 void timeInit();
 void ppsIRQ();
-// void microsecondIRQ();
+void microsecondIRQ();
 void ppsIRQHandle(int signum, siginfo_t *info, void *context);
 int utcGet();
 int utcToint(const char *str, int find);

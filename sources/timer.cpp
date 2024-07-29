@@ -210,32 +210,33 @@ int utcGet()
     return 0;
 }
 
-// void microsecondIRQ()
-// {
-//     const char *dev_name = "/dev/mydev_clk";
-//     extern void macDaatrControlThread(int signum, siginfo_t *info, void *context);
-//     int count = 0;
-//     pid = getpid();
+void microsecondIRQ()
+{
+    const char *dev_name = "/dev/mydev_clk";
+    extern void macDaatrControlThread(int signum, siginfo_t *info, void *context);
 
-//     // 打开GPIO
-//     if ((fd_irq = open(dev_name, O_RDWR | O_NDELAY)) < 0)
-//     {
-//         printf("open dev failed! \n");
-//         return;
-//     }
+    int count = 0;
+    pid = getpid();
 
-//     printf("open dev success! \n");
+    // 打开GPIO
+    if ((fd_irq = open(dev_name, O_RDWR | O_NDELAY)) < 0)
+    {
+        printf("open dev failed! \n");
+        return;
+    }
 
-//     // 注册信号处理函数
-//     struct sigaction sc;
-//     sigemptyset(&sc.sa_mask);
-//     sc.sa_sigaction = &macDaatrControlThread;
-//     sc.sa_flags = SA_SIGINFO;
+    printf("open dev success! \n");
 
-//     sigaction(35, &sc, NULL);
+    // 注册信号处理函数
+    struct sigaction sc;
+    sigemptyset(&sc.sa_mask);
+    sc.sa_sigaction = &macDaatrControlThread;
+    sc.sa_flags = SA_SIGINFO;
 
-//     // set PID
-// }
+    sigaction(35, &sc, NULL);
+
+    // set PID
+}
 
 void ppsIRQ()
 {
@@ -333,8 +334,8 @@ void timeInit()
 
     if (daatr_str.nodeId == 1)
     {
-        // while (!start_irq)
-        //     ;
+        while (!daatr_str.start_irq)
+            ;
 
         char *send = "start";
         daatr_str.macDaatrSocketLowFreq_Send((uint8_t *)send, 6);
@@ -344,16 +345,16 @@ void timeInit()
     {
         char send[15] = {0};
         sprintf(send, "ready NODE%02d", daatr_str.nodeId);
-        // while (!init_send)
-        // {
-        //     daatr_str.macDaatrSocketLowFreq_Send((uint8_t *)send, 13);
-        //     sleep(1);
-        // }
+        while (!daatr_str.init_send)
+        {
+            daatr_str.macDaatrSocketLowFreq_Send((uint8_t *)send, 13);
+            sleep(1);
+        }
         printf("等待开始信号\n");
-        // while (!start_irq)
-        //     ;
+        while (!daatr_str.start_irq)
+            ;
     }
 
     ppsIRQ();
-    // microsecondIRQ();
+    microsecondIRQ();
 }

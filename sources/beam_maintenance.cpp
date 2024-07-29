@@ -1,6 +1,7 @@
 /********************************************波束维护模块************************************************************* */
 #include "beam_maintenance.h"
 #include <cmath>
+
 // 返回任意两节点间距离(单位: km)
 double calculateLinkDistance(float lat_1, float lng_1, float h_1, float lat_2, float lng_2, float h_2)
 {

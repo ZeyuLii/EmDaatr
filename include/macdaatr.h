@@ -10,6 +10,8 @@
 #include <map>
 #include <set>
 #include <arpa/inet.h>
+#include <signal.h>
+
 #include "common_struct.h" // define namespace
 
 // 嵌入式Daatr 相关配置信息
@@ -332,6 +334,10 @@ public:
     FlightStatus subnet_other_node_position[SUBNET_NODE_NUMBER_MAX - 1]; // 子网其他节点位置信息
     FlightStatus local_node_position_info;                               // 本地飞行状态信息
 
+    // 中断与嵌入式相关
+    bool start_irq;
+    bool init_send;
+
     // 类函数
 public:
     // 初始化相关
@@ -339,7 +345,7 @@ public:
     void macParameterInitialization(uint32_t idx);
 
     // 管控线程
-    void macDaatrControlThread();
+    void macDaatrControlThread(int signum, siginfo_t *info, void *context);
 
     // Socket 相关
     int macDaatrCreateUDPSocket(string ip, int port, bool if_not_block);

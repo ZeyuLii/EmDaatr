@@ -3,8 +3,13 @@
 #include <unistd.h>
 #include <unordered_map>
 #include <fstream>
+#include <cstdint>
+#include <thread>
+#include <mutex>
+#include <string.h>
 
 #include "macdaatr.h"
+#include "low_freq_channel.h"
 #include "socket_control.h"
 
 using namespace std;
@@ -169,38 +174,106 @@ void MacDaatr::macDaatrSocketHighFreq_Recv(bool IF_NOT_BLOCKED = false)
 void MacDaatr::macDaatrSocketLowFreq_Recv(bool IF_NOT_BLOCKED = false)
 {
     extern bool end_simulation;
-    // extern MacDaatr daatr_str; // mac层协议类
-    // extern condition_variable lowthreadcondition_variable;
     string IP = in_subnet_id_to_ip[nodeId];
-    int sock_fd = macDaatrCreateUDPSocket(IP, LOW_FREQ_SOCKET_PORT, IF_NOT_BLOCKED);
+    int sock_fd;
+    if (nodeId < 4)
+        sock_fd = macDaatrCreateUDPSocket(IP, LOW_FREQ_SOCKET_PORT, IF_NOT_BLOCKED);
+    else
+        sock_fd = macDaatrCreateUDPSocket(IP, LOW_FREQ_SOCKET_PORT + nodeId, IF_NOT_BLOCKED);
+
     mac_daatr_low_freq_socket_fid = sock_fd;
     int recv_num;
     int send_num;
-    uint8_t send_buf[60000] = "i am server!";
     char recv_buf[60000];
     struct sockaddr_in addr_client;
     socklen_t len = sizeof(sockaddr_in);
+
+    if (nodeId == 1)
+    {
+        char *find_char;
+        char NODEID[3];
+        int find_int = 0;
+        char send[15] = {0};
+        bool ready_node[2] = {0, 0};
+        while (1)
+        {
+            recv_num = recvfrom(sock_fd, recv_buf, sizeof(recv_buf), 0,
+                                (struct sockaddr *)&addr_client, (socklen_t *)&len);
+            recv_buf[recv_num] = '\0';
+            find_char = strstr(recv_buf, "ready NODE");
+            if (find_char != NULL)
+            {
+                NODEID[0] = recv_buf[11];
+                NODEID[1] = recv_buf[12];
+                NODEID[2] = '\0';
+                find_int = atoi(NODEID);
+                if (!ready_node[find_int - 2])
+                {
+                    sprintf(send, "rev NODE%02d", find_int);
+                    macDaatrSocketLowFreq_Send((uint8_t *)send, 13);
+                    ready_node[find_int - 2] = 1;
+                    printf("收到 NODE %d 信息\n", find_int);
+                }
+
+                if (ready_node[0] && ready_node[1])
+                {
+
+                    start_irq = 1;
+                    break;
+                }
+            }
+        }
+    }
+    else
+    {
+
+        char *find_char;
+        char NODEID[3];
+        int find_int = 0;
+
+        while (1)
+        {
+            recv_num = recvfrom(sock_fd, recv_buf, sizeof(recv_buf), 0,
+                                (struct sockaddr *)&addr_client, (socklen_t *)&len);
+            recv_buf[recv_num] = '\0';
+            if (!strcmp("start", recv_buf))
+            {
+                init_send = 1;
+                start_irq = 1;
+                break;
+            }
+            else
+            {
+                find_char = strstr(recv_buf, "rev NODE");
+                if (find_char != NULL)
+                {
+                    NODEID[0] = recv_buf[9];
+                    NODEID[1] = recv_buf[10];
+                    NODEID[2] = '\0';
+                    find_int = atoi(NODEID);
+                    if (find_int == nodeId)
+                        init_send = 1;
+                }
+            }
+        }
+    }
+
     if (!IF_NOT_BLOCKED)
     { // 阻塞模式
         while (1)
         {
-            printf("low server wait:\n");
+            // printf("low server wait:\n");
             recv_num = recvfrom(sock_fd, recv_buf, sizeof(recv_buf), 0,
                                 (struct sockaddr *)&addr_client, (socklen_t *)&len);
             recv_buf[recv_num] = '\0';
-
-            // lowFreqChannelRecvHandle((uint8_t *)recv_buf, recv_num);
-
-            // if (end_simulation)
-            //     break;
-            if (!strcmp("End Simulation", recv_buf))
+            if (!strcmp("仿真结束", recv_buf))
             {
                 end_simulation = true;
-                central_control_thread_var.notify_one();
-                // lowthreadcondition_variable.notify_one();
                 printf("NODE %2d is over\n", nodeId);
+                sleep(1);
                 break;
             }
+            lowFreqChannelRecvHandle((uint8_t *)recv_buf, recv_num);
         }
     }
     else
@@ -253,12 +326,12 @@ void MacDaatr::macDaatrSocketHighFreq_Send(uint8_t *data, uint32_t len, uint16_t
         // 尝试发送数据到指定接收者，sendto函数用于向特定地址发送数据
         send_num = sendto(sock_fd, data, len, 0, (struct sockaddr *)&recever, sizeof(recever));
 
-        cout << nodeId << " Send -- ";
-        for (int i; i < send_num; i++)
-        {
-            cout << hex << (int)data[i] << " ";
-        }
-        cout << dec << endl;
+        // cout << nodeId << " Send -- ";
+        // for (int i; i < send_num; i++)
+        // {
+        //     cout << hex << (int)data[i] << " ";
+        // }
+        // cout << dec << endl;
 
         // 如果发送字节数小于0，说明发送失败，输出错误信息
         if (send_num < 0)
@@ -284,9 +357,8 @@ void MacDaatr::macDaatrSocketHighFreq_Send(uint8_t *data, uint32_t len, uint16_t
  */
 void MacDaatr::macDaatrSocketLowFreq_Send(uint8_t *data, uint32_t len)
 {
+    extern bool end_simulation;
     sockaddr_in recever; // 接收端地址
-    // 引入外部定义的MacDaatr类实例，用于获取socket文件描述符
-    // extern MacDaatr daatr_str;
     // 获取mac_daatr_low_freq_socket_fid的值，用于后续的发送操作
     int sock_fd = mac_daatr_low_freq_socket_fid;
     int send_num = 0;
@@ -295,15 +367,20 @@ void MacDaatr::macDaatrSocketLowFreq_Send(uint8_t *data, uint32_t len)
     {
         for (const auto &sendid : in_subnet_id_to_ip)
         {
-            if (sendid.first == nodeId)
-                continue;                                                  // 跳过本节点
-            initializeNodeIP(recever, sendid.first, LOW_FREQ_SOCKET_PORT); // 初始化接收端地址
+            if (sendid.first == nodeId && !end_simulation)
+                continue; // 跳过本节点
+
+            if (sendid.first < 4)
+                initializeNodeIP(recever, sendid.first, LOW_FREQ_SOCKET_PORT); // 初始化接收端地址
+            else
+                initializeNodeIP(recever, sendid.first, LOW_FREQ_SOCKET_PORT + sendid.first);
+
             // 尝试发送数据到指定接收者，sendto函数用于向特定地址发送数据
             send_num = sendto(sock_fd, data, len, 0, (struct sockaddr *)&recever, sizeof(recever));
             // 如果发送字节数小于0，说明发送失败，输出错误信息
             if (send_num < 0)
             {
-                cout << "低频信道线程发送失败!!!!!!!" << endl;
+                cout << "Node " << nodeId << "低频信道线程发送失败!!!!!!!" << endl;
             }
         }
     }
