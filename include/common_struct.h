@@ -342,7 +342,4 @@ struct ringBuffer
 		}
 	}
 };
-
-// void MockTestPrintNetViewFlightState(Node *node, FlightStatus *flightPtr);
-
 #endif

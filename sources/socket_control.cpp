@@ -141,7 +141,8 @@ void MacDaatr::macDaatrSocketHighFreq_Recv(bool IF_NOT_BLOCKED = false)
         {
             // printf("high server wait:\n");
 
-            recv_num = recvfrom(sock_fd, recv_buf, sizeof(recv_buf), 0, (struct sockaddr *)&addr_client, (socklen_t *)&len);
+            recv_num = recvfrom(sock_fd, recv_buf, sizeof(recv_buf), 0,
+                                (struct sockaddr *)&addr_client, (socklen_t *)&len);
             if (recv_num < 0 && errno == EWOULDBLOCK)
             {
                 // cout << "服务器未收到消息" << endl;

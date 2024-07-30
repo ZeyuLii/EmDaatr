@@ -156,6 +156,20 @@ typedef struct BuildLink_Request
     unsigned int if_build : 6; // 建链请求是否被允许  1:允许建链  0: 不允许建链
 } BuildLink_Request;
 
+typedef struct LinkAssignment_single
+{
+    unsigned short begin_node; // 链路发送节点ID
+    unsigned short end_node;   // 链路接收节点ID
+    unsigned short type;       // 业务类型, 取值范围[1-16]
+    unsigned short priority;   // 业务优化级, 取值范围为[1-16]
+    float size;                // 业务量大小(单位: Byte); 物理量范围为[0-1MB], 取值范围为[0-1048576]
+    unsigned short QOS;        // QOS需求; 物理量范围为[0-5s], 取值范围为[0-2000], 时延=取值*2.5ms,
+    unsigned short frequency;  // 业务频率, 物理量范围为[2.5ms/次-5s/次], 取值范围为[1-2000], 业务频率=取值*2.5ms/次
+
+    int data_slot_per_frame; // 指示该LA每帧需要的时隙数
+    double distance;         // 指示收发节点间的距离, 通过Save_Position数组实现
+} LinkAssignment_single;
+
 // 是否进入调整状态, 此结构体由网管节点通过网管信道广播发送
 typedef struct if_need_change_state
 {
@@ -304,7 +318,9 @@ public:
     mutex lock_buss_channel;                          // 业务信道待发送队列访问锁
     mutex highThreadSendMutex;                        // 控制高频信道的发送线程互斥量  unique_lock<mutex> highThreadSendLock(highThreadSendMutex);
     condition_variable highThread_condition_variable; // 高频信道条件变量 用来在daatrctr中每2.5ms唤醒高频信道发送线程
-    bool has_received_slottable;                      // 时隙表是否已收到一次
+    uint32_t receivedSlottableTimes;                  // 时隙表收到次数
+    uint32_t slottableTimes;
+    uint32_t stACKTimes;
     bool has_received_sequence;
     bool receivedChainBuildingRequest;
     uint32_t blTimes;                                     // 已经发送建链请求的数量 与MacHeader seq相关
@@ -376,6 +392,7 @@ public:
     void macToNetworkBufferHandle(void *data, uint8_t type, uint16_t len);
     void processPktFromNet(msgFromControl *MFC_temp);
     void processNodeNotificationFromNet(NodeNotification *temp);
+    void processLinkAssignmentFromNet(LinkAssignment *LinkAssignment_data, int linkNum);
 };
 
 uint64_t getTime();

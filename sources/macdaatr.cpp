@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <algorithm>
 
 #include "macdaatr.h"
 #include "struct_converter.h"
@@ -166,6 +167,7 @@ void MacDaatr::LoadSlottable_setup()
 /// @brief 读取执行阶段射前时隙表
 void MacDaatr::LoadSlottable_Execution()
 {
+
     // cout << "Node " << nodeId << " 读入建链阶段时隙表" << endl;
     string stlotable_state_filename = "../config/SlottableExecution/Slottable_RXTX_State_" +
                                       to_string(static_cast<long long>(nodeId)) + ".txt";
@@ -515,6 +517,72 @@ void MacDaatr::processNodeNotificationFromNet(NodeNotification *temp)
     }
 }
 
+void MacDaatr::processLinkAssignmentFromNet(LinkAssignment *LinkAssignment_data, int linkNum)
+{
+    vector<LinkAssignment_single> LinkAssignment_Storage;
+    // 将网络层发来的若干Linkassignment结构体(数组)分解为单个链路构建需求结构体
+    // LinkAssignment_single_temp 并将其存储进 LinkAssignment_Storage 内
+
+    for (int i = 0; i < linkNum; i++)
+    {
+        for (int j = 0; j < (*(LinkAssignment_data + i)).listNumber; j++)
+        {
+            LinkAssignment_single LinkAssignment_single_temp;
+            LinkAssignment_single_temp.begin_node = (*(LinkAssignment_data + i)).begin_node;
+            LinkAssignment_single_temp.end_node = (*(LinkAssignment_data + i)).end_node;
+            LinkAssignment_single_temp.type = (*(LinkAssignment_data + i)).type[j];
+            LinkAssignment_single_temp.priority = (*(LinkAssignment_data + i)).priority[j];
+            LinkAssignment_single_temp.size = (*(LinkAssignment_data + i)).size[j];
+            LinkAssignment_single_temp.QOS = (*(LinkAssignment_data + i)).QOS[j];
+            LinkAssignment_single_temp.frequency = (*(LinkAssignment_data + i)).frequency[j];
+
+            int LA_num = 1;
+            // cout << "number of LA_temp is " << LA_num << endl;
+            for (int k = 0; k < LA_num; k++)
+            {
+                if (LinkAssignment_single_temp.size != 0)
+                    LinkAssignment_Storage.push_back(LinkAssignment_single_temp);
+            }
+        }
+    }
+
+    sort(LinkAssignment_Storage.begin(), LinkAssignment_Storage.end(), Compare_by_Priority);
+    // Alloc_slot_traffic *Alloc_slottable_traffic = new Alloc_slot_traffic;
+    vector<Alloc_slot_traffic> allocSlottableTraffic(TRAFFIC_SLOT_NUMBER);
+    ReAllocate_Traffic_slottable(this, allocSlottableTraffic, LinkAssignment_Storage);
+
+    // 下面需要将分配表转换为各节点对应的时隙表
+    for (int i = 0; i < SUBNET_NODE_NUMBER_MAX; i++)
+    {
+        for (int j = 0; j < TRAFFIC_SLOT_NUMBER; j++)
+            slot_traffic_execution_new[i][j].state = 0; // 本应全置为IDLE
+    }
+
+    for (int i = 0; i < SUBNET_NODE_NUMBER_MAX; i++)
+    {
+        for (int j = 0; j < TRAFFIC_SLOT_NUMBER; j++)
+        {
+            if (allocSlottableTraffic[j].multiplexing_num != FREQUENCY_DIVISION_MULTIPLEXING_NUMBER)
+            {
+                for (int k = 0; k < FREQUENCY_DIVISION_MULTIPLEXING_NUMBER - allocSlottableTraffic[j].multiplexing_num; k++)
+                {
+                    // Alloc_slottable_traffic[j].send_node 是 网管节点的分配表的第 j 个时隙的发送节点序列
+                    // send[k] 是其中的第 k 组链路需求的发送节点
+                    // 需要找到 20 个时隙表中的第 senk[k] 个,
+                    // 然后将其第[j]个时隙的state和send进行修改 修改为 TX , 并将 send 指向 recv 节点
+                    slot_traffic_execution_new[allocSlottableTraffic[j].send_node[k] - 1][j].state = DAATR_STATUS_TX;
+                    slot_traffic_execution_new[allocSlottableTraffic[j].send_node[k] - 1][j].send_or_recv_node =
+                        allocSlottableTraffic[j].recv_node[k];
+
+                    slot_traffic_execution_new[allocSlottableTraffic[j].recv_node[k] - 1][j].state = DAATR_STATUS_RX;
+                    slot_traffic_execution_new[allocSlottableTraffic[j].recv_node[k] - 1][j].send_or_recv_node =
+                        allocSlottableTraffic[j].send_node[k];
+                }
+            }
+        }
+    }
+}
+
 /**
  * @brief buffer缓冲区写函数，将输入结构体转换为缓冲区帧并插入
  *
@@ -596,17 +664,47 @@ void MacDaatr::networkToMacBufferHandle(uint8_t *rBuffer_mac)
         break;
     }
     case 0x0b:
-    { // 链路构建需求
+    { // 链路构建需求 MAC_DAATR_ReceiveTaskInstruct
+        cout << "Node " << nodeId << " 收到链路构建需求";
+        printTime_ms();
 
+        // TODO : need_change_state修改
+        if (need_change_state == 0 &&
+            state_now != Mac_Adjustment_Slot &&
+            state_now != Mac_Adjustment_Freqency)
+        {
+            cout << "子网各节点即将进入时隙调整阶段!" << endl;
+            need_change_state = 1; // 即将进入时隙调整阶段
+        }
+        else if (need_change_state == 2)
+        {
+            cout << "首先进入频率调整阶段, 在时隙调整阶段结束后进入时隙调整阶段! " << endl;
+            need_change_state = 4;
+        }
+
+        LinkAssignmentHeader *linkAssignmentHeader = (LinkAssignmentHeader *)data;
+        int linkNum = linkAssignmentHeader->linkNum;
+        LinkAssignment *LinkAssignment_data = (LinkAssignment *)(linkAssignmentHeader + 1);
+        processLinkAssignmentFromNet(LinkAssignment_data, linkNum);
         break;
     }
     case 0x0e:
-    { // 转发表
+    { // 转发表 MAC_DAATR_ReceiveForwardingTable
+        Layer2_ForwardingTable_Msg *routingTable = (Layer2_ForwardingTable_Msg *)data;
+        vector<vector<uint16_t>> *recvForwardingTable = routingTable->Layer2_FT_Ptr;
 
+        if (state_now == Mac_Execution)
+        {
+            for (int i = 1; i <= subnet_node_num; i++)
+                Forwarding_Table[i - 1][1] = 0;
+
+            for (auto RT : *recvForwardingTable) // RT : [dest_node , next_hop]
+                Forwarding_Table[RT[0] - 1][1] = RT[1];
+        }
         break;
     }
     case 0x10:
-    { // 网络数据包（业务+信令）
+    { // 网络数据包（业务+信令） MSG_NETWORK_ReceiveNetworkPkt
         vector<uint8_t> curPktPayload(data, data + len);
         msgFromControl *MFC_temp = new msgFromControl();
         MFC_temp = convert_01_MFCPtr(&curPktPayload); // 解析数组, 还原为包结构体类型
@@ -753,6 +851,7 @@ void MacDaatr::macParameterInitialization(uint32_t idx)
 #ifdef DEBUG_SETUP
     cout << "macInit " << nodeId << ": 配置网管信道信息" << endl;
 #endif
+
     access_state = DAATR_NO_NEED_TO_ACCESS; // 默认不需要接入
     access_backoff_number = 0;              // 接入时隙
     low_slottable_should_read = 0;

@@ -429,7 +429,7 @@ void lowFreqSendThread()
                             // cout << "网管节点改变自己节点 state_now 为 Adjustment_Slot" << endl;
                             daatr_str.state_now = Mac_Adjustment_Slot; // 调整网管节点（本节点）为时隙调整阶段
                             daatr_str.need_change_state = 0;           // 已转变状态, 状态位复原
-                            daatr_str.has_received_slottable = false;  // 初始未收到时隙表
+                            daatr_str.receivedSlottableTimes = 0;      // 初始未收到时隙表
                         }
                     }
                     else if (daatr_str.need_change_state == 2)
@@ -706,7 +706,7 @@ void lowFreqChannelRecvHandle(uint8_t *bit_seq, uint64_t len)
             else if (change_state->state == 1)
             {
                 daatr_str.state_now = Mac_Adjustment_Slot; // 调整本节点为时隙调整阶段
-                daatr_str.has_received_slottable = false;  // 初始未收到时隙表
+                daatr_str.receivedSlottableTimes = 0;      // 初始未收到时隙表
                 cout << "节点 " << daatr_str.nodeId << " 收到网管节点广播消息, 并改变自己节点 state_now 为 Adjustment_Slot. " << endl;
                 printTime_ms(); // 打印时间
                 // 在收到网管节点发来的状态调整信息后, 立刻将自己的波束指向网管节点, 等待接收时隙表(需要调整！！！！！)

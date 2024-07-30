@@ -25,8 +25,8 @@ using namespace chrono;
         -Y prior 数据包——放入队列 MSG_NETWORK_ReceiveNetworkPkt <加锁>
         - 链路构建需求——调整阶段
         -Y 身份配置信息调整与下发
-        - 转发表与路由表
-        - 本地飞行状态信息
+        -Y 转发表与路由表
+        -Y 本地飞行状态信息
     5. 周期性向网络层缓冲区发送数据包
         - 其他节点飞行状态信息
         - 本地链路状态信息
@@ -340,6 +340,98 @@ void MacDaatr::highFreqSendThread()
                 // IDLE
             }
         }
+        else if (state_now == Mac_Adjustment_Slot)
+        {
+            currentStatus = slottable_adjustment[currentSlotId].state;
+            int dest_node = slottable_adjustment[currentSlotId].send_or_recv_node;
+
+            // 在调整阶段的最后一个时隙，将状态切换为 Mac_Execution(保险起见设为倒数第二个)
+            if (currentSlotId == TRAFFIC_SLOT_NUMBER - 2)
+                state_now = Mac_Execution;
+
+            if (currentStatus == DAATR_STATUS_TX && dest_node != 0) // TX
+            {
+                if (nodeId == mana_node) // 网管节点发送时隙表
+                {
+                    MacHeader *mac_header = new MacHeader;
+                    mac_header->PDUtype = 0;
+                    mac_header->is_mac_layer = 1 + (stACKTimes++) % 3;
+                    mac_header->backup = 4;
+                    mac_header->packetLength = 25 + 550;
+                    mac_header->srcAddr = nodeId; // 由网管节点发送
+                    mac_header->destAddr = dest_node;
+                    mac_header->seq = 1 + (slottableTimes++) % 3;
+
+                    MacDaatr_struct_converter mac_converter_PDU1(1);
+                    mac_converter_PDU1.set_struct((uint8_t *)mac_header, 1);
+                    mac_converter_PDU1.daatr_struct_to_0_1();
+
+                    MacDaatr_struct_converter mac_converter_Slottable(7);
+                    mac_converter_Slottable.set_length(550);
+                    highFreqSlottable *New_Slottable_ptr = new highFreqSlottable;
+                    for (int j = 0; j < TRAFFIC_SLOT_NUMBER; j++)
+                    {
+                        New_Slottable_ptr->slot_traffic_execution_new[j] =
+                            slot_traffic_execution_new[dest_node - 1][j];
+                    }
+                    mac_converter_Slottable.set_struct((uint8_t *)New_Slottable_ptr, 7);
+                    mac_converter_Slottable.daatr_struct_to_0_1();
+
+                    mac_converter_PDU1 + mac_converter_Slottable;
+
+                    uint8_t *frame_ptr = mac_converter_PDU1.get_sequence();
+                    uint32_t len = mac_converter_PDU1.get_length();
+                    uint8_t *temp_buf = new uint8_t[len];
+                    memcpy(temp_buf, frame_ptr, len);
+                    macDaatrSocketHighFreq_Send(temp_buf, len, dest_node); // 此处的的dest_node为待发送时隙表节点
+#ifdef DEBUG_ADJUST
+                    cout << "[" << currentSlotId << "T] 网管节点向 Node " << dest_node
+                         << " 发送时隙表--" << mac_header->seq << "  ";
+                    printTime_ms();
+#endif
+                    delete mac_header;
+                    delete temp_buf;
+                }
+                else // 普通节点向网管节点发送ACK
+                {
+                    MacHeader *mac_header = new MacHeader;
+                    mac_header->PDUtype = 0;
+                    mac_header->is_mac_layer = 1 + (stACKTimes++) % 3;
+                    mac_header->backup = 6;
+                    mac_header->packetLength = 25;
+                    mac_header->srcAddr = nodeId; // 由网管节点发送
+                    mac_header->destAddr = dest_node;
+                    mac_header->seq = 1 + (stACKTimes++) % 3;
+
+                    MacDaatr_struct_converter mac_converter_PDU1(1);
+                    mac_converter_PDU1.set_struct((uint8_t *)mac_header, 1);
+                    mac_converter_PDU1.daatr_struct_to_0_1();
+
+                    uint8_t *frame_ptr = mac_converter_PDU1.get_sequence();
+                    uint32_t len = mac_converter_PDU1.get_length();
+                    uint8_t *temp_buf = new uint8_t[len];
+                    memcpy(temp_buf, frame_ptr, len);
+                    macDaatrSocketHighFreq_Send(temp_buf, len, dest_node); // 此处的的dest_node为待发送时隙表节点
+#ifdef DEBUG_ADJUST
+                    cout << "[" << currentSlotId << "T] Node " << dest_node
+                         << " 向网管节点发送时隙表ACK--" << mac_header->seq << "  ";
+                    printTime_ms();
+#endif
+                    delete mac_header;
+                    delete temp_buf;
+                }
+            }
+            else if (currentStatus == DAATR_STATUS_RX && dest_node != 0)
+            {
+                // cout << "[" << currentSlotId << "R] Node " << nodeId << "<-" << dest_node << endl;
+                // 在执行阶段 收到的内容是 时隙表 和 接收时隙表ACK
+            }
+            else
+            {
+                cout << "[" << currentSlotId << "IDLE] Node " << nodeId << endl;
+                // IDLE
+            }
+        }
     }
 }
 
@@ -455,7 +547,8 @@ void MacDaatr::highFreqChannelHandle(uint8_t *bit_seq, uint64_t len)
 #ifdef DEBUG_SETUP
             BuildLink_Request *blRequest_ptr = (BuildLink_Request *)mac_converter_BLRequest.get_struct();
             BuildLink_Request blRequest = *blRequest_ptr;
-            cout << "[" << currentSlotId << "R] 网管节点收到 Node " << blRequest.nodeID << " 的建链请求--" << mac_header.seq + 1 << "  ";
+            cout << "[" << currentSlotId << "R] 网管节点收到 Node "
+                 << blRequest.nodeID << " 的建链请求--" << mac_header.seq + 1 << "  ";
             printTime_ms();
 #endif
 
@@ -484,16 +577,71 @@ void MacDaatr::highFreqChannelHandle(uint8_t *bit_seq, uint64_t len)
 
             if (blRequest.if_build == 1)
             {
-                cout << "[" << currentSlotId << "R] Node " << nodeId << " 收到建链许可--" << mac_header.seq << "  ";
+                cout << "[" << currentSlotId << "R] Node " << nodeId
+                     << " 收到建链许可--" << mac_header.seq << "  ";
                 printTime_ms();
             }
             else
             {
-                cout << "[" << currentSlotId << "R] Node " << nodeId << " 收到建链不许可--" << mac_header.seq << "  ";
+                cout << "[" << currentSlotId << "R] Node " << nodeId
+                     << " 收到建链不许可--" << mac_header.seq << "  ";
                 printTime_ms();
             }
 #endif
             break;
+        }
+        case 4: // 普通节点收到时隙表
+        {
+            // 检查此时的接收节点是不是普通节点
+            if (nodeId == mana_node)
+                cout << "Wrong Recv Node of Slottable!" << endl;
+
+            MacDaatr_struct_converter mac_converter_Slottable(7);
+            mac_converter_Slottable - mac_converter;
+            mac_converter_Slottable.daatr_0_1_to_struct();
+
+            highFreqSlottable *slottable_ptr =
+                (highFreqSlottable *)mac_converter_Slottable.get_struct();
+            for (int i = 0; i < TRAFFIC_SLOT_NUMBER; i++)
+            {
+                slottable_execution[i] = slottable_ptr->slot_traffic_execution_new[i];
+            }
+            receivedSlottableTimes = (receivedSlottableTimes + 1) % 3;
+            cout << endl;
+            cout << "[调整阶段] Node " << nodeId << " 收到新时隙表-- "
+                 << receivedSlottableTimes << "  ";
+            printTime_ms();
+
+            for (int i = 0; i < TRAFFIC_SLOT_NUMBER; i++)
+            {
+                if (slottable_execution[i].state == DAATR_STATUS_TX &&
+                    slottable_execution[i].send_or_recv_node != 0)
+                {
+                    cout << "|TX:" << slottable_execution[i].send_or_recv_node;
+                }
+                else if (slottable_execution[i].state == DAATR_STATUS_RX &&
+                         slottable_execution[i].send_or_recv_node != 0)
+                {
+                    cout << "|RX:" << slottable_execution[i].send_or_recv_node;
+                }
+                else
+                {
+                    cout << "|IDLE";
+                }
+            }
+            cout << endl;
+        }
+        case 6: // 网管节点收到时隙表ACK
+        {
+            // 检查此时的接收节点是不是网管节点
+            if (nodeId != mana_node)
+                cout << "Wrong Recv Node of SlottableACK!" << endl;
+
+#ifdef DEBUG_ADJUST
+            cout << "[" << currentSlotId << "R] 网管节点收到 Node "
+                 << mac_header.srcAddr << " 的时隙表ACK--" << mac_header.is_mac_layer << "  ";
+            printTime_ms();
+#endif
         }
         }
     }

@@ -23,4 +23,9 @@ int searchNextHopAddr(MacDaatr *macdata_daatr, int destAddr);
 void Insert_MFC_to_Queue(MacDaatr *macdata_daatr, msgFromControl *busin,
                          int pri, int loc, int temp, int my_pkt_flag);
 
+bool Compare_by_Priority(const LinkAssignment_single LA1, const LinkAssignment_single LA2);
+
+void ReAllocate_Traffic_slottable(MacDaatr *macdata_daatr,
+                                  vector<Alloc_slot_traffic> &Alloc_slottable_traffic,
+                                  vector<LinkAssignment_single> &LinkAssignment_Storage);
 #endif
