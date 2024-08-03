@@ -367,16 +367,16 @@ void ReAllocate_Traffic_slottable(MacDaatr *macdata_daatr,
     int i = 0, j = 0, k = 0, m;
     int slot_loc = 0; // 用来标识目前正在分配时隙的位置, 非子网间时隙才可以分
 
-    string Full_connection_send = "../config/FullConnection/FullConnection_10_send.txt";
-    string Full_connection_recv = "../config/FullConnection/FullConnection_10_recv.txt";
+    string Full_connection_send = "./config/FullConnection/FullConnection_10_send.txt";
+    string Full_connection_recv = "./config/FullConnection/FullConnection_10_recv.txt";
 
     ifstream fin1(Full_connection_send);
     ifstream fin2(Full_connection_recv);
 
     if (!fin1.is_open())
-        cout << "Could Not Open File1" << endl;
+        cout << "Cannot Open FullConnection File1" << endl;
     if (!fin2.is_open())
-        cout << "Could Not Open File2" << endl;
+        cout << "Cannot Open FullConnection File2" << endl;
 
     string str1, str2, temp;
     vector<int> send_node;
@@ -630,4 +630,67 @@ void ReAllocate_Traffic_slottable(MacDaatr *macdata_daatr,
             }
         }
     }
+}
+
+void sendLocalLinkStatus(MacDaatr *macdata_daatr)
+{
+    // TODO 核对if_receive_mana_flight_frame
+    vector<nodeLocalNeighList *> *send_neighborList = new vector<nodeLocalNeighList *>;
+    for (int dest_node = 1; dest_node <= macdata_daatr->subnet_node_num; dest_node++)
+    {
+        if (macdata_daatr->businessQueue[dest_node - 1].distance != 0 &&
+            macdata_daatr->if_receive_mana_flight_frame[dest_node - 1] == true)
+        {
+            uint32_t Capacity = Calculate_Transmission_Rate_by_Distance(macdata_daatr->businessQueue[dest_node - 1].distance);
+
+            nodeLocalNeighList *nodeLocalNeighdata = new nodeLocalNeighList;
+            nodeLocalNeighdata->nodeAddr = dest_node;
+            nodeLocalNeighdata->Capacity = Capacity;
+
+            send_neighborList->push_back(nodeLocalNeighdata);
+        }
+    }
+    for (int i = 0; i < macdata_daatr->subnet_node_num; i++)
+    {
+        macdata_daatr->if_receive_mana_flight_frame[i] = false;
+    }
+
+    ReceiveLocalLinkState_Msg loca_linkstate_struct;
+    loca_linkstate_struct.neighborList = send_neighborList;
+    int len = sizeof(loca_linkstate_struct);
+
+    macdata_daatr->macToNetworkBufferHandle((uint8_t *)&loca_linkstate_struct, 0x0d, len);
+
+    delete send_neighborList;
+}
+
+void sendOtherNodePosition(MacDaatr *macdata_daatr)
+{
+    int nodeNum = 1;
+    for (nodeNum; nodeNum <= SUBNET_NODE_NUMBER_MAX; nodeNum++)
+    {
+        if (macdata_daatr->subnet_other_node_position[nodeNum].nodeId == 0)
+        { // 此处截止
+            break;
+        }
+    }
+
+    FlightStatus *NodePosition_test = new FlightStatus[nodeNum];
+    int i;
+    for (i = 0; i < nodeNum - 1; i++)
+    { // 将已收到的结构体信息赋值给要发送的结构体中
+        NodePosition_test[i] = macdata_daatr->subnet_other_node_position[i];
+    }
+    NodePosition_test[i] = macdata_daatr->local_node_position_info;                       // 添加本节点飞行状态信息2023.8.17
+    uint32_t fullPacketSize = sizeof(NetFlightStateMsg) + nodeNum * sizeof(FlightStatus); // packet的总大小
+
+    uint8_t *pkt_nodeposition = (uint8_t *)malloc(fullPacketSize); // 存储该packet的空间
+    NetFlightStateMsg *node_position_header = (NetFlightStateMsg *)pkt_nodeposition;
+    node_position_header->nodeNum = nodeNum; // 本packet包含多少节点
+    FlightStatus *node_position = (FlightStatus *)(pkt_nodeposition + sizeof(NetFlightStateMsg));
+    memcpy(node_position, NodePosition_test, nodeNum * sizeof(FlightStatus));
+
+    macdata_daatr->macToNetworkBufferHandle((uint8_t *)pkt_nodeposition, 0x0c, fullPacketSize);
+
+    delete[] NodePosition_test;
 }

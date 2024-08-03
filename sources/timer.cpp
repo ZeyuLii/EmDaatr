@@ -273,7 +273,7 @@ void ppsIRQHandle(int signum, siginfo_t *info, void *context)
 
     if (!PPS_overcount)
     {
-        printf("开始仿真\n");
+        printf("开始仿真\n\n");
         extern int fd_irq;
         extern int pid;
         // signal(36, SIG_IGN);

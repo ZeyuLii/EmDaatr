@@ -334,7 +334,8 @@ struct ringBuffer
 		if (recvFrmNum > 0 && (sizeof(recvFrmData[recvFrmTail]) > 0))
 		{
 			// 读取缓冲区数据
-			memcpy(rBuffer, recvFrmData[recvFrmTail], sizeof(recvFrmData[recvFrmTail]));
+			memcpy(rBuffer, recvFrmData[recvFrmTail],
+				   recvFrmData[recvFrmTail][1] << 8 | recvFrmData[recvFrmTail][1]);
 
 			// 更新缓冲区编号
 			recvFrmTail = (recvFrmTail + 1) % MAX_BUFFER_NUM;

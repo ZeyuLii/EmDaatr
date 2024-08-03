@@ -310,6 +310,7 @@ public:
     low_freq_slot low_freq_link_build_slot_table[MANAGEMENT_SLOT_NUMBER_LINK_BUILD];   // 建链阶段网管信道时隙表
     low_freq_slot low_freq_other_stage_slot_table[MANAGEMENT_SLOT_NUMBER_OTHER_STAGE]; // 其他阶段网管信道时隙表
     uint8_t need_change_state;                                                         // 网管节点的阶段转换标志(默认为0) 1 表示时域调整 2 表示频域调整
+    bool if_receive_mana_flight_frame[SUBNET_NODE_NUMBER_MAX];                         // 是否在本帧内收到新的其他节点的飞行状态信息
 
     /*高频信道线程相关*/
     uint32_t currentSlotId; // 当前高频信道所处的时隙idx (由::UpdateTimer函数进行更新)

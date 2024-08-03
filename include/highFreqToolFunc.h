@@ -28,4 +28,8 @@ bool Compare_by_Priority(const LinkAssignment_single LA1, const LinkAssignment_s
 void ReAllocate_Traffic_slottable(MacDaatr *macdata_daatr,
                                   vector<Alloc_slot_traffic> &Alloc_slottable_traffic,
                                   vector<LinkAssignment_single> &LinkAssignment_Storage);
+
+void sendLocalLinkStatus(MacDaatr *macdata_daatr);
+
+void sendOtherNodePosition(MacDaatr *macdata_daatr);
 #endif

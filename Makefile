@@ -1,5 +1,5 @@
-CC := g++   #X86内核使用此编译器
-# CC := arm-linux-gnueabihf-g++   #ARM内核使用此编译器(需要先make clean)
+# CC := g++   #X86内核使用此编译器
+CC := arm-linux-gnueabihf-g++   #ARM内核使用此编译器(需要先make clean)
 CXXFLAGS := -w -std=c++11 -Wextra -g -I./include  #  -g代表生成的文件为dubug版本，在最终release版本需要去掉此参数
 OBJ_DIR := obj
 SRC_DIR := sources

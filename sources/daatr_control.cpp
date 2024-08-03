@@ -33,7 +33,10 @@ void macDaatrControlThread(int signum, siginfo_t *info, void *context)
     if (daatr_str.state_now == Mac_Initialization && time_ms >= END_LINK_BUILD_TIME - 1)
     { // 结束建链，进入执行阶段
         daatr_str.state_now = Mac_Execution;
+        cout << endl;
+        cout << endl;
         cout << "Node " << daatr_str.nodeId << " 进入执行阶段" << endl;
+        cout << endl;
     }
 
     // 节点掉网测试

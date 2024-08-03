@@ -11,7 +11,8 @@
 
 using namespace std;
 
-// #define DEBUG_SETUP 1
+#define DEBUG_SETUP 1
+#define DEBUG_EXECUTION 1
 
 /*****************************此文件主要包含对本层协议结构体控制相关函数******************************/
 /**
@@ -94,19 +95,18 @@ MacDaatr::MacDaatr()
 /// @brief 读取建链阶段时隙表
 void MacDaatr::LoadSlottable_setup()
 {
-    // cout << "Node " << nodeId << " 读入建链阶段时隙表" << endl;
-    string stlotable_state_filename = "../config/SlottableInitialization/Slottable_RXTX_State_" +
+    string stlotable_state_filename = "./config/SlottableInitialization/Slottable_RXTX_State_" +
                                       to_string(static_cast<long long>(nodeId)) + ".txt";
-    string stlotable_node_filename = "../config/SlottableInitialization/Slottable_RXTX_Node_" +
+    string stlotable_node_filename = "./config/SlottableInitialization/Slottable_RXTX_Node_" +
                                      to_string(static_cast<long long>(nodeId)) + ".txt";
     ifstream fin1(stlotable_state_filename);
     ifstream fin2(stlotable_node_filename);
 
     if (!fin1.is_open())
-        cout << "Could Not Open File1" << endl;
+        cout << "Cannot Open Setup File1" << endl;
 
     if (!fin2.is_open())
-        cout << "Could Not Open File2" << endl;
+        cout << "Cannot Open Setup File2" << endl;
 
     vector<int> RXTX_state;
     vector<int> RXTX_node;
@@ -144,43 +144,41 @@ void MacDaatr::LoadSlottable_setup()
         }
     }
 
-    // cout << endl;
-    // cout << "Node " << nodeId << " 将时隙表切换为建链时隙表 " << endl;
-    // for (int i = 0; i < TRAFFIC_SLOT_NUMBER; i++)
-    // {
-    //     if (slottable_setup[i].state == DAATR_STATUS_TX &&
-    //         slottable_setup[i].send_or_recv_node != 0)
-    //     {
-    //         cout << "|TX:" << slottable_setup[i].send_or_recv_node;
-    //     }
-    //     else if (slottable_setup[i].state == DAATR_STATUS_RX &&
-    //              slottable_setup[i].send_or_recv_node != 0)
-    //     {
-    //         cout << "|RX:" << slottable_setup[i].send_or_recv_node;
-    //     }
-    //     else
-    //         cout << "|IDLE";
-    // }
-    // cout << endl;
+    cout << endl;
+    cout << "Node " << nodeId << " 读入建链时隙表 " << endl;
+    for (int i = 0; i < TRAFFIC_SLOT_NUMBER; i++)
+    {
+        if (slottable_setup[i].state == DAATR_STATUS_TX &&
+            slottable_setup[i].send_or_recv_node != 0)
+        {
+            cout << "|TX:" << slottable_setup[i].send_or_recv_node;
+        }
+        else if (slottable_setup[i].state == DAATR_STATUS_RX &&
+                 slottable_setup[i].send_or_recv_node != 0)
+        {
+            cout << "|RX:" << slottable_setup[i].send_or_recv_node;
+        }
+        else
+            cout << "|IDLE";
+    }
+    cout << endl;
 }
 
 /// @brief 读取执行阶段射前时隙表
 void MacDaatr::LoadSlottable_Execution()
 {
-
-    // cout << "Node " << nodeId << " 读入建链阶段时隙表" << endl;
-    string stlotable_state_filename = "../config/SlottableExecution/Slottable_RXTX_State_" +
+    string stlotable_state_filename = "./config/SlottableExecution/Slottable_RXTX_State_" +
                                       to_string(static_cast<long long>(nodeId)) + ".txt";
-    string stlotable_node_filename = "../config/SlottableExecution/Slottable_RXTX_Node_" +
+    string stlotable_node_filename = "./config/SlottableExecution/Slottable_RXTX_Node_" +
                                      to_string(static_cast<long long>(nodeId)) + ".txt";
     ifstream fin1(stlotable_state_filename);
     ifstream fin2(stlotable_node_filename);
 
     if (!fin1.is_open())
-        cout << "Could Not Open File1" << endl;
+        cout << "Cannot Open Execution File1" << endl;
 
     if (!fin2.is_open())
-        cout << "Could Not Open File2" << endl;
+        cout << "Cannot Open Execution File2" << endl;
 
     vector<int> RXTX_state;
     vector<int> RXTX_node;
@@ -218,42 +216,42 @@ void MacDaatr::LoadSlottable_Execution()
         }
     }
 
-    // cout << endl;
-    // cout << "Node " << nodeId << " 将时隙表切换为建链时隙表 " << endl;
-    // for (int i = 0; i < TRAFFIC_SLOT_NUMBER; i++)
-    // {
-    //     if (slottable_execution[i].state == DAATR_STATUS_TX &&
-    //         slottable_execution[i].send_or_recv_node != 0)
-    //     {
-    //         cout << "|TX:" << slottable_execution[i].send_or_recv_node;
-    //     }
-    //     else if (slottable_execution[i].state == DAATR_STATUS_RX &&
-    //              slottable_execution[i].send_or_recv_node != 0)
-    //     {
-    //         cout << "|RX:" << slottable_execution[i].send_or_recv_node;
-    //     }
-    //     else
-    //         cout << "|IDLE";
-    // }
-    // cout << endl;
+    cout << endl;
+    cout << "Node " << nodeId << " 读取射前时隙表 " << endl;
+    for (int i = 0; i < TRAFFIC_SLOT_NUMBER; i++)
+    {
+        if (slottable_execution[i].state == DAATR_STATUS_TX &&
+            slottable_execution[i].send_or_recv_node != 0)
+        {
+            cout << "|TX:" << slottable_execution[i].send_or_recv_node;
+        }
+        else if (slottable_execution[i].state == DAATR_STATUS_RX &&
+                 slottable_execution[i].send_or_recv_node != 0)
+        {
+            cout << "|RX:" << slottable_execution[i].send_or_recv_node;
+        }
+        else
+            cout << "|IDLE";
+    }
+    cout << endl;
 }
 
 /// @brief 读取调整阶段时隙表
 void MacDaatr::LoadSlottable_Adjustment()
 {
     // cout << "Node " << nodeId << " 读入建链阶段时隙表" << endl;
-    string stlotable_state_filename = "../config/SlottableAdjustment/Slottable_RXTX_State_" +
+    string stlotable_state_filename = "./config/SlottableAdjustment/Slottable_RXTX_State_" +
                                       to_string(static_cast<long long>(nodeId)) + ".txt";
-    string stlotable_node_filename = "../config/SlottableAdjustment/Slottable_RXTX_Node_" +
+    string stlotable_node_filename = "./config/SlottableAdjustment/Slottable_RXTX_Node_" +
                                      to_string(static_cast<long long>(nodeId)) + ".txt";
     ifstream fin1(stlotable_state_filename);
     ifstream fin2(stlotable_node_filename);
 
     if (!fin1.is_open())
-        cout << "Could Not Open File1" << endl;
+        cout << "Cannot Open Adjustment File1" << endl;
 
     if (!fin2.is_open())
-        cout << "Could Not Open File2" << endl;
+        cout << "Cannot Open Adjustment File2" << endl;
 
     vector<int> RXTX_state;
     vector<int> RXTX_node;
@@ -362,7 +360,7 @@ bool MacDaatr::MAC_NetworkLayerHasPacketToSend(msgFromControl *busin)
 
     if (loc == TRAFFIC_MAX_BUSINESS_NUMBER) // 这说明队列全满
     {
-        printf("the sequence of node %d of priority %d is full!\n", busin->destAddr, busin->priority);
+        printf("Node %d 的优先级队列 %d 已满\n", busin->destAddr, busin->priority);
 
         if ((busin->packetLength == 73 && busin->msgType == 15 && busin->fragmentNum == 15))
         // 这是频谱感知结果数据包
@@ -382,7 +380,7 @@ bool MacDaatr::MAC_NetworkLayerHasPacketToSend(msgFromControl *busin)
                     flag = true;
                     break;
                 }
-                printf("the sequence of node %d of priority %d is full!\n", i, busin->priority);
+                printf("Node %d 的优先级队列 %d 已满\n", i, busin->priority);
             }
         }
         else
@@ -398,7 +396,7 @@ bool MacDaatr::MAC_NetworkLayerHasPacketToSend(msgFromControl *busin)
                     flag = true;
                     break;
                 }
-                printf("the sequence of node %d of priority %d is full!\n", i, busin->priority);
+                printf("Node %d 的优先级队列 %d 已满\n", i, busin->priority);
             }
         }
     }
@@ -422,7 +420,7 @@ bool MacDaatr::MAC_NetworkLayerHasPacketToSend(msgFromControl *busin)
     return flag;
 }
 
-/// @brief 对shomfcTemp进行处理
+/// @brief 对收到的mfcTemp进行处理
 void MacDaatr::processPktFromNet(msgFromControl *MFC_temp)
 {
     if (MFC_temp->msgType == 1)
@@ -446,6 +444,7 @@ void MacDaatr::processPktFromNet(msgFromControl *MFC_temp)
     }
 }
 
+/// @brief 对收到的身份配置信息进行处理
 void MacDaatr::processNodeNotificationFromNet(NodeNotification *temp)
 {
     if (state_now == Mac_Execution)
@@ -517,6 +516,9 @@ void MacDaatr::processNodeNotificationFromNet(NodeNotification *temp)
     }
 }
 
+/// @brief 对收到的链路构建需求进行处理
+/// @param LinkAssignment_data 链路构建需求指针
+/// @param linkNum 链路构建需求数量
 void MacDaatr::processLinkAssignmentFromNet(LinkAssignment *LinkAssignment_data, int linkNum)
 {
     vector<LinkAssignment_single> LinkAssignment_Storage;
@@ -665,7 +667,7 @@ void MacDaatr::networkToMacBufferHandle(uint8_t *rBuffer_mac)
     }
     case 0x0b:
     { // 链路构建需求 MAC_DAATR_ReceiveTaskInstruct
-        cout << "Node " << nodeId << " 收到链路构建需求";
+        cout << "[Adjustment] Node " << nodeId << " 收到链路构建需求";
         printTime_ms();
 
         // TODO : need_change_state修改
@@ -690,6 +692,8 @@ void MacDaatr::networkToMacBufferHandle(uint8_t *rBuffer_mac)
     }
     case 0x0e:
     { // 转发表 MAC_DAATR_ReceiveForwardingTable
+        cout << "Node " << nodeId << " 收到路由表";
+        printTime_ms();
         Layer2_ForwardingTable_Msg *routingTable = (Layer2_ForwardingTable_Msg *)data;
         vector<vector<uint16_t>> *recvForwardingTable = routingTable->Layer2_FT_Ptr;
 
@@ -718,8 +722,10 @@ void MacDaatr::networkToMacBufferHandle(uint8_t *rBuffer_mac)
 
 void MacDaatr::macParameterInitialization(uint32_t idx)
 {
+    cout << endl;
+    cout << "==========================================" << endl;
     cout << "===== Node " << idx << " macInitialization Start =====" << endl;
-    string filePath = "../config/daatr_config.txt";
+    string filePath = "./config/daatr_config_" + to_string(static_cast<long long>(idx)) + ".txt";
     // 打开文件
     ifstream file(filePath);
     if (!file.is_open())
@@ -812,12 +818,14 @@ void MacDaatr::macParameterInitialization(uint32_t idx)
         }
     }
     file.close();
+
 #ifdef DEBUG_SETUP
     cout << "macInit " << nodeId << ": 配置 IP_Addr" << endl;
 #endif
     // 配置ip地址，ip地址配置策略为'192.168.'+ 子网号 + 节点ID
     for (int i = 2; i <= subnet_node_num + 1; i++)
         in_subnet_id_to_ip[i - 1] = "192.168." + to_string(subnetId) + "." + to_string(i);
+
 #ifdef DEBUG_SETUP
     cout << "macInit " << nodeId << ": 配置业务信道信息" << endl;
 #endif
@@ -827,6 +835,7 @@ void MacDaatr::macParameterInitialization(uint32_t idx)
 
     currentSlotId = 0;
     currentStatus = DAATR_STATUS_IDLE;
+
     LoadSlottable_setup();
     LoadSlottable_Execution();
     LoadSlottable_Adjustment();
@@ -848,15 +857,18 @@ void MacDaatr::macParameterInitialization(uint32_t idx)
             }
         }
     }
+
 #ifdef DEBUG_SETUP
     cout << "macInit " << nodeId << ": 配置网管信道信息" << endl;
 #endif
-
     access_state = DAATR_NO_NEED_TO_ACCESS; // 默认不需要接入
     access_backoff_number = 0;              // 接入时隙
     low_slottable_should_read = 0;
 
     cout << "===== Node " << nodeId << " macInitialization Completed =====" << endl;
+    cout << "==============================================" << endl;
+    cout << endl;
+    cout << endl;
 
     // 测试收发包
     if (nodeId == 2)
@@ -869,7 +881,6 @@ void MacDaatr::macParameterInitialization(uint32_t idx)
         MFC_temp->packetLength = 10;
         MFC_temp->srcAddr = nodeId;
         MFC_temp->destAddr = 1;
-        MFC_temp->backup = 0;
         MFC_temp->repeat = 0;
         MFC_temp->fragmentNum = 1;
 
@@ -883,10 +894,71 @@ void MacDaatr::macParameterInitialization(uint32_t idx)
         MFC_temp2->msgType = 3;
         MFC_temp2->packetLength = 10;
         MFC_temp2->srcAddr = nodeId;
-        MFC_temp2->destAddr = 1;
-        MFC_temp2->backup = 0;
+        MFC_temp2->destAddr = 3;
         MFC_temp2->repeat = 0;
         MFC_temp->fragmentNum = 2;
+
+        MAC_NetworkLayerHasPacketToSend(MFC_temp2);
+        delete MFC_temp2;
+    }
+
+    if (nodeId == 1)
+    {
+        // 测试收发包
+        msgFromControl *MFC_temp = new msgFromControl;
+        MFC_temp->priority = 0;
+        MFC_temp->backup = 0;
+        MFC_temp->msgType = 3;
+        MFC_temp->packetLength = 10;
+        MFC_temp->srcAddr = nodeId;
+        MFC_temp->destAddr = 2;
+        MFC_temp->repeat = 0;
+        MFC_temp->fragmentNum = 3;
+
+        MAC_NetworkLayerHasPacketToSend(MFC_temp);
+        delete MFC_temp;
+
+        // 测试收发包
+        msgFromControl *MFC_temp2 = new msgFromControl;
+        MFC_temp2->priority = 1;
+        MFC_temp2->backup = 0;
+        MFC_temp2->msgType = 3;
+        MFC_temp2->packetLength = 10;
+        MFC_temp2->srcAddr = nodeId;
+        MFC_temp2->destAddr = 3;
+        MFC_temp2->repeat = 0;
+        MFC_temp->fragmentNum = 4;
+
+        MAC_NetworkLayerHasPacketToSend(MFC_temp2);
+        delete MFC_temp2;
+    }
+
+    if (nodeId == 3)
+    {
+        // 测试收发包
+        msgFromControl *MFC_temp = new msgFromControl;
+        MFC_temp->priority = 0;
+        MFC_temp->backup = 0;
+        MFC_temp->msgType = 3;
+        MFC_temp->packetLength = 10;
+        MFC_temp->srcAddr = nodeId;
+        MFC_temp->destAddr = 1;
+        MFC_temp->repeat = 0;
+        MFC_temp->fragmentNum = 5;
+
+        MAC_NetworkLayerHasPacketToSend(MFC_temp);
+        delete MFC_temp;
+
+        // 测试收发包
+        msgFromControl *MFC_temp2 = new msgFromControl;
+        MFC_temp2->priority = 1;
+        MFC_temp2->backup = 0;
+        MFC_temp2->msgType = 3;
+        MFC_temp2->packetLength = 10;
+        MFC_temp2->srcAddr = nodeId;
+        MFC_temp2->destAddr = 2;
+        MFC_temp2->repeat = 0;
+        MFC_temp->fragmentNum = 6;
 
         MAC_NetworkLayerHasPacketToSend(MFC_temp2);
         delete MFC_temp2;
