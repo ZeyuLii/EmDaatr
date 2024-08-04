@@ -60,24 +60,42 @@ void macDaatrControlThread(int signum, siginfo_t *info, void *context)
             daatr_str.lowthreadcondition_variable.notify_one();
         }
     }
-    else
-    {
-        // 如果本次触发业务和网管信道都不需要发送，则进行 节点内 上下层间 信息的接收
-        // 从网络-macFIFO队列接收业务
-        while (RoutingTomac_Buffer.recvFrmNum != 0)
-        {
-            RoutingTomac_Buffer.ringBuffer_get(rBuffer_mac);
-            // networkToMacBufferHandle(rBuffer_mac)//处理接收到的序列（包括读取业务种类，业务长度，然后做对应处理）
-        }
-    }
 
     // 线程结束标志(以什么样的条件终止线程)
     if (end_simulation)
     {
+        daatr_str.macDaatrSocketHighFreq_Send((uint8_t *)send, 13, daatr_str.nodeId);
         if (daatr_str.nodeId == 1)
         {
             char *send = "仿真结束";
             daatr_str.macDaatrSocketLowFreq_Send((uint8_t *)send, 13);
+            daatr_str.lowthreadcondition_variable.notify_one();
         }
-    };
+    }
+}
+
+void MacDaatr::networkToMacBufferReadThread()
+{
+
+    extern ringBuffer RoutingTomac_Buffer;
+    uint8_t rBuffer_mac[MAX_DATA_LEN];
+    extern bool end_simulation;
+    unique_lock<mutex> nTmBufferReadlock(nTmBufferReadmutex);
+
+    while (1)
+    {
+        networkToMacBufferReadThread_condition_variable.wait(nTmBufferReadlock);
+
+        if (end_simulation)
+        {
+            printf("NODE %2d networkToMacBufferReadThread is Over\n", nodeId);
+            break;
+        }
+
+        while (RoutingTomac_Buffer.recvFrmNum != 0)
+        {
+            RoutingTomac_Buffer.ringBuffer_get(rBuffer_mac);
+            networkToMacBufferHandle(rBuffer_mac); // 处理接收到的序列（包括读取业务种类，业务长度，然后做对应处理）
+        }
+    }
 }

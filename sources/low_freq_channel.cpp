@@ -1,3 +1,8 @@
+#include <string.h>
+#include <stdlib.h>
+#include <stddef.h>
+#include <stdio.h>
+
 #include "macdaatr.h"
 #include "low_freq_channel.h"
 #include "common_struct.h"
@@ -493,6 +498,7 @@ void lowFreqSendThread()
                         writeInfo("处于接入阶段，停止收发");
                         break;
                     }
+                    writeInfo("网络层管控信息通告");
                     msgFromControl buss_to_be_sent;
                     bool flag;
                     flag = daatr_str.getLowChannelBusinessFromQueue(&buss_to_be_sent);
@@ -532,6 +538,7 @@ void lowFreqSendThread()
         }
         if (end_simulation)
         {
+            printf("Node %2d LowSendThread is Over\n", daatr_str.nodeId);
             break;
         }
     }
@@ -667,7 +674,7 @@ void lowFreqChannelRecvHandle(uint8_t *bit_seq, uint64_t len)
             macpacket_daatr.node_position = *flight_sta;
             macpacket_daatr.node_position.nodeId = mac_header2.srcAddr;
             UpdatePosition(&macpacket_daatr, &daatr_str);
-            // Get_Angle_Info(&macpacket_daatr, &daatr_str);
+            Get_Angle_Info(&macpacket_daatr, &daatr_str);
             break;
         }
         case 5:
@@ -684,7 +691,7 @@ void lowFreqChannelRecvHandle(uint8_t *bit_seq, uint64_t len)
             macpacket_daatr.node_position.nodeId = mac_header2.srcAddr;
             daatr_str.mana_node = mac_header2.srcAddr; // 更新网管节点
             UpdatePosition(&macpacket_daatr, &daatr_str);
-            // Get_Angle_Info(&macpacket_daatr, &daatr_str);
+            Get_Angle_Info(&macpacket_daatr, &daatr_str);
             break;
         }
         case 6:

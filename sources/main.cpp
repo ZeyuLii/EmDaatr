@@ -36,25 +36,26 @@ int main(int argc, char *argv[])
     daatr_str.macParameterInitialization(id); // mac层参数初始化
     if (daatr_str.nodeId == 1)
     {
-        daatr_str.local_node_position_info.positionX = 1;
-        daatr_str.local_node_position_info.positionY = 2;
-        daatr_str.local_node_position_info.positionZ = 3;
+        daatr_str.local_node_position_info.positionX = 39.976;
+        daatr_str.local_node_position_info.positionY = 116.227;
+        daatr_str.local_node_position_info.positionZ = 3.35976;
     }
     else if (daatr_str.nodeId == 2)
     {
-        daatr_str.local_node_position_info.positionX = 4;
-        daatr_str.local_node_position_info.positionY = 5;
-        daatr_str.local_node_position_info.positionZ = 6;
+        daatr_str.local_node_position_info.positionX = 39.835;
+        daatr_str.local_node_position_info.positionY = 116.189;
+        daatr_str.local_node_position_info.positionZ = 3.33833;
     }
     else if (daatr_str.nodeId == 3)
     {
-        daatr_str.local_node_position_info.positionX = 7;
-        daatr_str.local_node_position_info.positionY = 8;
-        daatr_str.local_node_position_info.positionZ = 9;
+        daatr_str.local_node_position_info.positionX = 39.89;
+        daatr_str.local_node_position_info.positionY = 116.281;
+        daatr_str.local_node_position_info.positionZ = 2.96994;
     }
 
-    thread t1(&MacDaatr::macDaatrSocketLowFreq_Recv, &daatr_str, false);
-    thread t2(lowFreqSendThread);
+    thread lowRecvThread(&MacDaatr::macDaatrSocketLowFreq_Recv, &daatr_str, false);
+    thread lowSendThread(lowFreqSendThread);
+    thread BufferReadThread(&MacDaatr::networkToMacBufferReadThread, &daatr_str);
 
     thread highRecvThread(&MacDaatr::macDaatrSocketHighFreq_Recv, &daatr_str, false);
     thread highSendThread(&MacDaatr::highFreqSendThread, &daatr_str);
@@ -63,11 +64,13 @@ int main(int argc, char *argv[])
 
     cout << "等待同步信号" << endl;
 
-    t1.join();
-    t2.join();
+    lowRecvThread.join();
+    lowSendThread.join();
+    BufferReadThread.join();
     highRecvThread.join();
     highSendThread.join();
 
+    sleep(1);
     cout << simInfoPosition << "    " << over_count << "    " << PPS_overcount << endl;
 
     // 将仿真数据写入文件

@@ -115,12 +115,6 @@ void MacDaatr::macDaatrSocketHighFreq_Recv(bool IF_NOT_BLOCKED = false)
     { // 阻塞模式
         while (1)
         {
-            if (end_simulation == true)
-            {
-                cout << "Node " << nodeId << " HighRecvThread is Over" << endl;
-                break;
-            }
-
             recv_num = recvfrom(sock_fd, recv_buf, sizeof(recv_buf), 0,
                                 (sockaddr *)&addr_client, (socklen_t *)&len);
             recv_buf[recv_num] = '\0';
@@ -131,6 +125,12 @@ void MacDaatr::macDaatrSocketHighFreq_Recv(bool IF_NOT_BLOCKED = false)
             //     cout << hex << (int)recv_buf[i] << " ";
             // }
             // cout << dec << endl;
+
+            if (end_simulation == true)
+            {
+                cout << "Node " << nodeId << " HighRecvThread is Over" << endl;
+                break;
+            }
 
             highFreqChannelHandle((uint8_t *)recv_buf, recv_num);
         }

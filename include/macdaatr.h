@@ -182,6 +182,15 @@ typedef struct spectrum_sensing_struct
     unsigned int spectrum_sensing[TOTAL_FREQ_POINT]; // 频谱感知结果(为一串0、1序列, 0代表此频段有干扰, 1代表此频段无干扰)
 } spectrum_sensing_struct;
 
+typedef struct A_ang
+{
+    float el;    // 天线俯仰角
+    float az;    // 天线方位角
+    float b_ang; // 波束角(波束指向向量与y轴正向的夹角)
+    float dys;   // 天线坐标系下的dys
+    int index;
+} A_ang;
+
 typedef struct subnet_frequency_parttern
 {
     unsigned int mana_node_hopping[500];                                       // 网管节点跳频图案
@@ -355,6 +364,11 @@ public:
     bool start_irq;
     bool init_send;
 
+    // 网络层到MAC层缓存区读线程
+    mutex nTmBufferReadmutex;                                           // 控制网络层到MAC层缓存区读线程互斥量
+    condition_variable networkToMacBufferReadThread_condition_variable; // 网络层到MAC层缓存区条件变量
+    // unique_lock<mutex> nTmBufferReadlock(daatr_str.nTmBufferReadmutex);
+
     // 类函数
 public:
     // 初始化相关
@@ -388,12 +402,14 @@ public:
     void macDaatrSocketLowFreq_Send(uint8_t *data, uint32_t len);
     void macDaatrSocketLowFreq_Recv(bool IF_NOT_BLOCKED);
 
-    // 层间缓冲区操作函数
-    void networkToMacBufferHandle(uint8_t *rBuffer_mac);
+    // 层间缓冲区操作函数 (W)
     void macToNetworkBufferHandle(void *data, uint8_t type, uint16_t len);
     void processPktFromNet(msgFromControl *MFC_temp);
     void processNodeNotificationFromNet(NodeNotification *temp);
     void processLinkAssignmentFromNet(LinkAssignment *LinkAssignment_data, int linkNum);
+    // 层间缓冲区操作函数 (R)
+    void networkToMacBufferHandle(uint8_t *rBuffer_mac);
+    void networkToMacBufferReadThread();
 };
 
 uint64_t getTime();
