@@ -346,6 +346,8 @@ public:
 
     highFreqBusinessQueue businessQueue[SUBNET_NODE_NUMBER_MAX]; // 业务信道的待发送队列
 
+    // 缺少bool has_received_sequence_ACK;  523
+
     /*随遇接入相关*/
     NodeAccess access_state;         // 当前节点接入状态
     uint8_t access_backoff_number;   // 接入退避数目
@@ -372,6 +374,8 @@ public:
     condition_variable networkToMacBufferReadThread_condition_variable; // 网络层到MAC层缓存区条件变量
     // unique_lock<mutex> nTmBufferReadlock(daatr_str.nTmBufferReadmutex);
 
+    // 掉链标志位
+    bool node_is_chain_drop;
     // 类函数
 public:
     // 初始化相关

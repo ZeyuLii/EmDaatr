@@ -11,6 +11,7 @@
 #include "macdaatr.h"
 #include "low_freq_channel.h"
 #include "socket_control.h"
+#include "timer.h"
 
 using namespace std;
 
@@ -201,6 +202,7 @@ void MacDaatr::macDaatrSocketLowFreq_Recv(bool IF_NOT_BLOCKED = false)
             recv_num = recvfrom(sock_fd, recv_buf, sizeof(recv_buf), 0,
                                 (struct sockaddr *)&addr_client, (socklen_t *)&len);
             recv_buf[recv_num] = '\0';
+            printf(" rec num=%d \n", recv_num);
             find_char = strstr(recv_buf, "ready NODE");
             if (find_char != NULL)
             {
@@ -267,14 +269,34 @@ void MacDaatr::macDaatrSocketLowFreq_Recv(bool IF_NOT_BLOCKED = false)
             recv_num = recvfrom(sock_fd, recv_buf, sizeof(recv_buf), 0,
                                 (struct sockaddr *)&addr_client, (socklen_t *)&len);
             recv_buf[recv_num] = '\0';
-            if (!strcmp("仿真结束", recv_buf))
+
+            if (recv_num == 7)
             {
-                end_simulation = true;
-                printf("NODE %2d is over\n", nodeId);
+                if (!strcmp("掉链", recv_buf))
+                {
+                    node_is_chain_drop = 1;
+                    state_now = Mac_Access;
+                    access_state = DAATR_NEED_ACCESS;
+                    writeInfo("NODE %2d 掉链", nodeId);
+                    printf("NODE %2d 掉链\n", nodeId);
+                }
+                else if (!strcmp("上链", recv_buf))
+                {
+                    node_is_chain_drop = 0;
+                    writeInfo("NODE %2d 上链", nodeId);
+                    printf("NODE %2d 上链\n", nodeId);
+                }
+            }
+
+            if (end_simulation)
+            {
+                printf("NODE %2d LowRecvThread is Over\n", nodeId);
                 sleep(1);
                 break;
             }
-            lowFreqChannelRecvHandle((uint8_t *)recv_buf, recv_num);
+
+            if (!node_is_chain_drop)
+                lowFreqChannelRecvHandle((uint8_t *)recv_buf, recv_num);
         }
     }
     else

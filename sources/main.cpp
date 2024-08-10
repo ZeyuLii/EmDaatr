@@ -34,24 +34,6 @@ int main(int argc, char *argv[])
     int id = atoi(argv[1]);
 
     daatr_str.macParameterInitialization(id); // mac层参数初始化
-    if (daatr_str.nodeId == 1)
-    {
-        daatr_str.local_node_position_info.positionX = 39.976;
-        daatr_str.local_node_position_info.positionY = 116.227;
-        daatr_str.local_node_position_info.positionZ = 3.35976;
-    }
-    else if (daatr_str.nodeId == 2)
-    {
-        daatr_str.local_node_position_info.positionX = 39.835;
-        daatr_str.local_node_position_info.positionY = 116.189;
-        daatr_str.local_node_position_info.positionZ = 3.33833;
-    }
-    else if (daatr_str.nodeId == 3)
-    {
-        daatr_str.local_node_position_info.positionX = 39.89;
-        daatr_str.local_node_position_info.positionY = 116.281;
-        daatr_str.local_node_position_info.positionZ = 2.96994;
-    }
 
     thread lowRecvThread(&MacDaatr::macDaatrSocketLowFreq_Recv, &daatr_str, false);
     thread lowSendThread(lowFreqSendThread);
@@ -60,6 +42,7 @@ int main(int argc, char *argv[])
     thread highRecvThread(&MacDaatr::macDaatrSocketHighFreq_Recv, &daatr_str, false);
     thread highSendThread(&MacDaatr::highFreqSendThread, &daatr_str);
 
+    // 将主线程优先级设高
     pid_t pid = getpid();
     struct sched_param param;
     param.sched_priority = sched_get_priority_max(SCHED_FIFO); // 也可用SCHED_RR

@@ -1,0 +1,46 @@
+#define MAX_BUFFER_NUM 256   //接受缓冲区的最大个数(大小待定)
+
+typedef unsigned int uint32_t;
+typedef unsigned short uint16_t;
+typedef unsigned char uint8_t;
+
+//循环缓冲区定义(暂定)
+struct ringBuffer
+{
+    vector<vector<uint8_t> > recvFrmData;
+    //下列数据类型根据MAX_BUFFER_NUM给出
+    uint8_t recvFrmHead;  //添加数据的位置
+    uint8_t recvFrmTail;  //读取数据的位置
+    uint8_t recvFrmNum;  //缓冲区中已经存放的数据个数
+    pthread_mutex_t lock;  //写时互斥锁，防止同时对缓冲区进行写操作
+
+    //写缓冲区数据成员函数
+    void ringBuffer_put(const vector<uint8_t> wBuffer) {
+        if(recvFrmNum < MAX_BUFFER_NUM) {
+            pthread_mutex_lock(&lock);
+            //将要写入的缓冲区清空
+            recvFrmData.erase(recvFrmData.begin() + recvFrmHead);
+            //将数据写入缓冲区
+            for(int i = 0; i < wBuffer.size(); i++) {
+	recvFrmData[recvFrmHead].push_back(wBuffer[i]);
+            }
+            //更新缓冲区编号
+            recvFrmHead = (recvFrmHead + 1) % MAX_BUFFER_NUM;
+            ++recvFrmNum;
+            pthread_mutex_unlock(&lock);
+        }
+    }
+
+    //读缓冲区数据成员函数
+    void ringBuffer_get(vector<uint8_t> &rBuffer) {
+        if(recvFrmNum > 0 && (recvFrmData[recvFrmTail].size() > 0)) {
+            //读取缓冲区数据
+            for(int i = 0; i < recvFrmData[recvFrmTail].size(); i++) {
+                 rBuffer.push_back(recvFrmData[recvFrmTail][i]);
+             }
+            //更新缓冲区编号
+            recvFrmTail = (recvFrmTail + 1) % MAX_BUFFER_NUM;
+            --recvFrmNum;
+        }
+    }
+};
