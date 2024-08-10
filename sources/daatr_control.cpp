@@ -1,6 +1,6 @@
 #include "macdaatr.h"
 #include "main.h"
-
+#include "timer.h"
 using namespace std;
 
 /**********************此文件定义了总控线程相关内容************************/
@@ -40,18 +40,19 @@ void macDaatrControlThread(int signum, siginfo_t *info, void *context)
     }
 
     // 节点掉网测试
-    // if (time_ms == 5000 && nodeId == 3)
+    // if (time_ms == 5000 && daatr_str.nodeId == 3)
     // {
-    //     state_now = Mac_Access;
-    //     access_state = DAATR_NEED_ACCESS;
-    //     writeInfo("NODE %2d 掉链", nodeId);
+    //     daatr_str.state_now = Mac_Access;
+    //     daatr_str.access_state = DAATR_NEED_ACCESS;
+    //     writeInfo("NODE %2d 掉链", daatr_str.nodeId);
     // }
 
     daatr_str.clock_trigger += 1;
     if (daatr_str.clock_trigger % (int)HIGH_FREQ_CHANNEL_TRIGGER_LEN == 0) // 25
     {
         // 业务信道线程触发 (节点间的收发线程)
-        daatr_str.highThread_condition_variable.notify_one(); // 唤醒阻塞在发送线程 highFreqSendThread() 的 wait()
+        daatr_str.highThread_condition_variable.notify_one();                   // 唤醒阻塞在发送线程 highFreqSendThread() 的 wait()
+        daatr_str.networkToMacBufferReadThread_condition_variable.notify_one(); // 唤醒缓存区读函数
 
         if (daatr_str.clock_trigger % (int)LOW_FREQ_CHANNEL_TRIGGER_LEN == 0) // 200
         {
@@ -64,12 +65,15 @@ void macDaatrControlThread(int signum, siginfo_t *info, void *context)
     // 线程结束标志(以什么样的条件终止线程)
     if (end_simulation)
     {
+        sleep(1);
+        daatr_str.highThread_condition_variable.notify_one();                   // 唤醒阻塞在发送线程 highFreqSendThread() 的 wait()
+        daatr_str.networkToMacBufferReadThread_condition_variable.notify_one(); // 唤醒缓存区读函数
         daatr_str.macDaatrSocketHighFreq_Send((uint8_t *)send, 13, daatr_str.nodeId);
+        daatr_str.lowthreadcondition_variable.notify_one();
         if (daatr_str.nodeId == 1)
         {
             char *send = "仿真结束";
             daatr_str.macDaatrSocketLowFreq_Send((uint8_t *)send, 13);
-            daatr_str.lowthreadcondition_variable.notify_one();
         }
     }
 }

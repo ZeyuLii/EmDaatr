@@ -648,7 +648,7 @@ void MacDaatr::networkToMacBufferHandle(uint8_t *rBuffer_mac)
     uint8_t type = rBuffer_mac[0]; // 数据类型
     uint16_t len = 0;              // 数据长度（单位：字节）
     len |= rBuffer_mac[1];
-    len << 8;
+    len <<= 8;
     len |= rBuffer_mac[2];
     uint8_t *data = &rBuffer_mac[3]; // 数据启示指针
     switch (type)
@@ -873,6 +873,10 @@ void MacDaatr::macParameterInitialization(uint32_t idx)
     // 测试收发包
     if (nodeId == 2)
     {
+        // 测试数据
+        local_node_position_info.positionX = 39.276;
+        local_node_position_info.positionY = 116.627;
+        local_node_position_info.positionZ = 3.37976;
         // 测试收发包
         msgFromControl *MFC_temp = new msgFromControl;
         MFC_temp->priority = 0;
@@ -904,6 +908,10 @@ void MacDaatr::macParameterInitialization(uint32_t idx)
 
     if (nodeId == 1)
     {
+        // 测试数据
+        local_node_position_info.positionX = 39.976;
+        local_node_position_info.positionY = 116.227;
+        local_node_position_info.positionZ = 3.35976;
         // 测试收发包
         msgFromControl *MFC_temp = new msgFromControl;
         MFC_temp->priority = 0;
@@ -935,6 +943,10 @@ void MacDaatr::macParameterInitialization(uint32_t idx)
 
     if (nodeId == 3)
     {
+        // 测试数据
+        local_node_position_info.positionX = 39.976;
+        local_node_position_info.positionY = 116;
+        local_node_position_info.positionZ = 3.3592;
         // 测试收发包
         msgFromControl *MFC_temp = new msgFromControl;
         MFC_temp->priority = 0;

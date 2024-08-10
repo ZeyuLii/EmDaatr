@@ -288,7 +288,7 @@ void ppsIRQHandle(int signum, siginfo_t *info, void *context)
     return;
 }
 
-void writeInfo(const char *fmt, ...)
+void _writeInfo(bool addTimeHeadFlag, const char *fmt, ...)
 {
 
     static char sprint_buf[2048];
@@ -298,6 +298,14 @@ void writeInfo(const char *fmt, ...)
     va_start(args, fmt);
     vsprintf(sprint_buf, fmt, args);
     va_end(args);
+
+    if (!addTimeHeadFlag)
+    {
+        sprintf(simInfo[simInfoPosition++],
+                "%s\n",
+                sprint_buf);
+        return;
+    }
 
     clock_gettime(CLOCK_MONOTONIC, &tptemp);
 
@@ -311,11 +319,11 @@ void writeInfo(const char *fmt, ...)
     long long temp_usec = temp / 1000;
     long long temp_nsec = temp % 1000;
 
-    mtxPrintTime.lock();
+    // mtxPrintTime.lock();
     sprintf(simInfo[simInfoPosition++],
             "[ %3d ,  %3lld %3lld %3lld] %s\n",
             temp_sec, temp_msec, temp_usec, temp_nsec, sprint_buf);
-    mtxPrintTime.unlock();
+    // mtxPrintTime.unlock();
 }
 
 void timeInit()
@@ -348,6 +356,7 @@ void timeInit()
         while (!daatr_str.init_send)
         {
             daatr_str.macDaatrSocketLowFreq_Send((uint8_t *)send, 13);
+            printf("send\n");
             sleep(1);
         }
         printf("等待开始信号\n");

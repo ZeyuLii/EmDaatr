@@ -24,6 +24,8 @@
 #include <stdarg.h>
 #include <sys/time.h>
 
+#define writeInfo(fmt, ...) _writeInfo(1, fmt, ##__VA_ARGS__)
+
 using namespace std;
 
 typedef void (*event_function)(void); // 回调函数指针
@@ -42,7 +44,7 @@ void microsecondIRQ();
 void ppsIRQHandle(int signum, siginfo_t *info, void *context);
 int utcGet();
 int utcToint(const char *str, int find);
-void writeInfo(const char *fmt, ...);
+void _writeInfo(bool addTimeHeadFlag, const char *fmt, ...);
 
 bool insertEventTimer_us(uint64_t time_del, event_function event_func);
 bool insertEventTimer_ms(double time_del, event_function event_func);
