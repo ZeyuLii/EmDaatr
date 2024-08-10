@@ -294,7 +294,7 @@ void lowFreqSendThread()
                         int i = 0;
                         for (i = 0; i < FREQUENCY_COUNT; i++)
                         {
-                            access_reply.mana_node_hopping[i] = daatr_str.frequency_sequence[daatr_str.nodeId][i]; // 将网管节点的跳频序列赋值进去
+                            access_reply.mana_node_hopping[i] = daatr_str.freqSeq[daatr_str.nodeId][i]; // 将网管节点的跳频序列赋值进去
                             // access_reply.mana_node_hopping[i] = i;//测试用
                         }
                         for (i = 0; i < 5; i++)
@@ -431,7 +431,7 @@ void lowFreqSendThread()
                         {
                             // 若当前状态不为时隙调整阶段且不为时隙调整阶段
                             state = 1;
-                            // cout << "网管节点改变自己节点 state_now 为 Adjustment_Slot" << endl;
+                            cout << "网管节点改变自己节点 state_now 为 Adjustment_Slot" << endl;
                             daatr_str.state_now = Mac_Adjustment_Slot; // 调整网管节点（本节点）为时隙调整阶段
                             daatr_str.need_change_state = 0;           // 已转变状态, 状态位复原
                             daatr_str.receivedSlottableTimes = 0;      // 初始未收到时隙表
@@ -440,7 +440,8 @@ void lowFreqSendThread()
                     else if (daatr_str.need_change_state == 2)
                     { // 若转变为频率调整阶段
                         if (daatr_str.state_now != Mac_Adjustment_Slot && daatr_str.state_now != Mac_Adjustment_Freqency)
-                        { // 若当前状态不为时隙调整阶段且不为时隙调整阶段
+                        {
+                            // 若当前状态不为时隙调整阶段且不为时隙调整阶段
                             state = 2;
                             cout << "网管节点改变自己节点 state_now 为 Mac_Adjustment_Freqency" << endl;
                             daatr_str.state_now = Mac_Adjustment_Freqency; // 调整网管节点（本节点）为频率调整阶段
@@ -460,6 +461,7 @@ void lowFreqSendThread()
                         state = 2;
                         daatr_str.need_change_state = 1; // 转变成需要进入频率调整阶段
                     }
+
                     MacHeader2 *mac_header2_ptr = new MacHeader2;
                     mac_header2_ptr->PDUtype = 1;
                     mac_header2_ptr->srcAddr = daatr_str.nodeId;
@@ -609,7 +611,7 @@ void lowFreqChannelRecvHandle(uint8_t *bit_seq, uint64_t len)
                 int slot_location = 0;
                 for (i = 0; i < FREQUENCY_COUNT; i++)
                 {
-                    daatr_str.frequency_sequence[mac_header2.srcAddr - 1][i] = access_reply->mana_node_hopping[i]; // 将网管节点的跳频序列赋值进去
+                    daatr_str.freqSeq[mac_header2.srcAddr - 1][i] = access_reply->mana_node_hopping[i]; // 将网管节点的跳频序列赋值进去
                 }
                 for (i = 0; i < 1; i++)
                 { // 第一个时隙为飞行状态信息

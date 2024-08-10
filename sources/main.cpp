@@ -60,6 +60,15 @@ int main(int argc, char *argv[])
     thread highRecvThread(&MacDaatr::macDaatrSocketHighFreq_Recv, &daatr_str, false);
     thread highSendThread(&MacDaatr::highFreqSendThread, &daatr_str);
 
+    pid_t pid = getpid();
+    struct sched_param param;
+    param.sched_priority = sched_get_priority_max(SCHED_FIFO); // 也可用SCHED_RR
+    if (sched_setscheduler(pid, SCHED_FIFO, &param) == -1)
+    {
+        perror("sched_setscheduler");
+        return 1;
+    }
+
     timeInit();
 
     cout << "等待同步信号" << endl;

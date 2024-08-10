@@ -329,8 +329,11 @@ public:
     mutex highThreadSendMutex;                        // 控制高频信道的发送线程互斥量  unique_lock<mutex> highThreadSendLock(highThreadSendMutex);
     condition_variable highThread_condition_variable; // 高频信道条件变量 用来在daatrctr中每2.5ms唤醒高频信道发送线程
     uint32_t receivedSlottableTimes;                  // 时隙表收到次数
+    uint32_t receivedSequenceTimes;
     uint32_t slottableTimes;
+    uint32_t sequenceTimes;
     uint32_t stACKTimes;
+    uint32_t seqACKTimes;
     bool has_received_sequence;
     bool receivedChainBuildingRequest;
     uint32_t blTimes;                                     // 已经发送建链请求的数量 与MacHeader seq相关
@@ -349,7 +352,7 @@ public:
     uint16_t waiting_to_access_node; // 等待接入的节点ID(网管节点专属)
 
     // 频域信息
-    unsigned int frequency_sequence[SUBNET_NODE_NUMBER_MAX][FREQUENCY_COUNT];        // 生成子网内调频序列(仅网管节点有)
+    unsigned int freqSeq[SUBNET_NODE_NUMBER_MAX][FREQUENCY_COUNT];                   // 生成子网内调频序列(仅网管节点有)
     unsigned int subnet_frequency_sequence[TOTAL_FREQ_POINT];                        // 子网所使用频段(共501频点, 对应频点值为1代表使用此频点, 0为不使用)(网管节点独有)
     unsigned int spectrum_sensing_node[TOTAL_FREQ_POINT];                            // 本节点频谱感知结果
     unsigned int spectrum_sensing_sum[SUBNET_NODE_NUMBER_MAX][TOTAL_FREQ_POINT + 1]; // 总频谱感知结果, 只存在于网管节点.最后一列每一行代表一个节点,
@@ -376,7 +379,7 @@ public:
     void macParameterInitialization(uint32_t idx);
 
     // 管控线程
-    void macDaatrControlThread(int signum, siginfo_t *info, void *context);
+    // void macDaatrControlThread(int signum, siginfo_t *info, void *context);
 
     // Socket 相关
     int macDaatrCreateUDPSocket(string ip, int port, bool if_not_block);

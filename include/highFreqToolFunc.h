@@ -32,4 +32,6 @@ void ReAllocate_Traffic_slottable(MacDaatr *macdata_daatr,
 void sendLocalLinkStatus(MacDaatr *macdata_daatr);
 
 void sendOtherNodePosition(MacDaatr *macdata_daatr);
+
+void generateSlottableExecution(MacDaatr *macdata_daatr);
 #endif

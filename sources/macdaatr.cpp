@@ -837,6 +837,7 @@ void MacDaatr::macParameterInitialization(uint32_t idx)
     currentStatus = DAATR_STATUS_IDLE;
 
     LoadSlottable_setup();
+    generateSlottableExecution(this);
     LoadSlottable_Execution();
     LoadSlottable_Adjustment();
 

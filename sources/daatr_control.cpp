@@ -52,7 +52,7 @@ void macDaatrControlThread(int signum, siginfo_t *info, void *context)
     {
         // 业务信道线程触发 (节点间的收发线程)
         daatr_str.highThread_condition_variable.notify_one(); // 唤醒阻塞在发送线程 highFreqSendThread() 的 wait()
-
+        daatr_str.networkToMacBufferReadThread_condition_variable.notify_one();
         if (daatr_str.clock_trigger % (int)LOW_FREQ_CHANNEL_TRIGGER_LEN == 0) // 200
         {
             // 网管信道线程触发(网管信道 节点间 收发线程)
