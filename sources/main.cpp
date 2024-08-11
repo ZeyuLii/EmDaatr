@@ -34,7 +34,6 @@ int main(int argc, char *argv[])
     int id = atoi(argv[1]);
 
     daatr_str.macParameterInitialization(id); // mac层参数初始化
-
     thread lowRecvThread(&MacDaatr::macDaatrSocketLowFreq_Recv, &daatr_str, false);
     thread lowSendThread(lowFreqSendThread);
     thread BufferReadThread(&MacDaatr::networkToMacBufferReadThread, &daatr_str);

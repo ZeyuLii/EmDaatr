@@ -93,8 +93,8 @@ enum MacState
 {
     // Mac层节点当前所处状态  分为初始化(Mac_Initialization)、调整(Mac_Adjustment)、执行(Mac_Execution)
     Mac_Initialization = 0,
-    Mac_Adjustment_Slot,     // 时隙调整
-    Mac_Adjustment_Freqency, // 频率调整
+    Mac_Adjustment_Slot,      // 时隙调整
+    Mac_Adjustment_Frequency, // 频率调整
     Mac_Execution,
     Mac_Access // 接入阶段
 };

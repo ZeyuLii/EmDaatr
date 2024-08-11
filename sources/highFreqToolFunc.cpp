@@ -516,7 +516,7 @@ void ReAllocate_Traffic_slottable(MacDaatr *macdata_daatr,
     // Full Multiplexing
     vector<int> node_pair_1; // 1 是非子网间时隙的分配结果
     vector<int> node_pair_2; // 2 是8-15时隙
-    srand((unsigned)time(NULL));
+    // srand((unsigned)time(NULL));
 
     for (i = 0; i < TRAFFIC_SLOT_NUMBER; i++)
     {
@@ -695,7 +695,7 @@ void sendOtherNodePosition(MacDaatr *macdata_daatr)
     delete[] NodePosition_test;
 }
 
-static vector<LinkAssignment> *Generate_LinkAssignment_Initialization(MacDaatr *macdata_daatr)
+vector<LinkAssignment> *Generate_LinkAssignment_Initialization(MacDaatr *macdata_daatr)
 {
     int i, j;
     vector<LinkAssignment> *link_assign_queue = new vector<LinkAssignment>;
@@ -771,9 +771,11 @@ void generateSlottableExecution(MacDaatr *macdata_daatr)
                 }
             }
         }
+
         sort(LinkAssignment_Storage.begin(), LinkAssignment_Storage.end(), Compare_by_Priority);
         vector<Alloc_slot_traffic> allocSlottableTraffic(TRAFFIC_SLOT_NUMBER);
         ReAllocate_Traffic_slottable(macdata_daatr, allocSlottableTraffic, LinkAssignment_Storage);
+
         // 下面需要将分配表转换为各节点对应的时隙表
         for (int i = 0; i < SUBNET_NODE_NUMBER_MAX; i++)
         {
@@ -865,12 +867,11 @@ static int calculateFreqNum(MacDaatr *macdata_daatr)
 }
 
 // 生成下一个m序列值
-static unsigned char Generate_M_SequenceValue()
+unsigned char Generate_M_SequenceValue()
 {
     // 生成九位m序列
     unsigned char m_sequence[M_SEQUENCE_LENGTH] = {0, 0, 0, 0, 0, 0, 0, 0, 1};
     unsigned char m_sequence_index = M_SEQUENCE_LENGTH - 1;
-    unsigned int freqSeq[SUBNET_NODE_NUMBER_MAX][FREQUENCY_COUNT]; // 初始跳频序列
 
     unsigned char feedback = (m_sequence[m_sequence_index] + m_sequence[0]) % 2;
     unsigned char output = m_sequence[m_sequence_index];
@@ -884,17 +885,17 @@ static unsigned char Generate_M_SequenceValue()
 }
 
 // 调整窄点
-static void adjustNarrowBand(unsigned int freqSeq[SUBNET_NODE_NUMBER_MAX][FREQUENCY_COUNT])
+void adjustNarrowBand(unsigned int freqSeq[SUBNET_NODE_NUMBER_MAX][FREQUENCY_COUNT])
 {
     int prev_node;
-
     for (int time = 0; time < FREQUENCY_COUNT; time++)
     {
-        for (int node = 0; node < SUBNET_NODE_NUMBER_MAX; node++)
+        for (int node = 0; node < 5; node++)
         {
             prev_node = node - 1;
-            while (prev_node >= 0)
+            while (prev_node > 0)
             {
+                // cout << prev_node << endl;
                 if (freqSeq[node][time] - freqSeq[prev_node][time] <= MIN_FREQUENCY_DIFFERENCE ||
                     freqSeq[prev_node][time] - freqSeq[node][time] <= MIN_FREQUENCY_DIFFERENCE)
                 {
@@ -1067,6 +1068,79 @@ static void generateFreqSequence(MacDaatr *macdata_daatr)
     }*/
 }
 
+void MacDaatrInitialize_Frequency_Seqence(MacDaatr *macdata_daatr)
+{
+    unsigned int pre_freqSeq[SUBNET_NODE_NUMBER_MAX][FREQUENCY_COUNT]; // 调整前序列
+
+    unsigned char available_frequency[TOTAL_FREQ_POINT];
+    for (int time = 0; time < FREQUENCY_COUNT; time++)
+    {
+        // int time = FREQUENCY_COUNT - 1;
+        for (int node = 0; node < SUBNET_NODE_NUMBER_MAX; node++)
+        {
+            unsigned int m_sequence_decimal = 0;
+            for (int i = 0; i < M_SEQUENCE_LENGTH; i++)
+            {
+                m_sequence_decimal <<= 1;
+                m_sequence_decimal |= Generate_M_SequenceValue();
+            }
+
+            pre_freqSeq[node][time] = m_sequence_decimal % MAX_FREQUENCY;
+        }
+    }
+
+    // 调整窄带, 直到没有窄带
+    int narrow_band_found = 1;
+    int total_attempts = 0;
+    int max_attempts = 100; // Maximum attempts to find suitable frequencies
+    while (narrow_band_found == 1 && total_attempts < max_attempts)
+    {
+        narrow_band_found = 0;
+        adjustNarrowBand(pre_freqSeq);
+
+        // 检查是否有窄带
+        for (int time = 0; time < FREQUENCY_COUNT; time++)
+        {
+            for (int node = 0; node < SUBNET_NODE_NUMBER_MAX; node++)
+            {
+                int prev_node = node - 1;
+                while (prev_node >= 0)
+                {
+                    if (((pre_freqSeq[node][time] - pre_freqSeq[prev_node][time] >= 0) &&
+                         (pre_freqSeq[node][time] - pre_freqSeq[prev_node][time] < MIN_FREQUENCY_DIFFERENCE)) ||
+                        ((pre_freqSeq[node][time] - pre_freqSeq[prev_node][time] < 0) &&
+                         (pre_freqSeq[prev_node][time] - pre_freqSeq[node][time] < MIN_FREQUENCY_DIFFERENCE)))
+
+                    {
+                        narrow_band_found = 1;
+                        break;
+                    }
+                    else
+                        prev_node--;
+                }
+            }
+        }
+    }
+
+    // 打印节点初始的频率序列
+    // printf("初始跳频序列\n");
+    // for (int node = 0; node < SUBNET_NODE_NUMBER_MAX; node++)
+    // {
+    //     printf("Node %d:", node + 1);
+    //     for (int time = 0; time < FREQUENCY_COUNT; time++)
+    //     {
+    //         printf("%d ", pre_freqSeq[node][time]);
+    //     }
+    //     printf("\n");
+    // }
+
+    for (int i = 0; i < SUBNET_NODE_NUMBER_MAX; i++)
+    { // 将生成的调频数组赋值给网管节点保存的生成跳频组
+        for (int j = 0; j < FREQUENCY_COUNT; j++)
+            macdata_daatr->freqSeq[i][j] = pre_freqSeq[i][j];
+    }
+}
+
 // 根据子网分配跳频点生成子网内使用的频段
 static void generateSubnetUsedFrequency(MacDaatr *macdata_daatr)
 {
@@ -1091,7 +1165,7 @@ static void generateSubnetUsedFrequency(MacDaatr *macdata_daatr)
     // cout << endl;
 }
 
-void judgeIfEnterFreqAdjust(MacDaatr *macdata_daatr)
+void judgeIfEnterFreqAdjustment(MacDaatr *macdata_daatr)
 {
     // 判断是否进入频率调整阶段
     int i = 0, j = 0;
@@ -1146,7 +1220,7 @@ void judgeIfEnterFreqAdjust(MacDaatr *macdata_daatr)
 
         if (macdata_daatr->need_change_state == 0 &&
             macdata_daatr->state_now != Mac_Adjustment_Slot &&
-            macdata_daatr->state_now != Mac_Adjustment_Freqency)
+            macdata_daatr->state_now != Mac_Adjustment_Frequency)
         {
             // 当前状态稳定, 在这之前没有发生要调整状态的事件, 且不处于任何调整状态
             cout << "即将进入频域调整阶段!";
@@ -1168,4 +1242,63 @@ void judgeIfEnterFreqAdjust(MacDaatr *macdata_daatr)
     }
     else
         cout << "干扰频段数未达到阈值, 不作调整" << endl;
+}
+
+int Generate_LinkAssignment_Stage_1(LinkAssignment link_assign[])
+{
+    int i, j, k, LA_index = 0;
+    // while (LA_index < num)
+    // {
+    for (i = 1; i <= 3; i++)
+    {
+        if (i == 1) // 网管节点的相关业务构建需求
+        {
+            for (j = 2; j <= 3; j++)
+            {
+
+                link_assign[LA_index].begin_node = i;
+                link_assign[LA_index].end_node = j;
+
+                link_assign[LA_index].listNumber = 4;
+                link_assign[LA_index].priority[0] = 0;
+                link_assign[LA_index].size[0] = 462 / 8;
+                link_assign[LA_index].QOS[0] = 4;
+
+                link_assign[LA_index].priority[1] = 1;
+                link_assign[LA_index].size[1] = 480 / 8;
+                link_assign[LA_index].QOS[1] = 4;
+
+                link_assign[LA_index].priority[2] = 2;
+                link_assign[LA_index].size[2] = 950 / 8;
+                link_assign[LA_index].QOS[2] = 4;
+
+                link_assign[LA_index].priority[3] = 3;
+                link_assign[LA_index].size[3] = 298 / 8;
+                link_assign[LA_index].QOS[3] = 4;
+
+                LA_index++;
+            }
+        }
+        else
+        {
+            for (j = 1; j <= 3; j++)
+            {
+                if (i != j)
+                {
+                    link_assign[LA_index].begin_node = i;
+                    link_assign[LA_index].end_node = j;
+
+                    link_assign[LA_index].listNumber = 1;
+
+                    link_assign[LA_index].priority[0] = 3;
+                    link_assign[LA_index].size[0] = 298 / 8;
+                    link_assign[LA_index].QOS[0] = 4;
+
+                    LA_index++;
+                }
+            }
+        }
+    }
+
+    return LA_index;
 }

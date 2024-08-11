@@ -23,11 +23,11 @@
 #define TIME_PRECISION 100                                               // 时间精确度（100us）(与底层中断相关，不要随便改变！！！！！！)
 
 // 子网信息
-#define SUBNET_NODE_NUMBER_MAX 20                 // 子网最大节点数
-#define FREQUENCY_DIVISION_MULTIPLEXING_NUMBER 10 // 子网内通信频分复用允许最大复用数(1/2,向下取整)
-#define FULL_CONNECTION_NODE_NUMBER 20            // 当前使用的全连接时隙表的节点数
-#define SUBNET_NUM 10                             // 子网数
-#define END_LINK_BUILD_TIME 1000                  // 结束建链阶段时间（单位：ms）
+#define SUBNET_NODE_NUMBER_MAX 20                // 子网最大节点数
+#define FREQUENCY_DIVISION_MULTIPLEXING_NUMBER 1 // 子网内通信频分复用允许最大复用数(1/2,向下取整)
+#define FULL_CONNECTION_NODE_NUMBER 10           // 当前使用的全连接时隙表的节点数
+#define SUBNET_NUM 10                            // 子网数
+#define END_LINK_BUILD_TIME 1000                 // 结束建链阶段时间（单位：ms）
 
 // 低频信道相关配置
 #define MANAGEMENT_SLOT_NUMBER_LINK_BUILD 25  // 建链阶段网管信道时隙表包含时隙数
@@ -78,8 +78,8 @@ enum MacState
 {
     // Mac层节点当前所处状态  分为初始化(Mac_Initialization)、调整(Mac_Adjustment)、执行(Mac_Execution)
     Mac_Initialization = 0,
-    Mac_Adjustment_Slot,     // 时隙调整
-    Mac_Adjustment_Freqency, // 频率调整
+    Mac_Adjustment_Slot,      // 时隙调整
+    Mac_Adjustment_Frequency, // 频率调整
     Mac_Execution,
     Mac_Access // 接入阶段
 };
@@ -389,9 +389,11 @@ public:
     int macDaatrCreateUDPSocket(string ip, int port, bool if_not_block);
     void initializeNodeIP(sockaddr_in &receiver, uint16_t dest_node, int port);
 
+    // 频域相关
+    // void MacDaatrInitialize_Frequency_Seqence();
+
     // 业务信道相关函数
-    msgFromControl getBusinessFromHighChannel(); // 从业务信道队列取业务
-    void LoadSlottable_setup();                  // 读取建链阶段时隙表
+    void LoadSlottable_setup(); // 读取建链阶段时隙表
     void LoadSlottable_Execution();
     void LoadSlottable_Adjustment();
 

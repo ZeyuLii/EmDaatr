@@ -1,4 +1,5 @@
 #include "macdaatr.h"
+#include "highFreqToolFunc.h"
 #include "main.h"
 #include "timer.h"
 using namespace std;
@@ -45,6 +46,25 @@ void macDaatrControlThread(int signum, siginfo_t *info, void *context)
     //     daatr_str.state_now = Mac_Access;
     //     daatr_str.access_state = DAATR_NEED_ACCESS;
     //     writeInfo("NODE %2d 掉链", daatr_str.nodeId);
+    // }
+
+    // 调整阶段测试
+    // if (time_ms == 3000 && daatr_str.nodeId == 1)
+    // {
+    //     // vector<LinkAssignment> *link_assign_queue =
+    //     //     Generate_LinkAssignment_Initialization(&daatr_str);
+
+    //     int linkNumTest = 437;
+    //     LinkAssignment *linkAssList = (LinkAssignment *)malloc(linkNumTest * sizeof(LinkAssignment));
+    //     linkNumTest = Generate_LinkAssignment_Stage_1(linkAssList);
+    //     unsigned int fullPacketSize = sizeof(LinkAssignmentHeader) + linkNumTest * sizeof(LinkAssignment);
+    //     char *pktStart = (char *)malloc(fullPacketSize);
+
+    //     LinkAssignmentHeader *linkheader = (LinkAssignmentHeader *)pktStart;
+    //     linkheader->linkNum = linkNumTest;
+
+    //     LinkAssignment *linkAssPtr = (LinkAssignment *)(pktStart + sizeof(LinkAssignmentHeader));
+    //     memcpy(linkAssPtr, linkAssList, linkNumTest * sizeof(LinkAssignment));
     // }
 
     daatr_str.clock_trigger += 1;

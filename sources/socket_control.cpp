@@ -202,7 +202,7 @@ void MacDaatr::macDaatrSocketLowFreq_Recv(bool IF_NOT_BLOCKED = false)
             recv_num = recvfrom(sock_fd, recv_buf, sizeof(recv_buf), 0,
                                 (struct sockaddr *)&addr_client, (socklen_t *)&len);
             recv_buf[recv_num] = '\0';
-            printf(" rec num=%d \n", recv_num);
+            // printf(" rec num=%d \n", recv_num);
             find_char = strstr(recv_buf, "ready NODE");
             if (find_char != NULL)
             {

@@ -356,7 +356,7 @@ void timeInit()
         while (!daatr_str.init_send)
         {
             daatr_str.macDaatrSocketLowFreq_Send((uint8_t *)send, 13);
-            printf("send\n");
+            // printf("send\n");
             sleep(1);
         }
         printf("等待开始信号\n");

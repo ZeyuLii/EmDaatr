@@ -4,6 +4,7 @@
 #include "socket_control.h"
 #include "struct_converter.h"
 #include "beam_maintenance.h"
+#include "highFreqToolFunc.h"
 #include "timer.h"
 
 #include <string.h>
@@ -165,7 +166,12 @@ void lowFreqSendThread()
                 close(Spectrum_sensing_file);
                 file_open_time++;
                 timeadd = 0;
-                // judgeIfEnterFreqAdjust(daatr_str);
+
+                // 只有网管节点会对频域调整阶段进行判定
+                // if (daatr_str.nodeId == daatr_str.mana_node)
+                // {
+                //     judgeIfEnterFreqAdjustment(&daatr_str);
+                // }
             }
 
             _writeInfo(0, "当前频谱感知结果为:\n");
@@ -482,7 +488,7 @@ void lowFreqSendThread()
                     else if (daatr_str.need_change_state == 1)
                     { // 若转变为时隙调整阶段
                         if (daatr_str.state_now != Mac_Adjustment_Slot &&
-                            daatr_str.state_now != Mac_Adjustment_Freqency)
+                            daatr_str.state_now != Mac_Adjustment_Frequency)
                         {
                             // 若当前状态不为时隙调整阶段且不为时隙调整阶段
                             state = 1;
@@ -494,13 +500,13 @@ void lowFreqSendThread()
                     }
                     else if (daatr_str.need_change_state == 2)
                     { // 若转变为频率调整阶段
-                        if (daatr_str.state_now != Mac_Adjustment_Slot && daatr_str.state_now != Mac_Adjustment_Freqency)
+                        if (daatr_str.state_now != Mac_Adjustment_Slot && daatr_str.state_now != Mac_Adjustment_Frequency)
                         {
                             // 若当前状态不为时隙调整阶段且不为时隙调整阶段
                             state = 2;
-                            cout << "网管节点改变自己节点 state_now 为 Mac_Adjustment_Freqency" << endl;
-                            daatr_str.state_now = Mac_Adjustment_Freqency; // 调整网管节点（本节点）为频率调整阶段
-                            daatr_str.need_change_state = 0;               // 已转变状态, 状态位复原
+                            cout << "网管节点改变自己节点 state_now 为 Mac_Adjustment_Frequency" << endl;
+                            daatr_str.state_now = Mac_Adjustment_Frequency; // 调整网管节点（本节点）为频率调整阶段
+                            daatr_str.need_change_state = 0;                // 已转变状态, 状态位复原
                             daatr_str.has_received_sequence = false;
                         }
                     }
@@ -511,8 +517,8 @@ void lowFreqSendThread()
                         daatr_str.need_change_state = 2; // 转变成需要进入频率调整阶段
                     }
                     else if (daatr_str.need_change_state == 4)
-                    {                                                  // 若在转变频率调整阶段过程中发生时隙调整阶段, 需要先进入频率调整阶段
-                        daatr_str.state_now = Mac_Adjustment_Freqency; // 调整网管节点（本节点）为时隙调整阶段
+                    {                                                   // 若在转变频率调整阶段过程中发生时隙调整阶段, 需要先进入频率调整阶段
+                        daatr_str.state_now = Mac_Adjustment_Frequency; // 调整网管节点（本节点）为时隙调整阶段
                         state = 2;
                         daatr_str.need_change_state = 1; // 转变成需要进入频率调整阶段
                     }
@@ -779,7 +785,7 @@ void lowFreqChannelRecvHandle(uint8_t *bit_seq, uint64_t len)
             }
             else if (change_state->state == 2)
             {
-                daatr_str.state_now = Mac_Adjustment_Freqency; // 调整本节点为时隙调整阶段
+                daatr_str.state_now = Mac_Adjustment_Frequency; // 调整本节点为时隙调整阶段
                 daatr_str.has_received_sequence = false;
                 cout << "节点 " << daatr_str.nodeId << " 收到网管节点广播消息, 并改变自己节点 state_now 为 Adjustment_Freqency. " << endl;
                 printTime_ms(); // 打印时间

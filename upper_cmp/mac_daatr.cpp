@@ -3757,7 +3757,7 @@ static void Judge_If_Enter_Freq_Adjust(Node *node, MacDataDaatr *macdata_daatr)
         // 此处添加跳频图案更改后比例，上处复制即可，变量去掉before
         MacDaatr_Cacu_node_narrow_band_interfer_ratio(node, macdata_daatr,
                                                       1); // 变化后窄带干扰比例
-        if (macdata_daatr->need_change_stage == 0 && macdata_daatr->state_now != Mac_Adjustment_Slot && macdata_daatr->state_now != Mac_Adjustment_Freqency)
+        if (macdata_daatr->need_change_stage == 0 && macdata_daatr->state_now != Mac_Adjustment_Slot && macdata_daatr->state_now != Mac_Adjustment_Frequency)
         {
             // 当前状态稳定, 在这之前没有发生要调整状态的事件, 且不处于任何调整状态
             cout << "Subnet Is About To Enter Freq Adjustment Stage!" << endl;
@@ -5792,7 +5792,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                 {
                     if (macdata_daatr->state_now != Mac_Access)
                     {
-                        macdata_daatr->state_now = Mac_Adjustment_Freqency; // 调整本节点为时隙调整阶段
+                        macdata_daatr->state_now = Mac_Adjustment_Frequency; // 调整本节点为时隙调整阶段
                         macdata_daatr->has_received_sequence = false;
                         cout << "节点 " << node->nodeId
                              << " 收到网管节点广播消息, 并改变自己节点 state_now 为 "
@@ -5875,7 +5875,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
 
                 else if (change_state->state == 2)
                 {
-                    macdata_daatr->state_now = Mac_Adjustment_Freqency; // 调整本节点为时隙调整阶段
+                    macdata_daatr->state_now = Mac_Adjustment_Frequency; // 调整本节点为时隙调整阶段
                     macdata_daatr->has_received_sequence = false;
                     cout << "节点 " << node->nodeId
                          << " 收到网管节点广播消息, 并改变自己节点 state_now 为 "
@@ -6450,7 +6450,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                     }
                     else if (macdata_daatr->need_change_stage == 1)
                     { // 若转变为时隙调整阶段
-                        if (macdata_daatr->state_now != Mac_Adjustment_Slot && macdata_daatr->state_now != Mac_Adjustment_Freqency)
+                        if (macdata_daatr->state_now != Mac_Adjustment_Slot && macdata_daatr->state_now != Mac_Adjustment_Frequency)
                         {
                             // 若当前状态不为时隙调整阶段且不为时隙调整阶段
                             state = 1;
@@ -6462,12 +6462,12 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                     }
                     else if (macdata_daatr->need_change_stage == 2)
                     { // 若转变为频率调整阶段
-                        if (macdata_daatr->state_now != Mac_Adjustment_Slot && macdata_daatr->state_now != Mac_Adjustment_Freqency)
+                        if (macdata_daatr->state_now != Mac_Adjustment_Slot && macdata_daatr->state_now != Mac_Adjustment_Frequency)
                         { // 若当前状态不为时隙调整阶段且不为时隙调整阶段
                             state = 2;
-                            cout << "网管节点改变自己节点 state_now 为 Mac_Adjustment_Freqency" << endl;
-                            macdata_daatr->state_now = Mac_Adjustment_Freqency; // 调整网管节点(本节点)为频率调整阶段
-                            macdata_daatr->need_change_stage = 0;               // 已转变状态, 状态位复原
+                            cout << "网管节点改变自己节点 state_now 为 Mac_Adjustment_Frequency" << endl;
+                            macdata_daatr->state_now = Mac_Adjustment_Frequency; // 调整网管节点(本节点)为频率调整阶段
+                            macdata_daatr->need_change_stage = 0;                // 已转变状态, 状态位复原
                             macdata_daatr->has_received_sequence = false;
                         }
                     }
@@ -6480,7 +6480,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                     else if (macdata_daatr->need_change_stage == 4)
                     { // 若在转变频率调整阶段过程中发生时隙调整阶段,
                         // 需要先进入频率调整阶段
-                        macdata_daatr->state_now = Mac_Adjustment_Freqency; // 调整网管节点(本节点)为时隙调整阶段
+                        macdata_daatr->state_now = Mac_Adjustment_Frequency; // 调整网管节点(本节点)为时隙调整阶段
                         state = 2;
                         macdata_daatr->need_change_stage = 1; // 转变成需要进入频率调整阶段
                     }
@@ -7113,7 +7113,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
             }
         }
 
-        else if (macdata_daatr->state_now == Mac_Adjustment_Freqency)
+        else if (macdata_daatr->state_now == Mac_Adjustment_Frequency)
         {
             cout << "节点 " << node->nodeId << " 进入频率调整阶段, Time: " << (float)(node->getNodeTime()) / 1000000 << endl;
             MESSAGE_CancelSelfMsg(node, macdata_daatr->timerMsg);
@@ -7163,7 +7163,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
         }
 
         // 此时网管节点改变自己的daatr结构体中的标志位
-        if (macdata_daatr->need_change_stage == 0 && macdata_daatr->state_now != Mac_Adjustment_Slot && macdata_daatr->state_now != Mac_Adjustment_Freqency)
+        if (macdata_daatr->need_change_stage == 0 && macdata_daatr->state_now != Mac_Adjustment_Slot && macdata_daatr->state_now != Mac_Adjustment_Frequency)
         {
             // 当前状态稳定, 在这之前没有发生要调整状态的事件, 且不处于任何调整状态
             cout << "子网各节点即将进入时隙调整阶段!" << endl;
@@ -8163,7 +8163,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
 
             cout << "------------------------" << endl;
         }
-        else if (macdata_daatr->state_now == Mac_Adjustment_Freqency)
+        else if (macdata_daatr->state_now == Mac_Adjustment_Frequency)
         {
             macdata_daatr->stats.freq_adjust_end_time = (float)(node->getNodeTime() / 1000000);
             cout << "------------------------" << endl;

@@ -4,11 +4,11 @@
 // 约定网管节点id为1, 网关节点id为2, 其余3-20节点为普通节点
 
 // 子网信息
-#define GATEWAY 1             // 此处为判断是否为网关节点, 若为网关节点, 则置1, 若不是, 置0, 默认为0
-#define SUBNET_NODE_NUMBER 20 // 当前节点可与相同子网通信的数量(可变)
+#define GATEWAY 1                                 // 此处为判断是否为网关节点, 若为网关节点, 则置1, 若不是, 置0, 默认为0
+#define SUBNET_NODE_NUMBER 20                     // 当前节点可与相同子网通信的数量(可变)
 #define FREQUENCY_DIVISION_MULTIPLEXING_NUMBER 10 // 子网内通信频分复用允许最大复用数(1/2,向下取整)
-#define SUBNET_NUM 10         // 子网数
-#define SUBNET_NODE_FREQ_NUMBER 20 //跳频图案可支持最大节点数（不可变！！！！）
+#define SUBNET_NUM 10                             // 子网数
+#define SUBNET_NODE_FREQ_NUMBER 20                // 跳频图案可支持最大节点数（不可变！！！！）
 
 // 网管信道
 #define MANA_SLOT_DURATION 20                 // 网管信道时隙时长(单位: ms)
@@ -26,21 +26,21 @@
 #define MAX_RANDOM_BACKOFF_NUM 7                                // 最大接入退避时隙
 
 // 业务信道
-#define TRAFFIC_SLOT_DURATION 2.5                 // 业务信道时隙时长(单位: ms)
-#define TRAFFIC_SLOT_NUMBER 400                   // 业务信道时隙表包含时隙数(执行阶段)
-#define TRAFFIC_CHANNEL_PRIORITY 4                // 业务信道业务优先级数量
+#define TRAFFIC_SLOT_DURATION 2.5  // 业务信道时隙时长(单位: ms)
+#define TRAFFIC_SLOT_NUMBER 400    // 业务信道时隙表包含时隙数(执行阶段)
+#define TRAFFIC_CHANNEL_PRIORITY 4 // 业务信道业务优先级数量
 
-#define TRAFFIC_MAX_BUSINESS_NUMBER 60            // 业务信道每一个优先级可允许容纳的业务量
+#define TRAFFIC_MAX_BUSINESS_NUMBER 60 // 业务信道每一个优先级可允许容纳的业务量
 
-#define MAX_WAITING_TIME 100000              // 数据包在队列中的最大等待时间(ms)
+#define MAX_WAITING_TIME 100000            // 数据包在队列中的最大等待时间(ms)
 #define LINK_SETUP_GUARD_TIME 100          // 建链阶段保护时间(在网管节点开始广播(20ms)后80ms开始业务信道的建链)
 #define LINK_SETUP_INTERVAL 500            // 两次建链间的间隔时间(指从第一次开始发建链请求到第二次开始)
 #define SENDING_SLOTTABLE_PREPARE_TIME 500 // 在收到链路构建需求事件后 发送时隙表
 
 // 频谱感知与跳频序列
-#define NSUM 50                               // 与产生正态分布数有关, 该值越大, 符合正态分布精度值越大(中心极限定理法)
+#define NSUM 50                                // 与产生正态分布数有关, 该值越大, 符合正态分布精度值越大(中心极限定理法)
 #define INTERFEREENCE_FREQUENCY_THRESHOLD 0.01 // 使用频段干扰比例, 若超过此门限, 则进入频率调整阶段
-#define TOTAL_FREQ_POINT 501                  // 总频点
+#define TOTAL_FREQ_POINT 501                   // 总频点
 #define M_SEQUENCE_LENGTH 9
 #define FREQUENCY_COUNT 25
 #define MIN_FREQUENCY 0
@@ -50,7 +50,7 @@
 
 // 时延与周期相关
 #define BEAM_MATAINMENCE_PERIOD 930        // 波束维护周期(单位: ms)
-#define SPEC_SENSING_PERIOD 1000            // 判断是否进入频率调整阶段周期(单位: ms)
+#define SPEC_SENSING_PERIOD 1000           // 判断是否进入频率调整阶段周期(单位: ms)
 #define SIMULATION_RESULT_SHOW_PERIOD 1000 // 显示仿真结果周期(单位: ms)
 #define LINK_STATE_PERIOD 3000             // 发送链路状态信息周期(单位: ms)
 #define SEND_NODE_POSITION_PERIOD 8000     // 向网络层上传节点位置信息周期(单位: ms)
@@ -82,8 +82,8 @@ enum MacState
 {
     // Mac层节点当前所处状态  分为初始化(Mac_Initialization)、调整(Mac_Adjustment)、执行(Mac_Execution)
     Mac_Initialization = 0,
-    Mac_Adjustment_Slot,     // 时隙调整
-    Mac_Adjustment_Freqency, // 频率调整
+    Mac_Adjustment_Slot,      // 时隙调整
+    Mac_Adjustment_Frequency, // 频率调整
     Mac_Execution,
     Mac_Access // 接入阶段
 };
@@ -216,7 +216,7 @@ typedef struct CPUFrequency
 
 typedef struct subnet_frequency_parttern
 {
-    unsigned int mana_node_hopping[500];                                   // 网管节点跳频图案
+    unsigned int mana_node_hopping[500];                                        // 网管节点跳频图案
     unsigned int subnet_node_hopping[SUBNET_NODE_FREQ_NUMBER][FREQUENCY_COUNT]; // 子网各节点跳频图案
 } subnet_frequency_parttern;
 
@@ -297,31 +297,31 @@ typedef struct struct_daatr_stats_str
     int UDU_GotUnicast;  // 发出的UDU数量
     int UDU_SentUnicast; // 收到的上层的UDU数量
 
-	uint64_t access_begin_time;//随遇接入开始时间(单位：ms)
-	uint64_t access_end_time;//随遇接入结束时间(单位：ms)
-	uint64_t slot_adjust_begin_time;//时隙调整开始时间(单位：ms)
-	uint64_t slot_adjust_end_time;//时隙调整结束时间(单位：ms)
-	uint64_t freq_adjust_begin_time;//频率调整开始时间(单位：ms)
-	uint64_t freq_adjust_end_time;//频率调整结束时间(单位：ms)
-	uint64_t traffic_output;//业务信道吞吐量(单位：byte)
-	uint64_t mac_network_overhead;//mac层网络开销(单位：byte)
-	float node_freq_interfer_ratio_before[SUBNET_NODE_FREQ_NUMBER];//跳频序列调整前 子网各节点频谱干扰比例
-	float subnet_freq_interfer_ratio_before;//跳频序列调整前子网频谱干扰比例 
-	float node_freq_interfer_ratio[SUBNET_NODE_FREQ_NUMBER];//子网各节点频谱干扰比例
-	float subnet_freq_interfer_ratio;//子网频谱干扰比例
-	float node_narrow_band_interfer_ratio_before[SUBNET_NODE_FREQ_NUMBER];//更新前子网各节点窄带干扰比例
-	float node_narrow_band_interfer_ratio[SUBNET_NODE_FREQ_NUMBER];//子网各节点窄带干扰比例
-	vector<vector<int>> narrow_band_interfer_nodeID;//子网有窄带干扰的节点ID组合
+    uint64_t access_begin_time;                                            // 随遇接入开始时间(单位：ms)
+    uint64_t access_end_time;                                              // 随遇接入结束时间(单位：ms)
+    uint64_t slot_adjust_begin_time;                                       // 时隙调整开始时间(单位：ms)
+    uint64_t slot_adjust_end_time;                                         // 时隙调整结束时间(单位：ms)
+    uint64_t freq_adjust_begin_time;                                       // 频率调整开始时间(单位：ms)
+    uint64_t freq_adjust_end_time;                                         // 频率调整结束时间(单位：ms)
+    uint64_t traffic_output;                                               // 业务信道吞吐量(单位：byte)
+    uint64_t mac_network_overhead;                                         // mac层网络开销(单位：byte)
+    float node_freq_interfer_ratio_before[SUBNET_NODE_FREQ_NUMBER];        // 跳频序列调整前 子网各节点频谱干扰比例
+    float subnet_freq_interfer_ratio_before;                               // 跳频序列调整前子网频谱干扰比例
+    float node_freq_interfer_ratio[SUBNET_NODE_FREQ_NUMBER];               // 子网各节点频谱干扰比例
+    float subnet_freq_interfer_ratio;                                      // 子网频谱干扰比例
+    float node_narrow_band_interfer_ratio_before[SUBNET_NODE_FREQ_NUMBER]; // 更新前子网各节点窄带干扰比例
+    float node_narrow_band_interfer_ratio[SUBNET_NODE_FREQ_NUMBER];        // 子网各节点窄带干扰比例
+    vector<vector<int>> narrow_band_interfer_nodeID;                       // 子网有窄带干扰的节点ID组合
 
-	int msgtype3_recv_network;
-	int msgtype3_recv; //
-	int msgtype3_sent1;//
-	int msgtype3_sent2;//
-	int msgtype3_sent3;//
-	int msgtype3_sent_network1;//
-	int msgtype3_sent_network2;//
-	int msgtype3_sent_network3;//
-    int Missed_pkts; // 因为长度过大而丢弃的包
+    int msgtype3_recv_network;
+    int msgtype3_recv;          //
+    int msgtype3_sent1;         //
+    int msgtype3_sent2;         //
+    int msgtype3_sent3;         //
+    int msgtype3_sent_network1; //
+    int msgtype3_sent_network2; //
+    int msgtype3_sent_network3; //
+    int Missed_pkts;            // 因为长度过大而丢弃的包
 } DaatrStats;
 
 typedef struct mana_channel_business
@@ -339,17 +339,15 @@ typedef struct mana_access_reply
 
 typedef struct patam_
 {
-   int nodeId;//节点ID
-   double value;//干扰比例%
+    int nodeId;   // 节点ID
+    double value; // 干扰比例%
 } ParamData;
 
 typedef struct patamstr_
 {
-	int nodeId;//节点ID
-	string value;//与此节点互干扰的节点ID字符串，中间以“,”隔开，例：“2，3 ”
+    int nodeId;   // 节点ID
+    string value; // 与此节点互干扰的节点ID字符串，中间以“,”隔开，例：“2，3 ”
 } ParamDataStr;
-
-
 
 /*
 *
@@ -461,15 +459,15 @@ typedef struct struct_mac_daatr_str
     // 节点位置信息
     // net_nei_one nei_one;
     FlightStatus subnet_other_node_position[SUBNET_NODE_FREQ_NUMBER - 1]; // 子网其他节点位置信息
-    FlightStatus local_node_position_info;                           // 本地飞行状态信息
+    FlightStatus local_node_position_info;                                // 本地飞行状态信息
 
     // 子网信息
     int mana_node;                                                      // 本子网网管节点ID
     int gateway_node;                                                   // 本子网网关节点ID
     int standby_gateway_node;                                           // 本子网备用网关节点ID
     int subnet_topology_matrix[SUBNET_NODE_NUMBER][SUBNET_NODE_NUMBER]; // 拓扑矩阵
-    uint16_t Forwarding_Table[SUBNET_NODE_FREQ_NUMBER][2];//转发表
-	char Forwarding_Table_int_access_sign;//收到空转发表数量
+    uint16_t Forwarding_Table[SUBNET_NODE_FREQ_NUMBER][2];              // 转发表
+    char Forwarding_Table_int_access_sign;                              // 收到空转发表数量
     // vector<nodeLocalNeighList *> node_local_neigh_list_ptr; // 链路状态指针
 
     // 业务信道相关
@@ -482,8 +480,8 @@ typedef struct struct_mac_daatr_str
     clocktype slotDuration;
     Message *timerMsg;
 
-    mana_slot_traffic slot_traffic_execution[TRAFFIC_SLOT_NUMBER];      // 业务信道时隙表(执行阶段)
-    mana_slot_traffic slot_traffic_initialization[TRAFFIC_SLOT_NUMBER]; // 业务信道时隙表(建链阶段)
+    mana_slot_traffic slot_traffic_execution[TRAFFIC_SLOT_NUMBER];           // 业务信道时隙表(执行阶段)
+    mana_slot_traffic slot_traffic_initialization[TRAFFIC_SLOT_NUMBER];      // 业务信道时隙表(建链阶段)
     mana_business_traffic traffic_channel_business[SUBNET_NODE_FREQ_NUMBER]; // 业务信道的待发送队列
 
     mana_slot_traffic slot_traffic_execution_new[SUBNET_NODE_FREQ_NUMBER][TRAFFIC_SLOT_NUMBER]; // 存储子网内所有节点的业务信道时隙表
@@ -492,13 +490,12 @@ typedef struct struct_mac_daatr_str
     Message *ptr_to_mana_channel_period_inquiry;                                          // 指向网管信道定期查询事件指针
     mana_slot_management slot_management[MANAGEMENT_SLOT_NUMBER_LINK_BUILD];              // 建链阶段网管信道时隙表
     mana_slot_management slot_management_other_stage[MANAGEMENT_SLOT_NUMBER_OTHER_STAGE]; // 其他阶段网管信道时隙表
-    mana_channel_business mana_channel_business_queue[MANA_MAX_BUSINESS_NUMBER]; // 网管信道待发送业务队列
-    unsigned int mana_channel_frame_num;                                         // 网管信道已过去几帧（一帧以50个时隙为基准，即一帧为1s）
-    int mana_slot_should_read;                                                   // 当前应查看网管信道时隙表第几个时隙
-	int mana_slottable_synchronization; //网管信道时隙表同步
-	bool if_mana_slottable_synchronization;
-	bool if_receive_mana_flight;//是否收到网管节点飞行状态信息
-
+    mana_channel_business mana_channel_business_queue[MANA_MAX_BUSINESS_NUMBER];          // 网管信道待发送业务队列
+    unsigned int mana_channel_frame_num;                                                  // 网管信道已过去几帧（一帧以50个时隙为基准，即一帧为1s）
+    int mana_slot_should_read;                                                            // 当前应查看网管信道时隙表第几个时隙
+    int mana_slottable_synchronization;                                                   // 网管信道时隙表同步
+    bool if_mana_slottable_synchronization;
+    bool if_receive_mana_flight; // 是否收到网管节点飞行状态信息
 
     // 网管信道信令flag
     bool has_received_chain_building_request; // 建链请求是否已收到一次
@@ -512,11 +509,11 @@ typedef struct struct_mac_daatr_str
 
     // 频域信息
     unsigned int frequency_sequence[SUBNET_NODE_FREQ_NUMBER][FREQUENCY_COUNT];        // 生成子网内调频序列(仅网管节点有)
-    unsigned int subnet_frequency_sequence[TOTAL_FREQ_POINT];                    // 子网所使用频段(共501频点, 对应频点值为1代表使用此频点, 0为不使用)(网管节点独有)
-    unsigned int spectrum_sensing_node[TOTAL_FREQ_POINT];                        // 本节点频谱感知结果
+    unsigned int subnet_frequency_sequence[TOTAL_FREQ_POINT];                         // 子网所使用频段(共501频点, 对应频点值为1代表使用此频点, 0为不使用)(网管节点独有)
+    unsigned int spectrum_sensing_node[TOTAL_FREQ_POINT];                             // 本节点频谱感知结果
     unsigned int spectrum_sensing_sum[SUBNET_NODE_FREQ_NUMBER][TOTAL_FREQ_POINT + 1]; // 总频谱感知结果, 只存在于网管节点.最后一列每一行代表一个节点, 若为0, 则说明没有接收到此节点的频谱感知结果, 若为1, 则说明接收到了
-    unsigned int unavailable_frequency_points[TOTAL_FREQ_POINT];                 // 不可用频点集合(1: 频点未干扰 0: 频点受到干扰)
-	Message *ptr_to_period_judge_if_enter_adjustment;//定期判断是否进入频率调整阶段指针
+    unsigned int unavailable_frequency_points[TOTAL_FREQ_POINT];                      // 不可用频点集合(1: 频点未干扰 0: 频点受到干扰)
+    Message *ptr_to_period_judge_if_enter_adjustment;                                 // 定期判断是否进入频率调整阶段指针
 } MacDataDaatr;
 
 bool MAC_NetworkLayerHasPacketToSend(Node *node, int interfaceIndex, msgFromControl *busin);
@@ -540,5 +537,5 @@ void MacDaatrReceivePhyStatusChangeNotification(Node *node,
 
 void MacDaatrFinalize(Node *node, int interfaceIndex);
 int Search_Next_Hop_Addr(MacDataDaatr *macdata_daatr, int destAddr);
-bool MacDaatr_judge_if_could_send_config_or_LinkRequist(Node* node, int interfaceIndex);
+bool MacDaatr_judge_if_could_send_config_or_LinkRequist(Node *node, int interfaceIndex);
 #endif

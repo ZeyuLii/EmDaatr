@@ -33,5 +33,17 @@ void sendLocalLinkStatus(MacDaatr *macdata_daatr);
 
 void sendOtherNodePosition(MacDaatr *macdata_daatr);
 
+vector<LinkAssignment> *Generate_LinkAssignment_Initialization(MacDaatr *macdata_daatr);
+
 void generateSlottableExecution(MacDaatr *macdata_daatr);
+
+unsigned char Generate_M_SequenceValue();
+
+void adjustNarrowBand(unsigned int freqSeq[SUBNET_NODE_NUMBER_MAX][FREQUENCY_COUNT]);
+
+void judgeIfEnterFreqAdjustment(MacDaatr *macdata_daatr);
+
+void MacDaatrInitialize_Frequency_Seqence(MacDaatr *macdata_daatr);
+
+int Generate_LinkAssignment_Stage_1(LinkAssignment link_assign[]);
 #endif

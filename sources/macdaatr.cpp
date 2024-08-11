@@ -4,9 +4,9 @@
 #include <string>
 #include <algorithm>
 
+#include "highFreqToolFunc.h"
 #include "macdaatr.h"
 #include "struct_converter.h"
-#include "highFreqToolFunc.h"
 #include "main.h"
 
 using namespace std;
@@ -673,7 +673,7 @@ void MacDaatr::networkToMacBufferHandle(uint8_t *rBuffer_mac)
         // TODO : need_change_state修改
         if (need_change_state == 0 &&
             state_now != Mac_Adjustment_Slot &&
-            state_now != Mac_Adjustment_Freqency)
+            state_now != Mac_Adjustment_Frequency)
         {
             cout << "子网各节点即将进入时隙调整阶段!" << endl;
             need_change_state = 1; // 即将进入时隙调整阶段
@@ -729,9 +729,7 @@ void MacDaatr::macParameterInitialization(uint32_t idx)
     // 打开文件
     ifstream file(filePath);
     if (!file.is_open())
-    {
         cerr << "!!!!无法打开文件: " << filePath << endl;
-    }
 
 // 读取文件内容
 #ifdef DEBUG_SETUP
@@ -865,6 +863,11 @@ void MacDaatr::macParameterInitialization(uint32_t idx)
     access_state = DAATR_NO_NEED_TO_ACCESS; // 默认不需要接入
     access_backoff_number = 0;              // 接入时隙
     low_slottable_should_read = 0;
+
+#ifdef DEBUG_SETUP
+    cout << "macInit " << nodeId << ": 配置频域信息" << endl;
+#endif
+    // MacDaatrInitialize_Frequency_Seqence(this);
 
     cout << "===== Node " << nodeId << " macInitialization Completed =====" << endl;
     cout << "==============================================" << endl;
