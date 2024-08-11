@@ -2498,10 +2498,10 @@ vector<uint8_t> *convert_PtrMFC_01(msgFromControl *packet)
     vector<uint8_t> *curData = new vector<uint8_t>;
     curData = (vector<uint8_t> *)(packet->data);
     // 封装报文内容 0728改
-    // for (int i = 0; i < curData->size(); i++)
-    // {
-    //     buffer->push_back((*curData)[i]);
-    // }
+    for (int i = 0; i < curData->size(); i++)
+    {
+        buffer->push_back((*curData)[i]);
+    }
     // 根据前面的字节计算CRC校验码
     packet->CRC = CRC16_L2(buffer);
 

@@ -49,23 +49,31 @@ void macDaatrControlThread(int signum, siginfo_t *info, void *context)
     // }
 
     // 调整阶段测试
-    // if (time_ms == 3000 && daatr_str.nodeId == 1)
-    // {
-    //     // vector<LinkAssignment> *link_assign_queue =
-    //     //     Generate_LinkAssignment_Initialization(&daatr_str);
+    if (time_ms == 2900 && daatr_str.nodeId == 1)
+    {
+        int linkNumTest = 437;
+        LinkAssignment *linkAssList = (LinkAssignment *)malloc(linkNumTest * sizeof(LinkAssignment));
+        linkNumTest = Generate_LinkAssignment_Stage_1(linkAssList);
+        unsigned int fullPacketSize = sizeof(LinkAssignmentHeader) + linkNumTest * sizeof(LinkAssignment);
+        char *pktStart = (char *)malloc(fullPacketSize);
 
-    //     int linkNumTest = 437;
-    //     LinkAssignment *linkAssList = (LinkAssignment *)malloc(linkNumTest * sizeof(LinkAssignment));
-    //     linkNumTest = Generate_LinkAssignment_Stage_1(linkAssList);
-    //     unsigned int fullPacketSize = sizeof(LinkAssignmentHeader) + linkNumTest * sizeof(LinkAssignment);
-    //     char *pktStart = (char *)malloc(fullPacketSize);
+        LinkAssignmentHeader *linkheader = (LinkAssignmentHeader *)pktStart;
+        linkheader->linkNum = linkNumTest;
+        LinkAssignment *linkAssPtr = (LinkAssignment *)(pktStart + sizeof(LinkAssignmentHeader));
+        memcpy(linkAssPtr, linkAssList, linkNumTest * sizeof(LinkAssignment));
 
-    //     LinkAssignmentHeader *linkheader = (LinkAssignmentHeader *)pktStart;
-    //     linkheader->linkNum = linkNumTest;
+        uint8_t *ret = (uint8_t *)malloc(fullPacketSize + 3);
+        memset(ret, 0, sizeof(ret)); // 清零
+        ret[0] = 0x0B;
+        // memcpy((ret + 1), &len, 2); // 小端序
+        // 大端序
+        ret[1] |= ((fullPacketSize >> 8) & 0xff);
+        ret[2] |= (fullPacketSize & 0xff);
+        memcpy((ret + 3), pktStart, fullPacketSize);
 
-    //     LinkAssignment *linkAssPtr = (LinkAssignment *)(pktStart + sizeof(LinkAssignmentHeader));
-    //     memcpy(linkAssPtr, linkAssList, linkNumTest * sizeof(LinkAssignment));
-    // }
+        extern ringBuffer RoutingTomac_Buffer;
+        RoutingTomac_Buffer.ringBuffer_put(ret, fullPacketSize + 3);
+    }
 
     daatr_str.clock_trigger += 1;
     if (daatr_str.clock_trigger % (int)HIGH_FREQ_CHANNEL_TRIGGER_LEN == 0) // 25
@@ -112,7 +120,7 @@ void MacDaatr::networkToMacBufferReadThread()
 
         if (end_simulation)
         {
-            printf("NODE %2d networkToMacBufferReadThread is Over\n", nodeId);
+            printf("NODE %2d BufferRead Thread is Over\n", nodeId);
             break;
         }
 

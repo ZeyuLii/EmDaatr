@@ -667,7 +667,7 @@ void MacDaatr::networkToMacBufferHandle(uint8_t *rBuffer_mac)
     }
     case 0x0b:
     { // 链路构建需求 MAC_DAATR_ReceiveTaskInstruct
-        cout << "[Adjustment] Node " << nodeId << " 收到链路构建需求";
+        cout << "[调整阶段] Node " << nodeId << " 收到链路构建需求  ";
         printTime_ms();
 
         // TODO : need_change_state修改
@@ -675,12 +675,12 @@ void MacDaatr::networkToMacBufferHandle(uint8_t *rBuffer_mac)
             state_now != Mac_Adjustment_Slot &&
             state_now != Mac_Adjustment_Frequency)
         {
-            cout << "子网各节点即将进入时隙调整阶段!" << endl;
+            cout << "[调整阶段] 子网各节点即将进入时隙调整阶段!" << endl;
             need_change_state = 1; // 即将进入时隙调整阶段
         }
         else if (need_change_state == 2)
         {
-            cout << "首先进入频率调整阶段, 在时隙调整阶段结束后进入时隙调整阶段! " << endl;
+            cout << "[调整阶段] 首先进入频率调整阶段, 在时隙调整阶段结束后进入时隙调整阶段! " << endl;
             need_change_state = 4;
         }
 
@@ -892,7 +892,7 @@ void MacDaatr::macParameterInitialization(uint32_t idx)
         MFC_temp->repeat = 0;
         MFC_temp->fragmentNum = 1;
 
-        MAC_NetworkLayerHasPacketToSend(MFC_temp);
+        // MAC_NetworkLayerHasPacketToSend(MFC_temp);
         delete MFC_temp;
 
         // 测试收发包
@@ -906,7 +906,7 @@ void MacDaatr::macParameterInitialization(uint32_t idx)
         MFC_temp2->repeat = 0;
         MFC_temp->fragmentNum = 2;
 
-        MAC_NetworkLayerHasPacketToSend(MFC_temp2);
+        // MAC_NetworkLayerHasPacketToSend(MFC_temp2);
         delete MFC_temp2;
     }
 
@@ -927,7 +927,7 @@ void MacDaatr::macParameterInitialization(uint32_t idx)
         MFC_temp->repeat = 0;
         MFC_temp->fragmentNum = 3;
 
-        MAC_NetworkLayerHasPacketToSend(MFC_temp);
+        // MAC_NetworkLayerHasPacketToSend(MFC_temp);
         delete MFC_temp;
 
         // 测试收发包
@@ -941,7 +941,7 @@ void MacDaatr::macParameterInitialization(uint32_t idx)
         MFC_temp2->repeat = 0;
         MFC_temp->fragmentNum = 4;
 
-        MAC_NetworkLayerHasPacketToSend(MFC_temp2);
+        // MAC_NetworkLayerHasPacketToSend(MFC_temp2);
         delete MFC_temp2;
     }
 
@@ -962,7 +962,7 @@ void MacDaatr::macParameterInitialization(uint32_t idx)
         MFC_temp->repeat = 0;
         MFC_temp->fragmentNum = 5;
 
-        MAC_NetworkLayerHasPacketToSend(MFC_temp);
+        // MAC_NetworkLayerHasPacketToSend(MFC_temp);
         delete MFC_temp;
 
         // 测试收发包
@@ -976,7 +976,7 @@ void MacDaatr::macParameterInitialization(uint32_t idx)
         MFC_temp2->repeat = 0;
         MFC_temp->fragmentNum = 6;
 
-        MAC_NetworkLayerHasPacketToSend(MFC_temp2);
+        // MAC_NetworkLayerHasPacketToSend(MFC_temp2);
         delete MFC_temp2;
     }
 }

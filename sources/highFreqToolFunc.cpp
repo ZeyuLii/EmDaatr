@@ -660,6 +660,8 @@ void sendLocalLinkStatus(MacDaatr *macdata_daatr)
     int len = sizeof(loca_linkstate_struct);
 
     macdata_daatr->macToNetworkBufferHandle((uint8_t *)&loca_linkstate_struct, 0x0d, len);
+    cout << "Node " << macdata_daatr->nodeId << " 向网络层上报本地链路状态信息  ";
+    printTime_ms();
 
     delete send_neighborList;
 }
@@ -691,6 +693,8 @@ void sendOtherNodePosition(MacDaatr *macdata_daatr)
     memcpy(node_position, NodePosition_test, nodeNum * sizeof(FlightStatus));
 
     macdata_daatr->macToNetworkBufferHandle((uint8_t *)pkt_nodeposition, 0x0c, fullPacketSize);
+    cout << "Node " << macdata_daatr->nodeId << " 向网络层上报其他节点飞行状态信息  ";
+    printTime_ms();
 
     delete[] NodePosition_test;
 }
