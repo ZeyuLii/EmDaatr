@@ -57,7 +57,7 @@
 
 // 频谱感知与跳频序列
 #define NSUM 50                                // 与产生正态分布数有关, 该值越大, 符合正态分布精度值越大(中心极限定理法)
-#define INTERFEREENCE_FREQUENCY_THRESHOLD 0.01 // 使用频段干扰比例, 若超过此门限, 则进入频率调整阶段
+#define INTERFEREENCE_FREQUENCY_THRESHOLD 0.90 // 使用频段干扰比例, 若超过此门限, 则进入频率调整阶段
 #define TOTAL_FREQ_POINT 501                   // 总频点
 #define M_SEQUENCE_LENGTH 9
 #define FREQUENCY_COUNT 25

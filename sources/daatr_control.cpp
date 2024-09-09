@@ -4,6 +4,8 @@
 #include "timer.h"
 using namespace std;
 
+// #define DEBUG_DROPOUT 1
+
 /**********************此文件定义了总控线程相关内容************************/
 
 int over_count = 0;
@@ -40,13 +42,18 @@ void macDaatrControlThread(int signum, siginfo_t *info, void *context)
         cout << endl;
     }
 
-    // 节点掉网测试
-    // if (time_ms == 5000 && daatr_str.nodeId == 3)
-    // {
-    //     daatr_str.state_now = Mac_Access;
-    //     daatr_str.access_state = DAATR_NEED_ACCESS;
-    //     writeInfo("NODE %2d 掉链", daatr_str.nodeId);
-    // }
+// 节点掉网测试
+#ifdef DEBUG_DROPOUT
+    if (time_ms == 5000 && daatr_str.nodeId == 3)
+    {
+        daatr_str.state_now = Mac_Access;
+        daatr_str.access_state = DAATR_NEED_ACCESS;
+        cout << "\nNode " << daatr_str.nodeId << " 掉网 ";
+        printTime_ms();
+        cout << "\n\n\n";
+        writeInfo("NODE %2d 掉链", daatr_str.nodeId);
+    }
+#endif
 
     // 调整阶段测试
     if (time_ms == 2900 && daatr_str.nodeId == 1)
@@ -120,7 +127,7 @@ void MacDaatr::networkToMacBufferReadThread()
 
         if (end_simulation)
         {
-            printf("NODE %2d BufferRead Thread is Over\n", nodeId);
+            printf("\n\nNODE %2d BufferRead Thread is Over\n", nodeId);
             break;
         }
 

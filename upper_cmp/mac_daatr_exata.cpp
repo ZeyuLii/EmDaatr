@@ -3472,7 +3472,7 @@ static void Judge_If_Enter_Freq_Adjust(Node *node, MacDataDaatr *macdata_daatr)
                 if (macdata_daatr->subnet_frequency_sequence[i] == 1)
                 {
                     interfer_number++;
-                }                                                   // 此值对应的是子网现使用频段被干扰的数目，不对应总的干扰频段数目
+                } // 此值对应的是子网现使用频段被干扰的数目，不对应总的干扰频段数目
                 macdata_daatr->unavailable_frequency_points[i] = 0; // 此频点受到干扰, 赋0（此处为总干扰频段）
                 interfer_number_sum++;
                 break;
@@ -6255,7 +6255,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                 {
                     macdata_daatr->state_now = Mac_Adjustment_Slot; // 调整本节点为时隙调整阶段
                     macdata_daatr->has_received_slottable = false;  // 初始未收到时隙表
-                    cout << "节点 " << node->nodeId << " 收到网管节点广播消息, 并改变自己节点 state_now 为 Adjustment_Slot. Time: "
+                    cout << "节点 " << node->nodeId << " 收到网管节点广播消息, state_now 改为 Adjustment_Slot. Time: "
                          << (float)(node->getNodeTime()) / 1000000 << endl;
                     macdata_daatr->stats.slot_adjust_begin_time = (node->getNodeTime()) / 1000000; // 时隙调整阶段开始时间
                     // 在收到网管节点发来的状态调整信息后, 立刻将自己的波束指向网管节点, 等待接收时隙表
@@ -6267,7 +6267,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                 {
                     macdata_daatr->state_now = Mac_Adjustment_Frequency; // 调整本节点为时隙调整阶段
                     macdata_daatr->has_received_sequence = false;
-                    cout << "节点 " << node->nodeId << " 收到网管节点广播消息, 并改变自己节点 state_now 为 Adjustment_Freqency. Time: "
+                    cout << "节点 " << node->nodeId << " 收到网管节点广播消息, state_now 改为 Adjustment_Freqency. Time: "
                          << (float)(node->getNodeTime()) / 1000000 << endl;
                     macdata_daatr->stats.freq_adjust_begin_time = (node->getNodeTime()) / 1000000; // 时隙调整阶段开始时间
                     // 在收到网管节点发来的状态调整信息后, 立刻将自己的波束指向网管节点, 等待接收时隙表

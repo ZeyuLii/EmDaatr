@@ -5778,7 +5778,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                     {
                         macdata_daatr->state_now = Mac_Adjustment_Slot; // 调整本节点为时隙调整阶段
                         macdata_daatr->has_received_slottable = false;  // 初始未收到时隙表
-                        cout << "节点 " << node->nodeId << " 收到网管节点广播消息, 并改变自己节点 state_now 为 Adjustment_Slot. Time: "
+                        cout << "节点 " << node->nodeId << " 收到网管节点广播消息, state_now 改为 Adjustment_Slot. Time: "
                              << (float)(node->getNodeTime()) / 1000000 << endl;
                         macdata_daatr->stats.slot_adjust_begin_time = (float)(node->getNodeTime()) / 1000000; // 时隙调整阶段开始时间
                         // 在收到网管节点发来的状态调整信息后,
@@ -5794,9 +5794,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                     {
                         macdata_daatr->state_now = Mac_Adjustment_Frequency; // 调整本节点为时隙调整阶段
                         macdata_daatr->has_received_sequence = false;
-                        cout << "节点 " << node->nodeId
-                             << " 收到网管节点广播消息, 并改变自己节点 state_now 为 "
-                                "Adjustment_Freqency. Time: "
+                        cout << "节点 " << node->nodeId << " 收到网管节点广播消息, state_now 改为 Adjustment_Freqency. Time: "
                              << (float)(node->getNodeTime()) / 1000000 << endl;
                         macdata_daatr->stats.freq_adjust_begin_time = (float)(node->getNodeTime()) / 1000000; // 时隙调整阶段开始时间
                         // 在收到网管节点发来的状态调整信息后,
@@ -5855,7 +5853,8 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                 if_need_change_state *change_state = (if_need_change_state *)mac_converter2.get_struct();
                 if (change_state->state == 0)
                 {
-                    cout << "节点 " << node->nodeId << " 此时未收到状态调整信息. Time: " << (float)(node->getNodeTime()) / 1000000 << endl;
+                    cout << "节点 " << node->nodeId << " 此时未收到状态调整信息. Time: "
+                         << (float)(node->getNodeTime()) / 1000000 << endl;
                 }
 
                 else if (change_state->state == 1)
@@ -5863,8 +5862,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                     macdata_daatr->state_now = Mac_Adjustment_Slot; // 调整本节点为时隙调整阶段
                     macdata_daatr->has_received_slottable = false;  // 初始未收到时隙表
                     cout << "节点 " << node->nodeId
-                         << " 收到网管节点广播消息, 并改变自己节点 state_now 为 "
-                            "Adjustment_Slot. Time: "
+                         << " 收到网管节点广播消息, state_now 改为 Adjustment_Slot. Time: "
                          << (float)(node->getNodeTime()) / 1000000 << endl;
                     macdata_daatr->stats.slot_adjust_begin_time = (float)(node->getNodeTime()) / 1000000; // 时隙调整阶段开始时间
                     // 在收到网管节点发来的状态调整信息后,
@@ -5878,8 +5876,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                     macdata_daatr->state_now = Mac_Adjustment_Frequency; // 调整本节点为时隙调整阶段
                     macdata_daatr->has_received_sequence = false;
                     cout << "节点 " << node->nodeId
-                         << " 收到网管节点广播消息, 并改变自己节点 state_now 为 "
-                            "Adjustment_Freqency. Time: "
+                         << " 收到网管节点广播消息, state_now 改为 Adjustment_Freqency. Time: "
                          << (float)(node->getNodeTime()) / 1000000 << endl;
                     macdata_daatr->stats.freq_adjust_begin_time = (float)(node->getNodeTime()) / 1000000; // 时隙调整阶段开始时间
                     // 在收到网管节点发来的状态调整信息后,

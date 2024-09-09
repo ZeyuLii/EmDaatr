@@ -129,7 +129,7 @@ void MacDaatr::macDaatrSocketHighFreq_Recv(bool IF_NOT_BLOCKED = false)
 
             if (end_simulation == true)
             {
-                cout << "NODE  " << nodeId << " HighRecv Thread is Over" << endl;
+                cout << "NODE  " << nodeId << " HighRecv   Thread is Over" << endl;
                 break;
             }
 
@@ -289,7 +289,7 @@ void MacDaatr::macDaatrSocketLowFreq_Recv(bool IF_NOT_BLOCKED = false)
 
             if (end_simulation)
             {
-                printf("NODE %2d LowRecv  Thread is Over\n", nodeId);
+                printf("NODE %2d LowRecv    Thread is Over\n", nodeId);
                 sleep(1);
                 break;
             }

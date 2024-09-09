@@ -592,7 +592,6 @@ void MacDaatr::highFreqSendThread()
             else if (currentStatus == DAATR_STATUS_RX && dest_node != 0)
             {
                 // cout << "[" << currentSlotId << "R] Node " << nodeId << "<-" << dest_node << endl;
-                // 在执行阶段 收到的内容是 时隙表 和 接收时隙表ACK
             }
             else
             {
@@ -603,7 +602,7 @@ void MacDaatr::highFreqSendThread()
 
         if (end_simulation == true)
         {
-            cout << "NODE  " << nodeId << " HighSend Thread is Over" << endl;
+            cout << "NODE  " << nodeId << " HighSend   Thread is Over" << endl;
             break;
         }
     }
@@ -785,7 +784,7 @@ void MacDaatr::highFreqChannelHandle(uint8_t *bit_seq, uint64_t len)
             receivedSlottableTimes += 1;
             cout << endl;
             cout << "[调整阶段] Node " << nodeId << " 收到新时隙表 -- "
-                 << receivedSlottableTimes << "  ";
+                 << receivedSlottableTimes << "             ";
             printTime_ms();
 
             if (receivedSlottableTimes == 1)
@@ -838,7 +837,7 @@ void MacDaatr::highFreqChannelHandle(uint8_t *bit_seq, uint64_t len)
                 state_now = Mac_Execution;
                 access_state = DAATR_NO_NEED_TO_ACCESS;
 
-                cout << "[接入阶段] Node " << nodeId << " 收到新调频图案 ";
+                cout << "[接入阶段-HIGH] Node " << nodeId << " 收到新调频图案 ";
                 printTime_ms();
             }
             else
@@ -846,7 +845,7 @@ void MacDaatr::highFreqChannelHandle(uint8_t *bit_seq, uint64_t len)
                 cout << mac_header.mac_pSynch << endl;
                 receivedSequenceTimes = (receivedSequenceTimes + 1) % 3;
                 cout << endl;
-                cout << "[调整阶段] Node " << nodeId << " 收到新调频图案-- "
+                cout << "[调整阶段-HIGH] Node " << nodeId << " 收到新调频图案-- "
                      << receivedSequenceTimes << "  ";
                 printTime_ms();
             }
