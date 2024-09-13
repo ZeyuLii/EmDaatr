@@ -23,7 +23,12 @@
 #include "vector"
 #include <stdarg.h>
 #include <sys/time.h>
-
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <thread>
+#include <chrono>
+#include <sstream>
 #define writeInfo(fmt, ...) _writeInfo(1, fmt, ##__VA_ARGS__)
 
 using namespace std;
@@ -44,6 +49,8 @@ void microsecondIRQ();
 void ppsIRQHandle(int signum, siginfo_t *info, void *context);
 int utcGet();
 int utcToint(const char *str, int find);
+void parseCpuTimes();
+double calculateCpuUsage();
 void _writeInfo(bool addTimeHeadFlag, const char *fmt, ...);
 
 bool insertEventTimer_us(uint64_t time_del, event_function event_func);

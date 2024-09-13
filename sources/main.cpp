@@ -42,13 +42,23 @@ int main(int argc, char *argv[])
     thread highSendThread(&MacDaatr::highFreqSendThread, &daatr_str);
 
     // 将主线程优先级设高
-    pid_t pid = getpid();
+    // pid_t pid = getpid();
+    // struct sched_param param;
+    // param.sched_priority = sched_get_priority_max(SCHED_FIFO); // 也可用SCHED_RR
+    // if (sched_setscheduler(pid, SCHED_FIFO, &param) == -1)
+    // {
+    //     perror("sched_setscheduler");
+    //     return 1;
+    // }
+    pthread_t tid = pthread_self();
+    int policy;
     struct sched_param param;
-    param.sched_priority = sched_get_priority_max(SCHED_FIFO); // 也可用SCHED_RR
-    if (sched_setscheduler(pid, SCHED_FIFO, &param) == -1)
+    policy = SCHED_RR;         // 使用实时调度策略
+    param.sched_priority = 20; // 设置优先级，值越高优先级越高
+    if (pthread_setschedparam(tid, policy, &param) != 0)
     {
-        perror("sched_setscheduler");
-        return 1;
+        perror("pthread_setschedparam");
+        exit(EXIT_FAILURE);
     }
 
     timeInit();
@@ -63,6 +73,27 @@ int main(int argc, char *argv[])
 
     sleep(1);
     cout << simInfoPosition << "    " << over_count << "    " << PPS_overcount << endl;
+
+    if (daatr_str.nodeId == 1)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            _writeInfo(0, "网管节点收到 NODE %2d 频谱感知结果为:\n", j + 1);
+            char temp[TOTAL_FREQ_POINT];
+            int count = 0;
+            for (int i = 1; i < TOTAL_FREQ_POINT + 1; i++)
+            {
+                count += sprintf(temp + count, "%d", daatr_str.spectrum_sensing_sum[j][i - 1]);
+                if (i % 100 == 0 || i == TOTAL_FREQ_POINT)
+                {
+                    sprintf(temp + count, "\n");
+                    _writeInfo(0, temp);
+                    memset(temp, 0, TOTAL_FREQ_POINT);
+                    count = 0;
+                }
+            }
+        }
+    }
 
     // 将仿真数据写入文件
     char filePath[50];

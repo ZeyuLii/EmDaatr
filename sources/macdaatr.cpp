@@ -8,7 +8,7 @@
 #include "macdaatr.h"
 #include "struct_converter.h"
 #include "main.h"
-
+#include "timer.h"
 using namespace std;
 
 #define DEBUG_SETUP 1
@@ -690,7 +690,13 @@ void MacDaatr::networkToMacBufferHandle(uint8_t *rBuffer_mac)
         LinkAssignmentHeader *linkAssignmentHeader = (LinkAssignmentHeader *)data;
         int linkNum = linkAssignmentHeader->linkNum;
         LinkAssignment *LinkAssignment_data = (LinkAssignment *)(linkAssignmentHeader + 1);
+        printTime_ms();
+        // parseCpuTimes();
+        cout << "==================" << endl;
         processLinkAssignmentFromNet(LinkAssignment_data, linkNum);
+        printTime_ms();
+        // printf("cpu is %lf\n", calculateCpuUsage());
+        cout << "==================" << endl;
         break;
     }
     case 0x0e:
@@ -832,7 +838,7 @@ void MacDaatr::macParameterInitialization(uint32_t idx)
     need_change_state = 0;                // 不需要改变状态
     state_now = Mac_Initialization;       // 初始为建链阶段
     receivedChainBuildingRequest = false; // 初始未发送建链请求
-
+    // clock_trigger = 199;
     currentSlotId = 0;
     currentStatus = DAATR_STATUS_IDLE;
 

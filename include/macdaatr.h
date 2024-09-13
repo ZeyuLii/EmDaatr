@@ -17,10 +17,10 @@
 // 嵌入式Daatr 相关配置信息
 #define HIGH_FREQ_SLOT_LEN 2.5                                           // 业务信道时隙长度（单位：ms）
 #define LOW_FREQ_SLOT_LEN 20                                             // 网管信道时隙长度（单位：ms）
-#define TRIGGER_LEN 0.1                                                  // 触发时长（单位：ms）
+#define TRIGGER_LEN 0.5                                                  // 触发时长（单位：ms）
 #define HIGH_FREQ_CHANNEL_TRIGGER_LEN (HIGH_FREQ_SLOT_LEN / TRIGGER_LEN) // 业务信道触发次数
 #define LOW_FREQ_CHANNEL_TRIGGER_LEN (LOW_FREQ_SLOT_LEN / TRIGGER_LEN)   // 网管信道触发次数
-#define TIME_PRECISION 100                                               // 时间精确度（100us）(与底层中断相关，不要随便改变！！！！！！)
+#define TIME_PRECISION 500                                               // 时间精确度（100us）(与底层中断相关，不要随便改变！！！！！！)
 
 // 子网信息
 #define SUBNET_NODE_NUMBER_MAX 20                // 子网最大节点数
@@ -57,7 +57,7 @@
 
 // 频谱感知与跳频序列
 #define NSUM 50                                // 与产生正态分布数有关, 该值越大, 符合正态分布精度值越大(中心极限定理法)
-#define INTERFEREENCE_FREQUENCY_THRESHOLD 0.90 // 使用频段干扰比例, 若超过此门限, 则进入频率调整阶段
+#define INTERFEREENCE_FREQUENCY_THRESHOLD 0.10 // 使用频段干扰比例, 若超过此门限, 则进入频率调整阶段
 #define TOTAL_FREQ_POINT 501                   // 总频点
 #define M_SEQUENCE_LENGTH 9
 #define FREQUENCY_COUNT 25
@@ -308,7 +308,7 @@ public:
     /*管控线程相关*/
     mutex lock_central_control_thread;             // 管控线程访问锁
     condition_variable central_control_thread_var; // 管控线程条件变量
-    uint8_t clock_trigger;                         // 时帧触发数目
+    int clock_trigger;                             // 时帧触发数目
 
     /*低频信道线程相关*/
     int mac_daatr_low_freq_socket_fid; // daatr协议低频信道socket句柄

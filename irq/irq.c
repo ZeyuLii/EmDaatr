@@ -155,7 +155,7 @@ static long mydev_ioctl(struct file* file, unsigned int cmd, unsigned long arg)
 		    printk("copy_from_user failed! \n");
 		    return -EFAULT;
 		}
-		SIMULATION_TIME=SIMULATION_TIME*10000;
+		SIMULATION_TIME=SIMULATION_TIME*2000;
 	}
 	else if (103 == cmd)
 	{

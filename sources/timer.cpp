@@ -21,11 +21,16 @@ extern bool end_simulation;
 
 char simInfo[12000][200] = {0};
 int simInfoPosition = 0;
-mutex mtxPrintTime;
+
+mutex mtxWritePos;
+mutex mtxWriteStr;
+
 int PPS_overcount = 0;
 int fd_irq = 0;
 int pid = 0;
 struct timespec tpstart = {0};
+unsigned long long idleTime = 0;
+unsigned long long totalTime = 0;
 
 myevent event_list[EVENT_MAX_NUMBER];
 uint16_t event_number_now = 0;
@@ -282,10 +287,82 @@ void ppsIRQHandle(int signum, siginfo_t *info, void *context)
         ioctl(fd_irq, 102, &stim);
         ioctl(fd_irq, 101, &pid);
         PPS_overcount++;
+        daatr_str.lowthreadcondition_variable.notify_one();
+        parseCpuTimes();
     }
     else
         PPS_overcount++;
     return;
+}
+
+// 解析 /proc/stat 文件中的 CPU 时间
+void parseCpuTimes()
+{
+    // system("cat /proc/stat");
+    ifstream file("/proc/stat");
+    string line;
+
+    if (file.is_open())
+    {
+        getline(file, line); // 读取第一行 (以 "cpu" 开头)
+        file.close();
+
+        string cpu;
+        unsigned long long user, nice, system, idle, iowait, irq, softirq, steal;
+
+        istringstream ss(line);
+        ss >> cpu >> user >> nice >> system >> idle >> iowait >> irq >> softirq >> steal;
+
+        idleTime = idle + iowait;                                                 // 空闲时间
+        totalTime = user + nice + system + idle + iowait + irq + softirq + steal; // 总时间
+        // printf(" \nhhhhhh%lld %lld\n", (long long)idleTime, (long long)totalTime);
+        // cout << "  " << cpu << "  " << user << "  " << nice << "  " << system << "  " << endl;
+        // cout << "  " << idle << "  " << iowait << "  " << irq << "  " << softirq << "  " << steal << endl;
+    }
+    else
+    {
+        cerr << "无法打开 /proc/stat 文件" << endl;
+    }
+}
+// 计算 CPU 占用率
+double calculateCpuUsage()
+{
+    unsigned long long newIdleTime, newTotalTime;
+    // system("cat /proc/stat");
+    //  读取初始 CPU 时间
+    ifstream file("/proc/stat");
+    string line;
+
+    if (file.is_open())
+    {
+        getline(file, line); // 读取第一行 (以 "cpu" 开头)
+        file.close();
+
+        string cpu;
+        unsigned long long user, nice, system, idle, iowait, irq, softirq, steal;
+
+        istringstream ss(line);
+        ss >> cpu >> user >> nice >> system >> idle >> iowait >> irq >> softirq >> steal;
+
+        newIdleTime = idle + iowait;                                                 // 空闲时间
+        newTotalTime = user + nice + system + idle + iowait + irq + softirq + steal; // 总时间
+        // printf(" \njisuan%lld %lld\n", (long long)newIdleTime, (long long)newTotalTime);
+        // cout << "  " << cpu << "  " << user << "  " << nice << "  " << system << "  " << endl;
+        // cout << "  " << idle << "  " << iowait << "  " << irq << "  " << softirq << "  " << steal << endl;
+    }
+    else
+    {
+        cerr << "无法打开 /proc/stat 文件" << endl;
+    }
+
+    // 计算时间差
+    unsigned long long idleDelta = newIdleTime - idleTime;
+    unsigned long long totalDelta = newTotalTime - totalTime;
+    // printf("res is %lld %lld %lld %lld %lf\n", idleTime, totalTime, idleDelta, totalDelta, ((double)idleDelta / (double)totalDelta));
+    //  计算 CPU 使用率
+    double cpuUsage = (double)idleDelta / (double)totalDelta;
+
+    return cpuUsage;
 }
 
 void _writeInfo(bool addTimeHeadFlag, const char *fmt, ...)
@@ -293,8 +370,10 @@ void _writeInfo(bool addTimeHeadFlag, const char *fmt, ...)
 
     static char sprint_buf[2048];
     struct timespec tptemp;
-
+    char temp_str[200] = {0};
     va_list args;
+
+    mtxWriteStr.lock();
     va_start(args, fmt);
     vsprintf(sprint_buf, fmt, args);
     va_end(args);
@@ -304,6 +383,7 @@ void _writeInfo(bool addTimeHeadFlag, const char *fmt, ...)
         sprintf(simInfo[simInfoPosition++],
                 "%s\n",
                 sprint_buf);
+        mtxWriteStr.unlock();
         return;
     }
 
@@ -319,11 +399,12 @@ void _writeInfo(bool addTimeHeadFlag, const char *fmt, ...)
     long long temp_usec = temp / 1000;
     long long temp_nsec = temp % 1000;
 
-    // mtxPrintTime.lock();
+    // mtxWritePos.lock();
     sprintf(simInfo[simInfoPosition++],
             "[ %3d ,  %3lld %3lld %3lld] %s\n",
             temp_sec, temp_msec, temp_usec, temp_nsec, sprint_buf);
-    // mtxPrintTime.unlock();
+    // mtxWritePos.unlock();
+    mtxWriteStr.unlock();
 }
 
 void timeInit()
