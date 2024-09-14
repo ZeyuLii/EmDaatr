@@ -1,3 +1,4 @@
+#编译命令： make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
 CROSS_COMPILE:= arm-linux-gnueabihf-
 ARCH:= arm
 CC:= $(CROSS_COMPILE)gcc
