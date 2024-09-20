@@ -375,7 +375,7 @@ public:
     // unique_lock<mutex> nTmBufferReadlock(daatr_str.nTmBufferReadmutex);
 
     // 掉链标志位
-    bool node_is_chain_drop;
+    bool isValid;
     // 类函数
 public:
     // 初始化相关

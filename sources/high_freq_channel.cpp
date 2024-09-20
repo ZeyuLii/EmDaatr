@@ -59,6 +59,9 @@ void MacDaatr::highFreqSendThread()
         unique_lock<mutex> highthreadLock(highThreadSendMutex);
         highThread_condition_variable.wait(highthreadLock);
 
+        if (isValid) // 掉链标志位
+            continue;
+
         if (state_now == Mac_Initialization)
         { // -- 如果是 Mac_Initialiation 则发送内容为 建链请求/建链回复
             currentStatus = slottable_setup[currentSlotId].state;

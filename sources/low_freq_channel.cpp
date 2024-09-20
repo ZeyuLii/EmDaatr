@@ -145,7 +145,6 @@ void lowFreqSendThread()
     //...........................//
     while (1)
     {
-
         daatr_str.lowthreadcondition_variable.wait(lowthreadlock);
         writeInfo("时隙:%2d-------------------------------------------------------------------------------", daatr_str.low_slottable_should_read);
         state_now = daatr_str.state_now;
@@ -251,7 +250,7 @@ void lowFreqSendThread()
         }
         timeadd++;
 
-        if (daatr_str.node_is_chain_drop)
+        if (daatr_str.isValid)
             continue;
 
         if (state_now == Mac_Initialization)

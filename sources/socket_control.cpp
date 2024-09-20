@@ -273,7 +273,7 @@ void MacDaatr::macDaatrSocketLowFreq_Recv(bool IF_NOT_BLOCKED = false)
             {
                 if (!strcmp("掉链", recv_buf))
                 {
-                    node_is_chain_drop = 1;
+                    isValid = 1;
                     state_now = Mac_Access;
                     access_state = DAATR_NEED_ACCESS;
                     writeInfo("NODE %2d 掉链", nodeId);
@@ -281,7 +281,7 @@ void MacDaatr::macDaatrSocketLowFreq_Recv(bool IF_NOT_BLOCKED = false)
                 }
                 else if (!strcmp("上链", recv_buf))
                 {
-                    node_is_chain_drop = 0;
+                    isValid = 0;
                     writeInfo("NODE %2d 上链", nodeId);
                     printf("NODE %2d 上链\n", nodeId);
                 }
@@ -294,7 +294,7 @@ void MacDaatr::macDaatrSocketLowFreq_Recv(bool IF_NOT_BLOCKED = false)
                 break;
             }
 
-            if (!node_is_chain_drop)
+            if (!isValid)
                 lowFreqChannelRecvHandle((uint8_t *)recv_buf, recv_num);
         }
     }
