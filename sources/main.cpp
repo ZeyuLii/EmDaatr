@@ -7,6 +7,8 @@
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <string>
+#include <pthread.h>
 
 #include "timer.h"
 #include "macdaatr.h"
@@ -15,17 +17,36 @@
 #include "socket_control.h"
 #include "low_freq_channel.h"
 #include "high_freq_channel.h"
+#include "routing_mmanet.h"
+//
+#include "routing_mmanet.h"
+#include "network.h"
 
 using namespace std;
 
 bool end_simulation = false;    // 结束仿真标志
 MacDaatr daatr_str;             // mac层daatr协议信息保存类
 ringBuffer RoutingTomac_Buffer; // 网络层->MAC缓存队列
-ringBuffer macToRouting_Buffer; // MAC->网络层缓存队列
+
+// routing_mmanet模块所需的循环缓冲区
+ringBuffer macToRouting_buffer; // MAC->网络层缓存队列
+ringBuffer netToRouting_buffer;
+ringBuffer svcToRouting_buffer;
+// network模块所需的循环缓冲区
+ringBuffer svcToNet_buffer;
+ringBuffer macToNet_buffer; // MAC->路由缓存队列
+ringBuffer routingToNet_buffer;
+
+MMANETData *mmanet;
+LinkConfigData *linkConfigPtr;
+IdentityData *IdentityPtr;             // 用于维护IdentityData结构体
+NodeNotification *nodeNotificationPtr; // 用于存储节点内向其他层传播的节点身份
+NetViewData *netViewPtr;               // 用于维护网络状态视图数据结构
 
 int main(int argc, char *argv[])
 {
     system("clear");
+    system("source ./rm.sh");
 
     extern int over_count;
     extern int PPS_overcount;
@@ -50,6 +71,7 @@ int main(int argc, char *argv[])
     //     perror("sched_setscheduler");
     //     return 1;
     // }
+
     pthread_t tid = pthread_self();
     int policy;
     struct sched_param param;
@@ -62,38 +84,55 @@ int main(int argc, char *argv[])
     }
 
     timeInit();
-
     cout << "等待同步信号" << endl;
 
+    // 创建routing_mmanet模块所需的数据类型结构体指针,并进行初始化
+    mmanet = new MMANETData();
+    MMANETInit(mmanet);
+    mmanet->nodeAddr = id;
+    mmanet->groupID = 1;
+    mmanet->intragroupcontrolNodeId = daatr_str.mana_node;
+    //  创建network模块所需的数据类型结构体指针,并进行初始化
+    linkConfigPtr = new LinkConfigData(); // 在对应的线程中进行初始化
+    IdentityPtr = new IdentityData();
+    nodeNotificationPtr = new NodeNotification(); // 在对应的线程中进行初始化
+    netViewPtr = new NetViewData();
+    NetViewInit();
+
+    // 创建routing_mmanet模块多线程
+    pthread_t routingReceiveFromSvc, routingReceiveFromNet, routingReceiveFromMac;
+    pthread_create(&routingReceiveFromMac, NULL, RoutingReceiveFromMac, NULL);
+    pthread_create(&routingReceiveFromNet, NULL, RoutingReceiveFromNet, NULL);
+    pthread_create(&routingReceiveFromSvc, NULL, RoutingReceiveFromSvc, NULL);
+
+    // 创建network模块多线程
+    pthread_t netReceiveFromSvc, netReceiveFromRouting, netReceiveFromMac;
+    pthread_create(&netReceiveFromMac, NULL, NetReceiveFromMac, NULL);
+    pthread_create(&netReceiveFromRouting, NULL, NetReceiveFromRouting, NULL);
+    pthread_create(&netReceiveFromSvc, NULL, NetReceiveFromSvc, NULL);
+
+    // SetTimer(0, 1, 1);
     lowRecvThread.join();
     lowSendThread.join();
     BufferReadThread.join();
     highRecvThread.join();
     highSendThread.join();
 
+    pthread_join(routingReceiveFromSvc, NULL);
+    pthread_join(routingReceiveFromNet, NULL);
+    pthread_join(routingReceiveFromMac, NULL);
+    pthread_join(netReceiveFromSvc, NULL);
+    pthread_join(netReceiveFromRouting, NULL);
+    pthread_join(netReceiveFromMac, NULL);
+
+    delete mmanet;
+    delete linkConfigPtr;
+    delete IdentityPtr;
+    delete nodeNotificationPtr;
+    delete netViewPtr;
+
     sleep(1);
     cout << simInfoPosition << "    " << over_count << "    " << PPS_overcount << endl;
-
-    if (daatr_str.nodeId == 1)
-    {
-        for (int j = 0; j < 3; j++)
-        {
-            _writeInfo(0, "网管节点收到 NODE %2d 频谱感知结果为:\n", j + 1);
-            char temp[TOTAL_FREQ_POINT];
-            int count = 0;
-            for (int i = 1; i < TOTAL_FREQ_POINT + 1; i++)
-            {
-                count += sprintf(temp + count, "%d", daatr_str.spectrum_sensing_sum[j][i - 1]);
-                if (i % 100 == 0 || i == TOTAL_FREQ_POINT)
-                {
-                    sprintf(temp + count, "\n");
-                    _writeInfo(0, temp);
-                    memset(temp, 0, TOTAL_FREQ_POINT);
-                    count = 0;
-                }
-            }
-        }
-    }
 
     // 将仿真数据写入文件
     char filePath[50];

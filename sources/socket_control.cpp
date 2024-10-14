@@ -28,6 +28,13 @@ using namespace std;
  *   @param dest_node 节点ID，用于索引IP地址
  *   @param port 端口号，用于设置服务端口
  **/
+bool all_nodes_are_ready(bool *ready_node, int node_num)
+{
+    bool res = true;
+    for (int i = 0; i < node_num; i++)
+        res &&ready_node[i];
+    return res;
+}
 void MacDaatr::initializeNodeIP(sockaddr_in &receiver, uint16_t dest_node, int port)
 {
     /* 引入mac层数据结构类，用于获取节点IP地址 */
@@ -190,13 +197,13 @@ void MacDaatr::macDaatrSocketLowFreq_Recv(bool IF_NOT_BLOCKED = false)
     struct sockaddr_in addr_client;
     socklen_t len = sizeof(sockaddr_in);
 
-    if (nodeId == 1)
+    if (nodeId == mana_node)
     {
         char *find_char;
         char NODEID[3];
         int find_int = 0;
         char send[15] = {0};
-        bool ready_node[2] = {0, 0};
+        bool ready_node[subnet_node_num] = {0};
         while (1)
         {
             recv_num = recvfrom(sock_fd, recv_buf, sizeof(recv_buf), 0,
@@ -214,11 +221,15 @@ void MacDaatr::macDaatrSocketLowFreq_Recv(bool IF_NOT_BLOCKED = false)
                 {
                     sprintf(send, "rev NODE%02d", find_int);
                     macDaatrSocketLowFreq_Send((uint8_t *)send, 13);
-                    ready_node[find_int - 2] = 1;
+
+                    for (int i = 0; i < subnet_node_num; i++)
+                        if (!ready_node[i])
+                            ready_node[i] = true;
+
                     printf("收到 NODE %d 信息\n", find_int);
                 }
-
-                if (ready_node[0] && ready_node[1])
+                usleep(3e5);
+                if (all_nodes_are_ready(ready_node, subnet_node_num))
                 {
 
                     start_irq = 1;
@@ -240,6 +251,7 @@ void MacDaatr::macDaatrSocketLowFreq_Recv(bool IF_NOT_BLOCKED = false)
             recv_buf[recv_num] = '\0';
             if (!strcmp("start", recv_buf))
             {
+                printf("收到 开始 信息\n");
                 init_send = 1;
                 start_irq = 1;
                 break;
@@ -249,6 +261,7 @@ void MacDaatr::macDaatrSocketLowFreq_Recv(bool IF_NOT_BLOCKED = false)
                 find_char = strstr(recv_buf, "rev NODE");
                 if (find_char != NULL)
                 {
+                    printf("本节点已经收到\n");
                     NODEID[0] = recv_buf[9];
                     NODEID[1] = recv_buf[10];
                     NODEID[2] = '\0';

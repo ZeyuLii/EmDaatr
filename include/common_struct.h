@@ -1,6 +1,7 @@
 #ifndef __COMMON_STRUCT_H
 #define __COMMON_STRUCT_H
 
+#include <iostream>
 #include <vector>
 #include <string.h>
 #include <list>
@@ -9,10 +10,15 @@
 
 using namespace std;
 
-#define NODENUMINGROUP 20
-#define LINKMAXINRROUP 19
+#define NODENUMINGROUP 2 // 修改
+#define LINKMAXINRROUP 1 // 修改
 // 主要定义来自路由模块和链路模块的数据结构
 #define BUSSINE_TYPE_NUM 16
+typedef unsigned long long clocktype; // exata中的clocktype类型，uint64_t
+
+typedef uint16_t NodeAddress;
+
+// bool MacDaatr_judge_if_could_send_config_or_LinkRequist(int interfaceIndex);
 
 // 节点身份枚举
 enum nodeResponsibility
@@ -34,11 +40,10 @@ enum nodeResponsibility
 // 路由模块存储的本地邻居表
 struct nodeLocalNeighList
 {
-
 	uint16_t nodeAddr; // 邻居节点地址
-	// NodeAddress nodeAddr;//邻居节点地址
+	// NodeAddress nodeAddr; //邻居节点地址
 	// uint16_t Delay;
-	// clocktype Delay;
+	clocktype Delay;
 	uint16_t Capacity; // 链路容量
 	uint16_t Queuelen; // 队列长度
 	float Load;
@@ -50,9 +55,10 @@ struct nodeNetNeighList
 	vector<nodeLocalNeighList *> localNeighList;
 };
 // 节点损伤信息
-//  struct DamagedNodes_Msg {
-//  	vector<NodeAddress>* DamagedNodes;//vector指针，指向毁伤节点表
-//  };
+struct DamagedNodes_Msg
+{
+	vector<NodeAddress> *DamagedNodes; // vector指针，指向毁伤节点表
+};
 
 // 链路模块传来的节点速度和位置
 struct NodePosAndSpeed
@@ -192,9 +198,14 @@ struct MessageDiversionHeader
 // 节点管控模块结构 author:zhangyue
 
 // 链路状态包
+// struct ReceiveLocalLinkState_Msg
+// {
+// 	vector<nodeLocalNeighList *> *neighborList;
+// };
+
 struct ReceiveLocalLinkState_Msg
 {
-	vector<nodeLocalNeighList *> *neighborList;
+	vector<nodeLocalNeighList> neighborList;
 };
 
 struct NodeNotification
@@ -241,10 +252,10 @@ struct DamagedHeader
 {
 	unsigned short damagedNum;
 };
-// struct DamagedNode
-// {
-// 	NodeAddress damagedNode;
-// };
+struct DamagedNode
+{
+	NodeAddress damagedNode;
+};
 
 struct GroupResponsibility
 {
@@ -311,6 +322,14 @@ struct ringBuffer
 	uint8_t recvFrmNum;	 // 缓冲区中已经存放的数据个数
 	mutex lock;			 // 写时互斥锁，防止同时对缓冲区进行写操作
 
+	// 构造函数,new
+	ringBuffer()
+	{
+		recvFrmHead = 0;
+		recvFrmTail = 0;
+		recvFrmNum = 0;
+	}
+
 	// 写缓冲区数据成员函数
 	void ringBuffer_put(const uint8_t wBuffer[], uint32_t write_len)
 	{ // uint32_t是根据MAX_DATA_LEN给出
@@ -324,6 +343,13 @@ struct ringBuffer
 			// 更新缓冲区编号
 			recvFrmHead = (recvFrmHead + 1) % MAX_BUFFER_NUM;
 			++recvFrmNum;
+
+			// for (int i = 0; i < write_len; i++)
+			// {
+			// 	cout << hex << (int)wBuffer[i] << " ";
+			// }
+			// cout << dec << endl;
+			// cout << recvFrmHead << " " << recvFrmTail << " " << recvFrmNum << endl;
 			lock.unlock();
 		}
 	}
@@ -334,12 +360,19 @@ struct ringBuffer
 		if (recvFrmNum > 0 && (sizeof(recvFrmData[recvFrmTail]) > 0))
 		{
 			// 读取缓冲区数据
-			memcpy(rBuffer, recvFrmData[recvFrmTail],
-				   recvFrmData[recvFrmTail][1] << 8 | recvFrmData[recvFrmTail][1]);
-
+			// memcpy(rBuffer, recvFrmData[recvFrmTail],
+			//	   recvFrmData[recvFrmTail][1] << 8 | recvFrmData[recvFrmTail][1]);
+			memcpy(rBuffer, recvFrmData[recvFrmTail], sizeof(recvFrmData[recvFrmTail]));
 			// 更新缓冲区编号
 			recvFrmTail = (recvFrmTail + 1) % MAX_BUFFER_NUM;
 			--recvFrmNum;
+
+			// for (int i = 0; i < recvFrmData[recvFrmTail][1] << 8 | recvFrmData[recvFrmTail][1]; i++)
+			// {
+			// 	cout << hex << (int)rBuffer[i] << " ";
+			// }
+			// cout << dec << endl;
+			// cout << recvFrmHead << " " << recvFrmTail << " " << recvFrmNum << endl;
 		}
 	}
 };

@@ -273,6 +273,8 @@ void lowFreqSendThread()
                 mac_header2_ptr->backup = 1;                       // 备用字段为1
                 mac_header2_ptr->fragment_tail_identification = 1; // 分片尾标识
                 FlightStatus flight_sta = daatr_str.local_node_position_info;
+                cout << "飞行状态信息发送" << endl;
+                cout << daatr_str.local_node_position_info.nodeId << " " << daatr_str.local_node_position_info.positionX << " " << daatr_str.local_node_position_info.positionY << " " << daatr_str.local_node_position_info.positionZ << endl;
                 Low_Freq_Packet_Type packet_type;
                 if (daatr_str.node_type != Node_Management)
                 {
@@ -297,6 +299,7 @@ void lowFreqSendThread()
                 uint8_t *temp_buf = new uint8_t[len]; // 此处只是为了防止转换类中的bit指针被释放，所以保险起见复制一份，也可以尝试直接使用
                 memcpy(temp_buf, frame_ptr, len);
                 daatr_str.macDaatrSocketLowFreq_Send(temp_buf, len); // 发送
+
                 writeInfo("NODE %2d 发送飞行状态信息", daatr_str.nodeId);
                 delete temp_buf;
                 delete mac_header2_ptr;
@@ -504,6 +507,8 @@ void lowFreqSendThread()
                     mac_header2_ptr->backup = 1;                       // 备用字段为1
                     mac_header2_ptr->fragment_tail_identification = 1; // 分片尾标识
                     FlightStatus flight_sta = daatr_str.local_node_position_info;
+                    // printf("本地飞行状态信息广播\n");
+                    // cout << daatr_str.local_node_position_info.nodeId << " " << daatr_str.local_node_position_info.positionX << " " << daatr_str.local_node_position_info.positionY << endl;
                     Low_Freq_Packet_Type packet_type;
                     if (daatr_str.node_type != Node_Management)
                     {
@@ -784,7 +789,7 @@ void lowFreqChannelRecvHandle(uint8_t *bit_seq, uint64_t len)
 
             writeInfo("NODE %2d 收到普通节点飞行状态信息", daatr_str.nodeId);
 
-            // printf("NODE %2d  收到普通节点飞行状态信息\n",daatr_str.nodeId);
+            printf("NODE %2d  收到普通节点飞行状态信息\n", daatr_str.nodeId);
             MacPacket_Daatr macpacket_daatr;
             mac_converter2.set_type(3);
             mac_converter2 - mac_converter; // 飞行状态信息
@@ -800,7 +805,7 @@ void lowFreqChannelRecvHandle(uint8_t *bit_seq, uint64_t len)
         { // 网管节点飞行状态信息
 
             writeInfo("NODE %2d 收到网管节点飞行状态信息", daatr_str.nodeId);
-            // printf("NODE %2d  收到网管节点飞行状态信息\n",daatr_str.nodeId);
+            printf("NODE %2d  收到网管节点飞行状态信息\n", daatr_str.nodeId);
             MacPacket_Daatr macpacket_daatr;
             mac_converter2.set_type(3);
             mac_converter2 - mac_converter; // 飞行状态信息

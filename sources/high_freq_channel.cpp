@@ -12,7 +12,7 @@ using namespace std;
 using namespace chrono;
 
 #define DEBUG_SETUP 1
-// #define DEBUG_EXECUTION 1
+#define DEBUG_EXECUTION 1
 #define DEBUG_ADJUST 1
 
 /*********************** 此文件主要包含对高频信道通信相关函数实现 ***********************/
@@ -171,6 +171,7 @@ void MacDaatr::highFreqSendThread()
             {
 #ifdef DEBUG_EXECUTION
                 cout << "[" << currentSlotId << "T] Node " << nodeId << "->" << dest_node << "  ";
+                writeInfo("[%d T] Node %2d-> %2d  ", currentSlotId, nodeId, dest_node);
                 printTime_ms();
 #endif
                 // 接入阶段 网管节点向接入节点发送新跳频图案
@@ -316,8 +317,9 @@ void MacDaatr::highFreqSendThread()
                     mac_header->backup = 0;
                     mac_header->mac_backup = multi;
 #ifdef DEBUG_EXECUTION
-                    cout << "节点 " << nodeId << " 向节点 " << dest_node
-                         << " 本次发送合包 " << multi << " 个 " << endl;
+                    cout << "节点 " << nodeId << " 向节点 " << dest_node << " 本次发送合包 " << multi << " 个 ";
+                    writeInfo("本次发送合包");
+                    printTime_ms();
 #endif
                     mac_header->packetLength = 25; // 设定PDU包头的初始长度
                     mac_header->destAddr = dest_node;
@@ -346,9 +348,11 @@ void MacDaatr::highFreqSendThread()
 
                         mac_converter_PDU1 + mac_converter_temp; // 将新生成的MFC的seq添加至PDU1包头之后
                         PDU_TotalLength += mfc_temp.packetLength;
-                        MFC_Trans_temp->clear();
+                        vector<uint8_t>().swap(*MFC_Trans_temp);
+                        // MFC_Trans_temp->clear();
                     }
-                    MFC_list_temp.clear(); // 清空待发送队列
+                    // MFC_list_temp.clear(); // 清空待发送队列
+                    vector<msgFromControl>().swap(MFC_list_temp);
 
                     mac_converter_PDU1.set_length(PDU_TotalLength);
                     uint8_t *frame_ptr = mac_converter_PDU1.get_sequence();
@@ -384,6 +388,7 @@ void MacDaatr::highFreqSendThread()
 #ifdef DEBUG_EXECUTION
                 // 在执行阶段 收到的内容是 数据包 和 频谱感知结果
                 cout << "[" << currentSlotId << "R] Node " << nodeId << "<-" << dest_node << "  ";
+                writeInfo("[%d R] Node %2d 收到本层数据包并传往上层 ", currentSlotId, nodeId);
                 printTime_ms();
 #endif
             }
@@ -605,6 +610,7 @@ void MacDaatr::highFreqSendThread()
 
         if (end_simulation == true)
         {
+            sleep(1);
             cout << "NODE  " << nodeId << " HighSend   Thread is Over" << endl;
             break;
         }
@@ -632,8 +638,8 @@ void MacDaatr::highFreqChannelHandle(uint8_t *bit_seq, uint64_t len)
     {
         int Total_MFC_num = mac_header.mac_backup; // 读取backup字段得到PDU中的MFC数量
 
-        cout << "Node " << nodeId << " 收到合包 " << Total_MFC_num << " 个  ";
-        printTime_ms();
+        // cout << "Node " << nodeId << " 收到合包 " << Total_MFC_num << " 个  ";
+        // printTime_ms();
 
         MacDaatr_struct_converter mac_converter_MFCs(99); // 用来盛放PDU中除去包头外的若干紧邻的MFC的01序列
         mac_converter_MFCs - mac_converter;
@@ -681,9 +687,10 @@ void MacDaatr::highFreqChannelHandle(uint8_t *bit_seq, uint64_t len)
                 else // 上层数据包
                 {
                     mfc_count_upper++;
-                    cout << nodeId << "MAC_DEBUG 收到本层数据包并传往上层. " << mfc_count_upper << " / "
-                         << Total_MFC_num << endl;
-
+                    // cout << "[" << currentSlotId << "R] Node " << nodeId
+                    //      << " 收到本层数据包并传往上层  " << mfc_count_upper << " / "
+                    //      << Total_MFC_num << endl;
+                    // writeInfo("[%d R] Node %2d 收到本层数据包并传往上层 ", currentSlotId, nodeId);
                     macToNetworkBufferHandle(MFC_vector_temp->data(), 0x10, MFC_vector_temp->size());
                 }
             }
@@ -694,8 +701,10 @@ void MacDaatr::highFreqChannelHandle(uint8_t *bit_seq, uint64_t len)
 
                 MAC_NetworkLayerHasPacketToSend(MFC_temp);
                 mfc_count_trans++;
-                cout << nodeId << ": " << MFC_temp->srcAddr << "-" << MFC_temp->destAddr << endl;
-                cout << "MAC_DEBUG 收到非本节点消息 转发对应节点. " << mfc_count_trans << " / " << Total_MFC_num << endl;
+                // cout << nodeId << ": " << MFC_temp->srcAddr << "-" << MFC_temp->destAddr << endl;
+                // cout << "[" << currentSlotId << "R] Node " << nodeId
+                //      << " 收到非本节点消息 转发对应节点  " << mfc_count_trans << " / "
+                //      << Total_MFC_num << endl;
             }
         }
         delete MFC_vector_temp;
@@ -716,13 +725,6 @@ void MacDaatr::highFreqChannelHandle(uint8_t *bit_seq, uint64_t len)
             // mac_converter_BLRequest.set_length(2);
             mac_converter_BLRequest.daatr_0_1_to_struct();
 
-            // uint8_t *frame = mac_converter_BLRequest.get_sequence();
-            // for (int i; i < 2; i++)
-            // {
-            //     cout << hex << (int)frame[i] << " ";
-            // }
-            // cout << dec << endl;
-
 #ifdef DEBUG_SETUP
             BuildLink_Request *blRequest_ptr = (BuildLink_Request *)mac_converter_BLRequest.get_struct();
             BuildLink_Request blRequest = *blRequest_ptr;
@@ -741,13 +743,6 @@ void MacDaatr::highFreqChannelHandle(uint8_t *bit_seq, uint64_t len)
             MacDaatr_struct_converter mac_converter_BLRequest(6);
             mac_converter_BLRequest - mac_converter;
             mac_converter_BLRequest.daatr_0_1_to_struct();
-
-            // uint8_t *frame = mac_converter_BLRequest.get_sequence();
-            // for (int i; i < 2; i++)
-            // {
-            //     cout << hex << (int)frame[i] << " ";
-            // }
-            // cout << dec << endl;
 
 #ifdef DEBUG_SETUP
             BuildLink_Request *blRequest_ptr = (BuildLink_Request *)mac_converter_BLRequest.get_struct();

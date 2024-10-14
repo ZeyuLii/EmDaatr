@@ -635,35 +635,40 @@ void ReAllocate_Traffic_slottable(MacDaatr *macdata_daatr,
 void sendLocalLinkStatus(MacDaatr *macdata_daatr)
 {
     // TODO 核对if_receive_mana_flight_frame
-    vector<nodeLocalNeighList *> *send_neighborList = new vector<nodeLocalNeighList *>;
+
+    vector<nodeLocalNeighList> *send_neighborList = new vector<nodeLocalNeighList>;
     for (int dest_node = 1; dest_node <= macdata_daatr->subnet_node_num; dest_node++)
     {
         if (macdata_daatr->businessQueue[dest_node - 1].distance != 0 &&
             macdata_daatr->if_receive_mana_flight_frame[dest_node - 1] == true)
         {
-            uint32_t Capacity = Calculate_Transmission_Rate_by_Distance(macdata_daatr->businessQueue[dest_node - 1].distance);
+            uint16_t Capacity = Calculate_Transmission_Rate_by_Distance(macdata_daatr->businessQueue[dest_node - 1].distance);
 
             nodeLocalNeighList *nodeLocalNeighdata = new nodeLocalNeighList;
             nodeLocalNeighdata->nodeAddr = dest_node;
             nodeLocalNeighdata->Capacity = Capacity;
-
-            send_neighborList->push_back(nodeLocalNeighdata);
+            nodeLocalNeighdata->Delay = 7;
+            nodeLocalNeighdata->Queuelen = 15;
+            nodeLocalNeighdata->Load = 1;
+            send_neighborList->push_back(*nodeLocalNeighdata);
+            delete nodeLocalNeighdata;
         }
     }
+
     for (int i = 0; i < macdata_daatr->subnet_node_num; i++)
     {
         macdata_daatr->if_receive_mana_flight_frame[i] = false;
     }
 
-    ReceiveLocalLinkState_Msg loca_linkstate_struct;
-    loca_linkstate_struct.neighborList = send_neighborList;
-    int len = sizeof(loca_linkstate_struct);
+    ReceiveLocalLinkState_Msg *loca_linkstate_struct = new ReceiveLocalLinkState_Msg;
+    loca_linkstate_struct->neighborList = *send_neighborList;
 
-    macdata_daatr->macToNetworkBufferHandle((uint8_t *)&loca_linkstate_struct, 0x0d, len);
+    int len = send_neighborList->size() * sizeof(nodeLocalNeighList);
+
+    macdata_daatr->macToNetworkBufferHandle(loca_linkstate_struct, 0x0d, len);
+
     cout << "[PERIODIC] Node " << macdata_daatr->nodeId << " 向网络层上报 本地链路状态信息      ";
     printTime_ms();
-
-    delete send_neighborList;
 }
 
 void sendOtherNodePosition(MacDaatr *macdata_daatr)
@@ -899,7 +904,6 @@ void adjustNarrowBand(unsigned int freqSeq[SUBNET_NODE_NUMBER_MAX][FREQUENCY_COU
             prev_node = node - 1;
             while (prev_node > 0)
             {
-                // cout << prev_node << endl;
                 if (freqSeq[node][time] - freqSeq[prev_node][time] <= MIN_FREQUENCY_DIFFERENCE ||
                     freqSeq[prev_node][time] - freqSeq[node][time] <= MIN_FREQUENCY_DIFFERENCE)
                 {
@@ -1198,19 +1202,19 @@ void judgeIfEnterFreqAdjustment(MacDaatr *macdata_daatr)
         }
     }
 
-    for (i = 0; i < TOTAL_FREQ_POINT; i++)
-        cout << macdata_daatr->unavailable_frequency_points[i] << " ";
+    // for (i = 0; i < TOTAL_FREQ_POINT; i++)
+    //     cout << macdata_daatr->unavailable_frequency_points[i] << " ";
 
-    cout << endl;
+    // cout << endl;
 
-    cout << "总频段被干扰数目为： " << interfer_number_sum << endl;
-    cout << "子网使用频段被干扰数目为： " << interfer_number << endl;
+    // cout << "总频段被干扰数目为： " << interfer_number_sum << endl;
+    // cout << "子网使用频段被干扰数目为： " << interfer_number << endl;
 
     int subnet_using_freq_num = calculateFreqNum(macdata_daatr);
     float using_freq_interfer_ratio = (float)interfer_number / subnet_using_freq_num;
 
-    cout << "子网使用频段个数为： " << subnet_using_freq_num << endl;
-    cout << "子网使用频段被干扰比例为： " << using_freq_interfer_ratio * 100 << endl;
+    // cout << "子网使用频段个数为： " << subnet_using_freq_num << endl;
+    // cout << "子网使用频段被干扰比例为： " << using_freq_interfer_ratio * 100 << endl;
 
     if (using_freq_interfer_ratio >= INTERFEREENCE_FREQUENCY_THRESHOLD)
     {

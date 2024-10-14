@@ -12,7 +12,7 @@ OBJS := $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRCS))
 all: $(EXECUTABLE)
 
 $(EXECUTABLE): $(OBJS)
-	$(CC) $(CXXFLAGS) $^ -o $@ -lpthread
+	$(CC) $(CXXFLAGS) $^ -o $@ -lpthread -lrt
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(wildcard $(INC_DIR)/*.h)
 	@mkdir -p $(OBJ_DIR)

@@ -417,11 +417,10 @@ void timeInit()
     system("echo in > /sys/class/gpio/gpio961/direction");
     system("echo 962 > /sys/class/gpio/export");
     system("echo in > /sys/class/gpio/gpio962/direction");
-
     system("insmod irq_start.ko");
     system("insmod irq.ko");
 
-    if (daatr_str.nodeId == 1)
+    if (daatr_str.nodeId == daatr_str.mana_node)
     {
         while (!daatr_str.start_irq)
             ;
@@ -437,7 +436,7 @@ void timeInit()
         while (!daatr_str.init_send)
         {
             daatr_str.macDaatrSocketLowFreq_Send((uint8_t *)send, 13);
-            // printf("send\n");
+            printf("NODE %2d send\n", daatr_str.nodeId);
             sleep(1);
         }
         printf("等待开始信号\n");

@@ -356,8 +356,8 @@ bool MacDaatr::MAC_NetworkLayerHasPacketToSend(msgFromControl *busin)
         else
         {
             loc = getAvailableLocationOfQueue(this, next_hop_node, busin->priority);
-            cout << "节点 " << nodeId << " 收到目的地址为: "
-                 << busin->destAddr << " 的数据包, 下一跳转发节点为 " << next_hop_node << endl;
+            // cout << "节点 " << nodeId << " 收到目的地址为: "
+            //      << busin->destAddr << " 的数据包, 下一跳转发节点为 " << next_hop_node << endl;
         }
     }
 
@@ -417,7 +417,7 @@ bool MacDaatr::MAC_NetworkLayerHasPacketToSend(msgFromControl *busin)
 
         flag = true;
     }
-    cout << "插入成功" << endl;
+    // cout << "插入成功" << endl;
     lock_buss_channel.unlock();
 
     return flag;
@@ -601,8 +601,8 @@ void MacDaatr::processLinkAssignmentFromNet(LinkAssignment *LinkAssignment_data,
  * 然后将转换后的数据插入缓冲区
  *
  * 0x0C表示其它节点飞行状态信息 12 |
- * 0x0D表示本地链路状态信息 13 |
- * 0x10表示网络数据包（业务+信令）16 |
+ * 0x0D表示本地链路状态信息 13 | 西电
+ * 0x10表示网络数据包（业务+信令）16 | 西电
  * 0x13表示网管信道传输参数 unused |
  * 0x14表示业务信道传输参数 unused |
  * 0X17表示链路运行状态 ? |
@@ -610,7 +610,9 @@ void MacDaatr::processLinkAssignmentFromNet(LinkAssignment *LinkAssignment_data,
  */
 void MacDaatr::macToNetworkBufferHandle(void *data, uint8_t type, uint16_t len)
 {
-    extern ringBuffer macToRouting_Buffer;
+    extern ringBuffer macToRouting_buffer; // 西电
+    extern ringBuffer macToNet_buffer;     // 北航
+
     uint8_t *ret = NULL; // 返回值
     ret = (uint8_t *)malloc(len + 3);
     memset(ret, 0, sizeof(ret)); // 清零
@@ -623,7 +625,12 @@ void MacDaatr::macToNetworkBufferHandle(void *data, uint8_t type, uint16_t len)
 
     // 写进Mac->Net缓冲区
     lock_Mac_to_Net.lock();
-    macToRouting_Buffer.ringBuffer_put(ret, len + 3);
+
+    if (type == 0x0C || type == 0x17 || type == 0x18) // 北航
+        macToNet_buffer.ringBuffer_put(ret, len + 3);
+    else if (type == 0x0D || type == 0x10) // 西电
+        macToRouting_buffer.ringBuffer_put(ret, len + 3);
+
     lock_Mac_to_Net.unlock();
     free(ret);
 }
@@ -660,10 +667,17 @@ void MacDaatr::networkToMacBufferHandle(uint8_t *rBuffer_mac)
     { // 飞行状态信息
         FlightStatus *temp = (FlightStatus *)data;
         local_node_position_info = *temp;
+        cout << "[BufferInfo] Node " << nodeId << " 收到上层飞行状态信息 " << endl;
+        // debug
+        // cout << local_node_position_info.nodeId << " " << local_node_position_info.positionX << " " << local_node_position_info.positionY << endl;
+        printTime_ms();
         break;
     }
     case 0x0a:
     { // 身份配置信息 MSG_MAC_POOL_ReceiveResponsibilityConfiguration
+        cout << "[BufferInfo] Node " << nodeId << " 收到上层身份配置信息 ";
+        printTime_ms();
+
         NodeNotification *temp = (NodeNotification *)data;
         processNodeNotificationFromNet(temp);
         break;
@@ -701,7 +715,7 @@ void MacDaatr::networkToMacBufferHandle(uint8_t *rBuffer_mac)
     }
     case 0x0e:
     { // 转发表 MAC_DAATR_ReceiveForwardingTable
-        cout << "Node " << nodeId << " 收到路由表";
+        cout << "[BufferInfo] Node " << nodeId << " 收到路由表";
         printTime_ms();
         Layer2_ForwardingTable_Msg *routingTable = (Layer2_ForwardingTable_Msg *)data;
         vector<vector<uint16_t>> *recvForwardingTable = routingTable->Layer2_FT_Ptr;
@@ -718,6 +732,9 @@ void MacDaatr::networkToMacBufferHandle(uint8_t *rBuffer_mac)
     }
     case 0x10:
     { // 网络数据包（业务+信令） MSG_NETWORK_ReceiveNetworkPkt
+        cout << "[BufferInfo] Node " << nodeId << " 收到数据包  ";
+        printTime_ms();
+
         vector<uint8_t> curPktPayload(data, data + len);
         msgFromControl *MFC_temp = new msgFromControl();
         MFC_temp = convert_01_MFCPtr(&curPktPayload); // 解析数组, 还原为包结构体类型
