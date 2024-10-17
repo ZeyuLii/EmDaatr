@@ -247,7 +247,7 @@ void MacDaatr::highFreqSendThread()
                         // 有任何一个条件不满足, 则停止遍历, 并将此前的所有业务打包发送
                         {
                             if ((transData >= businessQueue[dest_node - 1].business[i][skip_pkt].data_kbyte_sum) &&
-                                Judge_If_Include_ReTrans(businessQueue[dest_node - 1].business[i][skip_pkt].busin_data, MFC_list_temp) == false)
+                                judgeReTrans(businessQueue[dest_node - 1].business[i][skip_pkt].busin_data, MFC_list_temp) == false)
                             {
                                 transData -= businessQueue[dest_node - 1].business[i][skip_pkt].data_kbyte_sum;
                                 multi += 1;
@@ -311,6 +311,8 @@ void MacDaatr::highFreqSendThread()
 
                 if (MFC_list_temp.size() != 0)
                 {
+                    // auto startTime = system_clock::now();
+
                     MacHeader *mac_header = new MacHeader;
                     mac_header->PDUtype = 0;
                     mac_header->is_mac_layer = 0;
@@ -327,7 +329,7 @@ void MacDaatr::highFreqSendThread()
 
                     // 首先遍历所有待发送的MFC, 计算即将生成的PDU的长度,
                     // 更新包头位置的pktlength字段
-                    for (auto mfc_t : MFC_list_temp)
+                    for (const auto &mfc_t : MFC_list_temp)
                         mac_header->packetLength += mfc_t.packetLength;
 
                     MacDaatr_struct_converter mac_converter_PDU1(1);         // 此 converter 用来盛放包头, 设置类别为 1
@@ -337,7 +339,7 @@ void MacDaatr::highFreqSendThread()
                     vector<uint8_t> *MFC_Trans_temp = new vector<uint8_t>; // 盛放MFC转换的01序列
                     int PDU_TotalLength = mac_converter_PDU1.get_length(); // PDU_TotalLength 此时的长度只有 25 (是converter1的设定长度)
 
-                    for (auto mfc_temp : MFC_list_temp) // 遍历待发送队列中的每个MFC
+                    for (auto &mfc_temp : MFC_list_temp) // 遍历待发送队列中的每个MFC
                     {
                         MFC_Trans_temp = convert_PtrMFC_01(&mfc_temp);     // 将MFC转换为01序列(使用vector盛放)
                         MacDaatr_struct_converter mac_converter_temp(255); // 设定混合类型的converter,
@@ -349,10 +351,8 @@ void MacDaatr::highFreqSendThread()
                         mac_converter_PDU1 + mac_converter_temp; // 将新生成的MFC的seq添加至PDU1包头之后
                         PDU_TotalLength += mfc_temp.packetLength;
                         vector<uint8_t>().swap(*MFC_Trans_temp);
-                        // MFC_Trans_temp->clear();
                     }
-                    // MFC_list_temp.clear(); // 清空待发送队列
-                    vector<msgFromControl>().swap(MFC_list_temp);
+                    vector<msgFromControl>().swap(MFC_list_temp); // 清空待发送队列
 
                     mac_converter_PDU1.set_length(PDU_TotalLength);
                     uint8_t *frame_ptr = mac_converter_PDU1.get_sequence();
@@ -367,6 +367,10 @@ void MacDaatr::highFreqSendThread()
                     delete mac_header;
                     delete MFC_Trans_temp;
                     delete temp_buf;
+
+                    // auto endTime = system_clock::now();
+                    // auto duration = duration_cast<milliseconds>(endTime - startTime).count();
+                    // cout << " 合包耗时 " << duration << " ms" << endl;
                 }
 
                 // for (int i = 0; i < SUBNET_NODE_NUMBER_MAX; i++)
@@ -611,7 +615,7 @@ void MacDaatr::highFreqSendThread()
         if (end_simulation == true)
         {
             sleep(1);
-            cout << "NODE  " << nodeId << " HighSend   Thread is Over" << endl;
+            cout << "Node  " << nodeId << " HighSend   Thread is Over" << endl;
             break;
         }
     }
@@ -622,7 +626,6 @@ void MacDaatr::highFreqSendThread()
 /// @param len 位序列的长度
 void MacDaatr::highFreqChannelHandle(uint8_t *bit_seq, uint64_t len)
 {
-
     MacDaatr_struct_converter mac_converter(255);                       // 原始bitseq(包头 + 后续内容)
     int frame_length = mac_converter.get_PDU1_sequence_length(bit_seq); // 直接从bitseq中读取长度
     mac_converter.set_length(frame_length);

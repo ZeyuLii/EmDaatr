@@ -51,7 +51,7 @@ double Calculate_Transmission_Rate_by_Distance(double distance)
 }
 
 // 若待发送队列中不包含重传包, 则返回false, 反之返回true
-bool Judge_If_Include_ReTrans(const msgFromControl &MFC_temp, const vector<msgFromControl> &MFC_list_temp)
+bool judgeReTrans(const msgFromControl &MFC_temp, const vector<msgFromControl> &MFC_list_temp)
 {
     if (MFC_list_temp.size() == 0 || MFC_temp.repeat == 0)
         return false;

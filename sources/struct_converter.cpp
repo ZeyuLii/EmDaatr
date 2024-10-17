@@ -2470,43 +2470,60 @@ static uint16_t CRC16_L2(vector<uint8_t> *buffer)
 
 vector<uint8_t> *convert_PtrMFC_01(msgFromControl *packet)
 {
-    vector<uint8_t> *buffer = new vector<uint8_t>;
+    auto sz = 10 + ((vector<uint8_t> *)(packet->data))->size();
+    vector<uint8_t> *buffer = new vector<uint8_t>(sz);
 
-    // 封装第一个字节
-    buffer->push_back(((packet->priority << 5) | (packet->backup << 4) | (packet->msgType)) & 0xFF);
-
-    // 封装第二个字节
-    buffer->push_back((packet->packetLength >> 8) & 0xFF);
-
-    // 封装第三个字节
-    buffer->push_back(packet->packetLength & 0xFF);
-
-    // 封装第四个字节
-    buffer->push_back((packet->srcAddr >> 2) & 0xFF);
-
-    // 封装第五个字节
-    buffer->push_back(((packet->srcAddr << 6) | (packet->destAddr >> 4)) & 0xFF);
-
-    // 封装第六个字节
-    buffer->push_back(((packet->destAddr << 4) | (packet->seq >> 6)) & 0xFF);
-
-    // 封装第七个字节
-    buffer->push_back(((packet->seq << 2) | packet->repeat) & 0xFF);
-
-    // 封装第八个字节
-    buffer->push_back(((packet->fragmentNum << 4) | packet->fragmentSeq) & 0xFF);
-    vector<uint8_t> *curData = new vector<uint8_t>;
-    curData = (vector<uint8_t> *)(packet->data);
-    // 封装报文内容 0728改
-    for (int i = 0; i < curData->size(); i++)
+    int curIdx = 0;
+    (*buffer)[curIdx++] = ((packet->priority << 5) | (packet->backup << 4) | (packet->msgType)) & 0xFF;
+    (*buffer)[curIdx++] = (packet->packetLength >> 8) & 0xFF;
+    (*buffer)[curIdx++] = packet->packetLength & 0xFF;
+    (*buffer)[curIdx++] = (packet->srcAddr << 2) & 0xFF;
+    (*buffer)[curIdx++] = ((packet->srcAddr << 6) | (packet->destAddr >> 4)) & 0xFF;
+    (*buffer)[curIdx++] = ((packet->destAddr << 4) | (packet->seq >> 6)) & 0xFF;
+    (*buffer)[curIdx++] = ((packet->seq << 2) | packet->repeat) & 0xFF;
+    (*buffer)[curIdx++] = ((packet->fragmentNum << 4) | packet->fragmentSeq) & 0xFF;
+    // 封装数据
+    for (int i = 0; i < ((vector<uint8_t> *)(packet->data))->size(); i++)
     {
-        buffer->push_back((*curData)[i]);
+        (*buffer)[curIdx++] = ((vector<uint8_t> *)(packet->data))->at(i);
     }
-    // 根据前面的字节计算CRC校验码
     packet->CRC = CRC16_L2(buffer);
-
-    // 封装CRC
-    buffer->push_back((packet->CRC >> 8) & 0xFF);
-    buffer->push_back(packet->CRC & 0xFF);
+    (*buffer)[curIdx++] = packet->CRC & 0xFF;
+    (*buffer)[curIdx++] = packet->CRC >> 8;
     return buffer;
+
+    // // 封装第二个字节
+    // buffer->push_back((packet->packetLength >> 8) & 0xFF);
+
+    // // 封装第三个字节
+    // buffer->push_back(packet->packetLength & 0xFF);
+
+    // // 封装第四个字节
+    // buffer->push_back((packet->srcAddr >> 2) & 0xFF);
+
+    // // 封装第五个字节
+    // buffer->push_back(((packet->srcAddr << 6) | (packet->destAddr >> 4)) & 0xFF);
+
+    // // 封装第六个字节
+    // buffer->push_back(((packet->destAddr << 4) | (packet->seq >> 6)) & 0xFF);
+
+    // // 封装第七个字节
+    // buffer->push_back(((packet->seq << 2) | packet->repeat) & 0xFF);
+
+    // // 封装第八个字节
+    // buffer->push_back(((packet->fragmentNum << 4) | packet->fragmentSeq) & 0xFF);
+    // vector<uint8_t> *curData = new vector<uint8_t>;
+    // curData = (vector<uint8_t> *)(packet->data);
+    // // 封装报文内容 0728改
+    // for (int i = 0; i < curData->size(); i++)
+    // {
+    //     buffer->push_back((*curData)[i]);
+    // }
+    // // 根据前面的字节计算CRC校验码
+    // packet->CRC = CRC16_L2(buffer);
+
+    // // 封装CRC
+    // buffer->push_back((packet->CRC >> 8) & 0xFF);
+    // buffer->push_back(packet->CRC & 0xFF);
+    // return buffer;
 }

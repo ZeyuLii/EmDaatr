@@ -9,8 +9,8 @@
 
 double Calculate_Transmission_Rate_by_Distance(double distance);
 
-bool Judge_If_Include_ReTrans(const msgFromControl &MFC_temp,
-                              const vector<msgFromControl> &MFC_list_temp);
+bool judgeReTrans(const msgFromControl &MFC_temp,
+                  const vector<msgFromControl> &MFC_list_temp);
 
 void Business_Lead_Forward(MacDaatr *macdata_daatr, int dest_node, int prio, int location);
 

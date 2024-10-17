@@ -1,0 +1,4 @@
+/home/li/Code/macDaatr/build/CMakeFiles/rebuild_cache.dir
+/home/li/Code/macDaatr/build/CMakeFiles/edit_cache.dir
+/home/li/Code/macDaatr/build/CMakeFiles/clean.dir
+/home/li/Code/macDaatr/build/CMakeFiles/macdaatr.dir

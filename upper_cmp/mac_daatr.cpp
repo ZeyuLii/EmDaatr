@@ -5400,7 +5400,7 @@ static void MFC_Priority_Adjustment(MacDataDaatr *macdata_daatr)
 static int Search_Next_Hop_Addr(MacDataDaatr *macdata_daatr, int destAddr) { return int(macdata_daatr->Forwarding_Table[destAddr - 1][1]); }
 
 // 若待发送队列中不包含重传包, 则返回false, 反之返回true
-static bool Judge_If_Include_ReTrans(msgFromControl MFC_temp, vector<msgFromControl> MFC_list_temp)
+static bool judgeReTrans(msgFromControl MFC_temp, vector<msgFromControl> MFC_list_temp)
 {
     if (MFC_list_temp.size() == 0 || MFC_temp.repeat == 0)
     {
@@ -6819,7 +6819,7 @@ void MacDaatrLayer(Node *node, int interfaceIndex, Message *msg)
                         // 有任何一个条件不满足, 则停止遍历, 并将此前的所有业务打包发送
                         {
                             if ((trans_data >= macdata_daatr->traffic_channel_business[dest_node - 1].business[i][skip_pkt].data_kbyte_sum) &&
-                                Judge_If_Include_ReTrans(macdata_daatr->traffic_channel_business[dest_node - 1].business[i][skip_pkt].busin_data, MFC_list_temp) == false)
+                                judgeReTrans(macdata_daatr->traffic_channel_business[dest_node - 1].business[i][skip_pkt].busin_data, MFC_list_temp) == false)
                             {
                                 trans_data -= macdata_daatr->traffic_channel_business[dest_node - 1].business[i][skip_pkt].data_kbyte_sum;
                                 multi += 1;

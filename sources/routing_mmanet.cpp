@@ -37,10 +37,24 @@ void *RoutingReceiveFromSvc(void *arg)
 	vector<uint8_t> msg_svctomac;
 	while (!end_simulation)
 	{
-
 		// 接收数据
 		memset(buffer_svc, 0, MAX_DATA_LEN);
 		svcToRouting_buffer.ringBuffer_get(buffer_svc);
+
+		if (mmanet->nodeAddr == 1)
+		{
+			usleep(2e6);
+			buffer_svc[0] = 0x08;
+			buffer_svc[1] = 0x08;
+			buffer_svc[2] = 0x08;
+			buffer_svc[3] = 16; // des
+			buffer_svc[4] = 2;	// src 1
+			for (int i = 5; i < (65535 - 100) / 8; i++)
+			{
+				buffer_svc[i] = 0xAD;
+			}
+		}
+
 		uint8_t type = buffer_svc[0];
 		uint16_t len = (buffer_svc[1] << 8) | buffer_svc[2];
 		vector<uint8_t> dataPacket_svc(&buffer_svc[3], &buffer_svc[3] + len);
