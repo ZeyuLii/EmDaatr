@@ -83,9 +83,6 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    timeInit();
-    cout << "等待同步信号" << endl;
-
     // 创建routing_mmanet模块所需的数据类型结构体指针,并进行初始化
     mmanet = new MMANETData();
     MMANETInit(mmanet);
@@ -110,6 +107,9 @@ int main(int argc, char *argv[])
     pthread_create(&netReceiveFromMac, NULL, NetReceiveFromMac, NULL);
     pthread_create(&netReceiveFromRouting, NULL, NetReceiveFromRouting, NULL);
     pthread_create(&netReceiveFromSvc, NULL, NetReceiveFromSvc, NULL);
+
+    timeInit();
+    cout << "等待同步信号" << endl;
 
     // SetTimer(0, 1, 1);
     lowRecvThread.join();

@@ -13,6 +13,7 @@
 #include <stddef.h>
 #include <stdio.h>
 using namespace std;
+
 /*****************************此文件主要包含对低频信道通信相关函数实现******************************/
 
 /**
@@ -146,7 +147,7 @@ void lowFreqSendThread()
     while (1)
     {
         daatr_str.lowthreadcondition_variable.wait(lowthreadlock);
-        writeInfo("时隙:%2d-------------------------------------------------------------------------------", daatr_str.low_slottable_should_read);
+        writeInfo("时隙:%2d---------------------------------------------------------------------", daatr_str.low_slottable_should_read);
         state_now = daatr_str.state_now;
         int slot_num = daatr_str.low_slottable_should_read;
         daatr_str.low_slottable_should_read++;
@@ -273,8 +274,6 @@ void lowFreqSendThread()
                 mac_header2_ptr->backup = 1;                       // 备用字段为1
                 mac_header2_ptr->fragment_tail_identification = 1; // 分片尾标识
                 FlightStatus flight_sta = daatr_str.local_node_position_info;
-                cout << "飞行状态信息发送" << endl;
-                cout << daatr_str.local_node_position_info.nodeId << " " << daatr_str.local_node_position_info.positionX << " " << daatr_str.local_node_position_info.positionY << " " << daatr_str.local_node_position_info.positionZ << endl;
                 Low_Freq_Packet_Type packet_type;
                 if (daatr_str.node_type != Node_Management)
                 {
@@ -301,6 +300,8 @@ void lowFreqSendThread()
                 daatr_str.macDaatrSocketLowFreq_Send(temp_buf, len); // 发送
 
                 writeInfo("NODE %2d 发送飞行状态信息", daatr_str.nodeId);
+                cout << "[建链阶段] Node " << daatr_str.nodeId << " 广播飞行状态信息  ";
+                printTime_ms();
                 delete temp_buf;
                 delete mac_header2_ptr;
             }
@@ -365,6 +366,10 @@ void lowFreqSendThread()
                             delete mac_header2_ptr;
                             daatr_str.access_state = DAATR_HAS_SENT_ACCESS_REQUEST; // 断开节点已发送接入请求
                             writeInfo("NODE %2d 已发送接入请求", daatr_str.nodeId);
+
+                            printf("[接入广播-MANA] Node %2d 已发送接入请求  ", daatr_str.nodeId);
+                            printTime_ms();
+
                             if (!insertEventTimer_ms(ACCESS_REQUREST_WAITING_MAX_TIME, judgeIfBackToAccess))
                             {
                                 cout << "事件队列已满，无法进行事件插入!!!!!!!!!" << endl;
@@ -374,16 +379,17 @@ void lowFreqSendThread()
                         { // 等待退避数减1
                             daatr_str.access_backoff_number--;
                             cout << endl;
-                            cout << "[接入广播-MANA] Node ID " << daatr_str.nodeId << " 处于退避状态, 还需要退避 "
+                            cout << "[接入广播-MANA] Node " << daatr_str.nodeId << " 处于退避状态, 还需要退避 "
                                  << (int)daatr_str.access_backoff_number << " 接入时隙";
                             printTime_ms(); // 打印时间
                         }
                     }
                     else if (daatr_str.access_state == DAATR_HAS_SENT_ACCESS_REQUEST)
                     {
-                        // cout << endl;
-                        // cout << "[接入广播-MANA] Node ID " << daatr_str.nodeId << " 处于等待接收网管节点回复接入请求状态 ";
-                        writeInfo("|接入广播-MANA| Node %2d 处于等待接收网管节点回复接入请求状态", daatr_str.nodeId);
+                        cout << "[接入广播-MANA] Node " << daatr_str.nodeId << " 处于等待接收网管节点回复接入请求状态 ";
+                        printTime_ms();
+
+                        writeInfo("[接入广播-MANA] Node %2d 处于等待接收网管节点回复接入请求状态", daatr_str.nodeId);
                         // printTime_ms(); // 打印时间
                     }
                     else if (daatr_str.access_state == DAATR_WAITING_TO_ACCESS)
@@ -406,8 +412,8 @@ void lowFreqSendThread()
                     { // 如果网管节点有需要回复的节点
                         writeInfo("|接入广播-MANA| Node %2d 非建链阶段广播 网管信道 接入请求回复", daatr_str.nodeId);
                         // cout << endl;
-                        // cout << "[接入广播-MANA] Node ID " << daatr_str.nodeId << " 非建链阶段广播 网管信道 接入请求回复 ";
-                        // printTime_ms(); // 打印时间
+                        cout << "[接入广播-MANA] Node " << daatr_str.nodeId << " 非建链阶段广播 网管信道 接入请求回复 ";
+                        printTime_ms(); // 打印时间
                         vector<uint8_t> *slot_location;
                         slot_location = MacDaatrSearchSlotLocation(daatr_str.waiting_to_access_node, &daatr_str);
                         mana_access_reply access_reply;
@@ -458,8 +464,8 @@ void lowFreqSendThread()
                     else if (daatr_str.access_state == DAATR_WAITING_TO_REPLY && daatr_str.state_now != Mac_Execution)
                     { // 不处于执行阶段, 拒绝接入
                         // cout << endl;
-                        // cout << "[接入广播-MANA] Node ID " << daatr_str.nodeId << " 非建链阶段广播 网管信道 拒绝接入请求回复 ";
-                        // printTime_ms(); // 打印时间
+                        cout << "[接入广播-MANA] Node " << daatr_str.nodeId << " 非建链阶段广播 网管信道 拒绝接入请求回复 ";
+                        printTime_ms(); // 打印时间
                         writeInfo("|接入广播-MANA| Node %2d 非建链阶段广播 网管信道 拒绝接入请求回复", daatr_str.nodeId);
                         MacHeader2 *mac_header2_ptr = new MacHeader2;
                         mac_header2_ptr->PDUtype = 1;
@@ -488,11 +494,12 @@ void lowFreqSendThread()
                         daatr_str.waiting_to_access_node = 0;
                     }
                     else
-                    { // 网管节点无需回复
+                    {
+                        // 网管节点无需回复
                         // cout << endl;
                         // cout << "无接入节点, 网管节点无需回复 ";
                         // printTime_ms(); // 打印时间
-                        writeInfo("无接入节点, 网管节点无需回复", daatr_str.nodeId);
+                        // writeInfo("无接入节点, 网管节点无需回复", daatr_str.nodeId);
                     }
                     break;
                 }
@@ -534,6 +541,8 @@ void lowFreqSendThread()
                     memcpy(temp_buf, frame_ptr, len);
                     daatr_str.macDaatrSocketLowFreq_Send(temp_buf, len); // 发送
                     writeInfo("NODE %2d 发送飞行状态信息", daatr_str.nodeId);
+                    cout << "[MANA] Node " << daatr_str.nodeId << " 广播飞行状态信息  ";
+                    printTime_ms();
                     delete temp_buf;
                     delete mac_header2_ptr;
                     break;
@@ -662,7 +671,7 @@ void lowFreqSendThread()
         }
         if (end_simulation)
         {
-            printf("NODE %2d LowSendThread is Over\n", daatr_str.nodeId);
+            printf("Node %2d LowSendThread is Over\n", daatr_str.nodeId);
             break;
         }
     }
@@ -769,8 +778,7 @@ void lowFreqChannelRecvHandle(uint8_t *bit_seq, uint64_t len)
         { // 拒绝随遇接入请求
             if (daatr_str.nodeId == mac_header2.destAddr)
             {
-                cout << endl
-                     << "Node " << daatr_str.nodeId << "收到网管节点拒绝接入回复 ";
+                cout << "\nNode " << daatr_str.nodeId << "收到网管节点拒绝接入回复 ";
                 printTime_ms(); // 打印时间
                 int num = rand() % (MAX_RANDOM_BACKOFF_NUM + 1);
                 daatr_str.access_state = DAATR_NEED_ACCESS; // 节点已收到网管节点拒绝接入请求, 重新等待接入
@@ -789,7 +797,7 @@ void lowFreqChannelRecvHandle(uint8_t *bit_seq, uint64_t len)
 
             writeInfo("NODE %2d 收到普通节点飞行状态信息", daatr_str.nodeId);
 
-            printf("NODE %2d  收到普通节点飞行状态信息\n", daatr_str.nodeId);
+            // printf("Node %2d  收到普通节点飞行状态信息\n", daatr_str.nodeId);
             MacPacket_Daatr macpacket_daatr;
             mac_converter2.set_type(3);
             mac_converter2 - mac_converter; // 飞行状态信息
@@ -805,7 +813,7 @@ void lowFreqChannelRecvHandle(uint8_t *bit_seq, uint64_t len)
         { // 网管节点飞行状态信息
 
             writeInfo("NODE %2d 收到网管节点飞行状态信息", daatr_str.nodeId);
-            printf("NODE %2d  收到网管节点飞行状态信息\n", daatr_str.nodeId);
+            // printf("Node %2d  收到网管节点飞行状态信息\n", daatr_str.nodeId);
             MacPacket_Daatr macpacket_daatr;
             mac_converter2.set_type(3);
             mac_converter2 - mac_converter; // 飞行状态信息
@@ -857,7 +865,6 @@ void lowFreqChannelRecvHandle(uint8_t *bit_seq, uint64_t len)
             else
             {
                 cout << "Incorrect Data!" << endl;
-                // system("pause");
             }
             break;
         }

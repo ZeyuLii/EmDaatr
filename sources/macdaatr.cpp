@@ -16,6 +16,7 @@ using namespace std;
 // #define DEBUG_MAC_SENDRECV_PKT 1
 
 /*****************************此文件主要包含对本层协议结构体控制相关函数******************************/
+
 /**
  * 获取当前时间
  *
@@ -25,7 +26,6 @@ using namespace std;
  *
  * @return 返回当前协议栈的绝对时间，单位取决于外部变量daatr_str的定义。
  */
-
 uint64_t getTime()
 {
     extern MacDaatr daatr_str;
@@ -314,7 +314,7 @@ void MacDaatr::LoadSlottable_Adjustment()
 
 /// @brief 该函数由网络层在有业务要发送时进行调用,
 //         实现向业务信道队列和网管信道队列内添加待发送业务的目标
-bool MacDaatr::MAC_NetworkLayerHasPacketToSend(msgFromControl *busin)
+void MacDaatr::MAC_NetworkLayerHasPacketToSend(msgFromControl *busin)
 {
     /*
         1.检查busin的接收节点和优先级
@@ -324,7 +324,6 @@ bool MacDaatr::MAC_NetworkLayerHasPacketToSend(msgFromControl *busin)
         5.更新此时的优先级 & waiting_time
     */
     int i, new_loc, loc;
-    int flag = false; // 表征是否成功将busin插入业务队列
     int next_hop_node;
 
     lock_buss_channel.lock();
@@ -346,7 +345,7 @@ bool MacDaatr::MAC_NetworkLayerHasPacketToSend(msgFromControl *busin)
             if (busin->msgType != 2) // 一般数据包
             {
                 cout << "此时数据包的接收节点 " << busin->destAddr << " 不存在转发节点, 丢弃业务" << endl;
-                return false;
+                return;
             }
             else // type = 2 的探测包
             {
@@ -363,7 +362,7 @@ bool MacDaatr::MAC_NetworkLayerHasPacketToSend(msgFromControl *busin)
 
     if (loc == TRAFFIC_MAX_BUSINESS_NUMBER) // 这说明队列全满
     {
-        printf("Node %d 的优先级队列 %d 已满\n", busin->destAddr, busin->priority);
+        printf("Node %d->%d 的优先级队列 %d 已满\n", nodeId, busin->destAddr, busin->priority);
 
         if ((busin->packetLength == 73 && busin->msgType == 15 && busin->fragmentNum == 15))
         // 这是频谱感知结果数据包
@@ -380,10 +379,9 @@ bool MacDaatr::MAC_NetworkLayerHasPacketToSend(msgFromControl *busin)
                 if (new_loc != TRAFFIC_MAX_BUSINESS_NUMBER)
                 {
                     Insert_MFC_to_Queue(this, busin, i, new_loc, 0, 0); // 不查看路由表
-                    flag = true;
                     break;
                 }
-                printf("Node %d 的优先级队列 %d 已满\n", i, busin->priority);
+                printf("Node %d->%d 的优先级队列 %d 已满\n", nodeId, busin->destAddr, busin->priority);
             }
         }
         else
@@ -396,10 +394,9 @@ bool MacDaatr::MAC_NetworkLayerHasPacketToSend(msgFromControl *busin)
                 if (new_loc != TRAFFIC_MAX_BUSINESS_NUMBER)
                 {
                     Insert_MFC_to_Queue(this, busin, i, new_loc, 0, 1);
-                    flag = true;
                     break;
                 }
-                printf("Node %d 的优先级队列 %d 已满\n", i, busin->priority);
+                printf("Node %d->%d 的优先级队列 %d 已满\n", nodeId, busin->destAddr, busin->priority);
             }
         }
     }
@@ -414,13 +411,9 @@ bool MacDaatr::MAC_NetworkLayerHasPacketToSend(msgFromControl *busin)
 
         else
             Insert_MFC_to_Queue(this, busin, busin->priority, loc, 1, 1);
-
-        flag = true;
     }
     // cout << "插入成功" << endl;
     lock_buss_channel.unlock();
-
-    return flag;
 }
 
 /// @brief 对收到的mfcTemp进行处理
@@ -436,7 +429,8 @@ void MacDaatr::processPktFromNet(msgFromControl *MFC_temp)
         if (MFC_temp->backup == 0)
         {
             if (MFC_temp->msgType == 3 && Forwarding_Table[MFC_temp->destAddr - 1][1] == 0)
-                cout << nodeId << "->" << MFC_temp->destAddr
+                cout << nodeId
+                     << "->" << MFC_temp->destAddr
                      << " 无高速链路, 丢弃数据包 (msgType = 3)" << endl;
 
             MAC_NetworkLayerHasPacketToSend(MFC_temp);

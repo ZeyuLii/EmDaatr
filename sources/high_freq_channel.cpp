@@ -17,29 +17,6 @@ using namespace chrono;
 
 /*********************** 此文件主要包含对高频信道通信相关函数实现 ***********************/
 
-/*
- TODO 0720:
-    Y1. 时域调整阶段的数据收发(补充发函数与收函数的事件处理函数) &
-        频域调整阶段 (+ 干扰频点汇总 新调频图案等数据包的发送)
-    Y2. 状态的切换 Setup->Exe->Adj 标志位的更改 在macdaatr.cpp中
-    Y3. 执行阶段的读取数据包时，需要给数据 <加锁> 并把队列放进到 private 中
-        (后者无法实现，因为有非成员函数操作队列，如 UpdatePosition)
-    Y4. 接收上层缓冲区数据包并处理的事件处理函数
-        -Y prior 数据包——放入队列 MSG_NETWORK_ReceiveNetworkPkt <加锁>
-        -Y 链路构建需求——调整阶段
-        -Y 身份配置信息调整与下发
-        -Y 转发表与路由表
-        -Y 本地飞行状态信息
-    Y5. 周期性向网络层缓冲区发送数据包
-        -Y 其他节点飞行状态信息 MAC_DAATR_SendOtherNodePosition
-        -Y 本地链路状态信息 Send_LOcal_Link_Status()
-    Y6. 核对 身份配置信息变更后，其他节点的定时器修改问题 (processNodeNotificationFromNet函数中, 频域相关)
-    Y7. 射前时隙表生成函数 根据 node_num
-    Y8. 接入相关
-    Y9. 接收和生成频谱感知结果数据包 MAC_DAATR_SpectrumSensing (from PHY)
-    0. 如需必要 将队列更改为set 重写出入队的操作
-*/
-
 /// @brief 高频信道发送线程函数
 void MacDaatr::highFreqSendThread()
 {
@@ -49,6 +26,18 @@ void MacDaatr::highFreqSendThread()
     // -- 如果是 Mac_Adjustment 则发送内容为 时隙表/ACK
 
     extern bool end_simulation;
+
+    pthread_t tid = pthread_self();
+    int policy;
+    struct sched_param param;
+    policy = SCHED_RR;         // 使用实时调度策略
+    param.sched_priority = 19; // 设置优先级，值越高优先级越高
+    if (pthread_setschedparam(tid, policy, &param) != 0)
+    {
+        perror("pthread_setschedparam");
+        exit(EXIT_FAILURE);
+    }
+
     while (true)
     {
         // 首先更新时隙编号 slotId
@@ -171,7 +160,7 @@ void MacDaatr::highFreqSendThread()
             {
 #ifdef DEBUG_EXECUTION
                 cout << "[" << currentSlotId << "T] Node " << nodeId << "->" << dest_node << "  ";
-                writeInfo("[%d T] Node %2d-> %2d  ", currentSlotId, nodeId, dest_node);
+                writeInfo("[%dT] Node %2d-> %2d  ", currentSlotId, nodeId, dest_node);
                 printTime_ms();
 #endif
                 // 接入阶段 网管节点向接入节点发送新跳频图案
@@ -231,6 +220,7 @@ void MacDaatr::highFreqSendThread()
                 int skip_pkt = 0; // 表示这是大数据包(的个数), 无法放入此PDU, 跳过
                 vector<msgFromControl> MFC_list_temp;
 
+                lock_buss_channel.lock();
                 for (int i = 0; i < TRAFFIC_CHANNEL_PRIORITY; i++)
                 {
                     // i对应不同优先级
@@ -308,6 +298,7 @@ void MacDaatr::highFreqSendThread()
                         }
                     }
                 }
+                lock_buss_channel.unlock();
 
                 if (MFC_list_temp.size() != 0)
                 {
@@ -320,7 +311,7 @@ void MacDaatr::highFreqSendThread()
                     mac_header->mac_backup = multi;
 #ifdef DEBUG_EXECUTION
                     cout << "节点 " << nodeId << " 向节点 " << dest_node << " 本次发送合包 " << multi << " 个 ";
-                    writeInfo("本次发送合包");
+                    // writeInfo("本次发送合包");
                     printTime_ms();
 #endif
                     mac_header->packetLength = 25; // 设定PDU包头的初始长度

@@ -18,7 +18,7 @@ typedef unsigned long long clocktype; // exata中的clocktype类型，uint64_t
 
 typedef uint16_t NodeAddress;
 
-// bool MacDaatr_judge_if_could_send_config_or_LinkRequist(int interfaceIndex);
+bool canSendConfigLinkRequest();
 
 // 节点身份枚举
 enum nodeResponsibility

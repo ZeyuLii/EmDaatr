@@ -277,8 +277,6 @@ typedef struct MacPacket_Daatr
     vector<msgFromControl> MFC_list;
 } MacPacket;
 
-// class Business
-
 // mac层daatr类
 class MacDaatr
 {
@@ -346,8 +344,6 @@ public:
 
     highFreqBusinessQueue businessQueue[SUBNET_NODE_NUMBER_MAX]; // 业务信道的待发送队列
 
-    // 缺少bool has_received_sequence_ACK;  523
-
     /*随遇接入相关*/
     NodeAccess access_state;         // 当前节点接入状态
     uint8_t access_backoff_number;   // 接入退避数目
@@ -402,7 +398,7 @@ public:
     void macDaatrSocketHighFreq_Recv(bool IF_NOT_BLOCKED);                          // 高频信道Socket接收数据包
     void highFreqChannelHandle(uint8_t *bit_seq, uint64_t len);                     // 高频信道处理数据包
 
-    bool MAC_NetworkLayerHasPacketToSend(msgFromControl *busin);
+    void MAC_NetworkLayerHasPacketToSend(msgFromControl *busin);
 
     // 网管信道相关函数
     // void lowFreqSendThread();

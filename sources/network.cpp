@@ -96,7 +96,7 @@ void *NetReceiveFromSvc(void *arg)
         }
 
         // 每间隔100us读取一次数据
-        usleep(100);
+        usleep(1000);
     }
 
     return NULL;
@@ -148,7 +148,7 @@ void *NetReceiveFromRouting(void *arg)
         }
 
         // 每间隔100us读取一次数据
-        usleep(100);
+        usleep(1000);
     }
 
     return NULL;
@@ -194,7 +194,7 @@ void *NetReceiveFromMac(void *arg)
         }
 
         // 每间隔100us读取一次数据
-        usleep(100);
+        usleep(1000);
     }
 
     return NULL;
@@ -395,7 +395,6 @@ void HandleReceivedRTtable(const vector<uint8_t> &NetRT_EntryMsgPtr)
     // 更新自己数据结构里的指针
     linkConfigPtr->netRTtablePtr = rtMsgPtr->netRTtablePtr;
     PrintRTTable(linkConfigPtr->netRTtablePtr);
-    cout << "123282147389859" << endl;
     if (rtMsgPtr->netRTtablePtr->size() == 0) // 路由表为空
     {
         // 节点脱网，触发身份配置模块修改身份
@@ -403,7 +402,7 @@ void HandleReceivedRTtable(const vector<uint8_t> &NetRT_EntryMsgPtr)
         // 身份配置模块处理函数在此处运行
         HandleNodeOffline();
     }
-    cout << "34745909606700" << endl;
+
     // 获取全网所有节点
     vector<NodeAddress> *netNodesPtr = new vector<NodeAddress>;
     for (int i = 0; i < linkConfigPtr->netRTtablePtr->size(); i++)

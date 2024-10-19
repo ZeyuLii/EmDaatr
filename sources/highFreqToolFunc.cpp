@@ -46,8 +46,8 @@ double Calculate_Transmission_Rate_by_Distance(double distance)
 
     else if (distance > 1200 && distance <= 1500)
         tran_speed = 8;
-
-    return tran_speed;
+    // return tran_speed;
+    return tran_speed / 3; // 抑制发送
 }
 
 // 若待发送队列中不包含重传包, 则返回false, 反之返回true
@@ -1170,7 +1170,6 @@ static void generateSubnetUsedFrequency(MacDaatr *macdata_daatr)
     {                                                               // 打印当前子网所使用频点
         cout << macdata_daatr->subnet_frequency_sequence[i] << " "; // 设置为使用频点
     }
-    // cout << endl;
 }
 
 void judgeIfEnterFreqAdjustment(MacDaatr *macdata_daatr)
@@ -1308,4 +1307,10 @@ int Generate_LinkAssignment_Stage_1(LinkAssignment link_assign[])
     }
 
     return LA_index;
+}
+
+bool canSendConfigLinkRequest()
+{
+    extern MacDaatr daatr_str;
+    return daatr_str.state_now == Mac_Execution;
 }

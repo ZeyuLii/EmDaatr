@@ -13,6 +13,7 @@
 #include "routing_mmanet.h"
 #include "common_struct.h"
 #include "timer.h"
+
 int ikl = 0;
 extern MMANETData *mmanet; // routing_mmanet模块本节点所需要的数据，在主函数中初始化，通过全局变量引用
 // routing_mmanet模块所需的循环缓冲区
@@ -77,7 +78,7 @@ void *RoutingReceiveFromSvc(void *arg)
 		}
 
 		// 每间隔100us读取一次数据
-		usleep(100);
+		usleep(1000);
 	}
 
 	return NULL;
@@ -122,7 +123,7 @@ void *RoutingReceiveFromNet(void *arg)
 		}
 
 		// 每间隔100us读取一次数据
-		usleep(100);
+		usleep(1000);
 	}
 
 	return NULL;
@@ -170,7 +171,7 @@ void *RoutingReceiveFromMac(void *arg)
 		}
 
 		// 每间隔100us读取一次数据
-		usleep(100);
+		usleep(1000);
 	}
 
 	return NULL;

@@ -109,7 +109,6 @@ int MacDaatr::macDaatrCreateUDPSocket(string ip, int port, bool if_not_block)
 void MacDaatr::macDaatrSocketHighFreq_Recv(bool IF_NOT_BLOCKED = false)
 {
     extern bool end_simulation;
-    // extern MacDaatr daatr_str; // mac层协议类
     string IP = in_subnet_id_to_ip[nodeId];
     int sock_fd = macDaatrCreateUDPSocket(IP, HIGH_FREQ_SOCKET_PORT, IF_NOT_BLOCKED);
     mac_daatr_high_freq_socket_fid = sock_fd;
@@ -209,7 +208,7 @@ void MacDaatr::macDaatrSocketLowFreq_Recv(bool IF_NOT_BLOCKED = false)
                         if (!ready_node[i])
                             ready_node[i] = true;
 
-                    printf("收到 NODE %d 信息\n", find_int);
+                    printf("收到 Node %d 信息\n", find_int);
                 }
                 usleep(3e5);
 
@@ -260,7 +259,6 @@ void MacDaatr::macDaatrSocketLowFreq_Recv(bool IF_NOT_BLOCKED = false)
     { // 阻塞模式
         while (1)
         {
-            // printf("low server wait:\n");
             recv_num = recvfrom(sock_fd, recv_buf, sizeof(recv_buf), 0,
                                 (struct sockaddr *)&addr_client, (socklen_t *)&len);
             recv_buf[recv_num] = '\0';
@@ -273,13 +271,13 @@ void MacDaatr::macDaatrSocketLowFreq_Recv(bool IF_NOT_BLOCKED = false)
                     state_now = Mac_Access;
                     access_state = DAATR_NEED_ACCESS;
                     writeInfo("NODE %2d 掉链", nodeId);
-                    printf("NODE %2d 掉链\n", nodeId);
+                    printf("Node %2d 掉链\n", nodeId);
                 }
                 else if (!strcmp("上链", recv_buf))
                 {
                     isValid = 0;
                     writeInfo("NODE %2d 上链", nodeId);
-                    printf("NODE %2d 上链\n", nodeId);
+                    printf("Node %2d 上链\n", nodeId);
                 }
             }
 
