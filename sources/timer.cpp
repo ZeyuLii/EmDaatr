@@ -289,6 +289,15 @@ void ppsIRQHandle(int signum, siginfo_t *info, void *context)
         PPS_overcount++;
         daatr_str.lowthreadcondition_variable.notify_one();
         parseCpuTimes();
+
+        char *send = "start";
+        sockaddr_in recever; // 接收端地址
+        // 获取mac_daatr_low_freq_socket_fid的值，用于后续的发送操作
+        int sock_fd = daatr_str.mac_daatr_low_freq_socket_fid;
+        int send_num = 0;
+        daatr_str.initializeNodeIP(recever, 20, 8102);
+        // 尝试发送数据到指定接收者，sendto函数用于向特定地址发送数据
+        send_num = sendto(sock_fd, send, 6, 0, (struct sockaddr *)&recever, sizeof(recever));
     }
     else
         PPS_overcount++;
@@ -427,7 +436,7 @@ void timeInit()
 
         char *send = "start";
         daatr_str.macDaatrSocketLowFreq_Send((uint8_t *)send, 6);
-        printf("发送开始信号\n");
+        printf("发送开始信号 \n");
     }
     else
     {
@@ -437,7 +446,9 @@ void timeInit()
         {
             daatr_str.macDaatrSocketLowFreq_Send((uint8_t *)send, 13);
             printf("NODE %2d send\n", daatr_str.nodeId);
-            sleep(1);
+
+            int sleeptime = 100 + rand() % (200 - 100 + 1);
+            usleep(sleeptime * 1e4);
         }
         printf("等待开始信号\n");
         while (!daatr_str.start_irq)

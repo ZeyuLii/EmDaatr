@@ -7,7 +7,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream> // std::stringstream ss;
-
+// #include <unistd.h>
 using namespace std;
 
 // 根据输入的两节点距离计算对应的传输速率 kbps
@@ -209,7 +209,11 @@ void Insert_MFC_to_Queue(MacDaatr *macdata_daatr, msgFromControl *busin,
     }
 }
 
-bool Compare_by_Priority(const LinkAssignment_single LA1, const LinkAssignment_single LA2) { return LA1.priority <= LA2.priority; }
+bool Compare_by_Priority(const LinkAssignment_single LA1, const LinkAssignment_single LA2)
+{
+    // cout << LA1.priority << "  " << LA2.priority << endl;
+    return LA1.priority < LA2.priority;
+}
 
 static int Rand(int i) { return rand() % i; }
 
@@ -650,7 +654,7 @@ void sendLocalLinkStatus(MacDaatr *macdata_daatr)
             nodeLocalNeighdata->Delay = 7;
             nodeLocalNeighdata->Queuelen = 15;
             nodeLocalNeighdata->Load = 1;
-            send_neighborList->push_back(*nodeLocalNeighdata);
+            send_neighborList->emplace_back(*nodeLocalNeighdata);
             delete nodeLocalNeighdata;
         }
     }
@@ -662,26 +666,31 @@ void sendLocalLinkStatus(MacDaatr *macdata_daatr)
 
     ReceiveLocalLinkState_Msg *loca_linkstate_struct = new ReceiveLocalLinkState_Msg;
     loca_linkstate_struct->neighborList = *send_neighborList;
+    // cout << "size : " << send_neighborList->size() << endl;
+    // cout << "loca_linkstate_struct " << loca_linkstate_struct << endl;
 
     int len = send_neighborList->size() * sizeof(nodeLocalNeighList);
 
     macdata_daatr->macToNetworkBufferHandle(loca_linkstate_struct, 0x0d, len);
 
-    cout << "[PERIODIC] Node " << macdata_daatr->nodeId << " 向网络层上报 本地链路状态信息      ";
-    printTime_ms();
+    // cout << "[P] Node " << macdata_daatr->nodeId << " 上报 本地链路状态信息      ";
+    // printTime_ms();
+    // cout << "在网节点数 " << send_neighborList->size() << endl;
 }
 
 void sendOtherNodePosition(MacDaatr *macdata_daatr)
 {
-    int nodeNum = 1;
+    int nodeNum = 0;
     for (nodeNum; nodeNum <= SUBNET_NODE_NUMBER_MAX; nodeNum++)
     {
         if (macdata_daatr->subnet_other_node_position[nodeNum].nodeId == 0)
         { // 此处截止
+            // printf("nodenum is %d\n", nodeNum);
             break;
         }
     }
-
+    // printf("nodenum is %d\n", nodeNum);
+    nodeNum++;
     FlightStatus *NodePosition_test = new FlightStatus[nodeNum];
     int i;
     for (i = 0; i < nodeNum - 1; i++)
@@ -698,16 +707,16 @@ void sendOtherNodePosition(MacDaatr *macdata_daatr)
     memcpy(node_position, NodePosition_test, nodeNum * sizeof(FlightStatus));
 
     macdata_daatr->macToNetworkBufferHandle((uint8_t *)pkt_nodeposition, 0x0c, fullPacketSize);
-    cout << "[PERIODIC] Node " << macdata_daatr->nodeId << " 向网络层上报 其他节点飞行状态信息  ";
-    printTime_ms();
+    // cout << "[P] Node " << macdata_daatr->nodeId << " 上报 其他节点飞行状态信息  ";
+    // printTime_ms();
 
     delete[] NodePosition_test;
 }
 
-vector<LinkAssignment> *Generate_LinkAssignment_Initialization(MacDaatr *macdata_daatr)
+void Generate_LinkAssignment_Initialization(MacDaatr *macdata_daatr, vector<LinkAssignment> &link_assign_queue)
 {
     int i, j;
-    vector<LinkAssignment> *link_assign_queue = new vector<LinkAssignment>;
+    // vector<LinkAssignment> *link_assign_queue = new vector<LinkAssignment>;
 
     for (i = 1; i <= macdata_daatr->subnet_node_num; i++)
     {
@@ -721,10 +730,11 @@ vector<LinkAssignment> *Generate_LinkAssignment_Initialization(MacDaatr *macdata
             link_assignment_temp.priority[0] = 0;
             link_assignment_temp.size[0] = 400 / 8;
             link_assignment_temp.QOS[0] = 4;
+
             link_assignment_temp.priority[1] = 0;
             link_assignment_temp.size[1] = 400 / 8;
             link_assignment_temp.QOS[1] = 4;
-            link_assign_queue->push_back(link_assignment_temp);
+            link_assign_queue.push_back(link_assignment_temp);
         }
     }
 
@@ -746,21 +756,23 @@ vector<LinkAssignment> *Generate_LinkAssignment_Initialization(MacDaatr *macdata
                 link_assignment_temp3.priority[1] = 1;
                 link_assignment_temp3.size[1] = 400 / 8;
                 link_assignment_temp3.QOS[1] = 4;
-                link_assign_queue->push_back(link_assignment_temp3);
+                link_assign_queue.push_back(link_assignment_temp3);
             }
         }
     }
 
-    return link_assign_queue;
+    // return link_assign_queue;
 }
 
 void generateSlottableExecution(MacDaatr *macdata_daatr)
 {
     if (macdata_daatr->nodeId == macdata_daatr->mana_node)
     {
-        vector<LinkAssignment> *link_assign_queue = Generate_LinkAssignment_Initialization(macdata_daatr);
+        vector<LinkAssignment> link_assign_queue;
+        Generate_LinkAssignment_Initialization(macdata_daatr, link_assign_queue);
+
         vector<LinkAssignment_single> LinkAssignment_Storage;
-        for (auto &LA_in_list : *link_assign_queue)
+        for (auto &LA_in_list : link_assign_queue)
         {
             for (int j = 0; j < LA_in_list.listNumber; j++)
             {
@@ -782,7 +794,9 @@ void generateSlottableExecution(MacDaatr *macdata_daatr)
         }
 
         sort(LinkAssignment_Storage.begin(), LinkAssignment_Storage.end(), Compare_by_Priority);
+
         vector<Alloc_slot_traffic> allocSlottableTraffic(TRAFFIC_SLOT_NUMBER);
+
         ReAllocate_Traffic_slottable(macdata_daatr, allocSlottableTraffic, LinkAssignment_Storage);
 
         // 下面需要将分配表转换为各节点对应的时隙表
@@ -1170,11 +1184,18 @@ static void generateSubnetUsedFrequency(MacDaatr *macdata_daatr)
     {                                                               // 打印当前子网所使用频点
         cout << macdata_daatr->subnet_frequency_sequence[i] << " "; // 设置为使用频点
     }
+    cout << endl;
 }
-
+int fir = 0;
 void judgeIfEnterFreqAdjustment(MacDaatr *macdata_daatr)
 {
     // 判断是否进入频率调整阶段
+    cout << "判断是否进入频率调整阶段" << endl;
+    // for (int i = 0; i < TOTAL_FREQ_POINT; i++)
+    // {                                                               // 打印当前子网所使用频点
+    //     cout << macdata_daatr->subnet_frequency_sequence[i] << " "; // 设置为使用频点
+    // }
+    // cout << endl;
     int i = 0, j = 0;
     int interfer_number = 0;     // 子网使用频段干扰频段数量
     int interfer_number_sum = 0; // 总频段被干扰数目
@@ -1217,6 +1238,7 @@ void judgeIfEnterFreqAdjustment(MacDaatr *macdata_daatr)
 
     if (using_freq_interfer_ratio >= INTERFEREENCE_FREQUENCY_THRESHOLD)
     {
+        fir++;
         // 干扰频段数目超过阈值, 进入频率调整阶段
         cout << "干扰频段数目超过阈值, 进入频率调整阶段, Time:  ";
         printTime_ms();
@@ -1309,7 +1331,7 @@ int Generate_LinkAssignment_Stage_1(LinkAssignment link_assign[])
     return LA_index;
 }
 
-bool canSendConfigLinkRequest()
+bool canSendConfigLinkRequest() // 返回1表示在任务执行阶段，可以下发
 {
     extern MacDaatr daatr_str;
     return daatr_str.state_now == Mac_Execution;

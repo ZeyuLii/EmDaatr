@@ -54,6 +54,11 @@
         "streambuf": "cpp",
         "thread": "cpp",
         "typeinfo": "cpp",
-        "sstream": "cpp"
+        "sstream": "cpp",
+        "spectrum.h": "c",
+        "map": "c",
+        "cstring": "cpp",
+        "bitset": "cpp",
+        "regex": "cpp"
     }
 }

@@ -91,6 +91,8 @@ MacDaatr::MacDaatr()
 
     // 初始化低频率MAC DAATR套接字文件描述符为-1，表示尚未打开套接字。
     mac_daatr_low_freq_socket_fid = -1;
+
+    isValid = true;
 }
 
 /// @brief 读取建链阶段时隙表
@@ -170,6 +172,7 @@ void MacDaatr::LoadSlottable_setup()
 /// @brief 读取执行阶段射前时隙表
 void MacDaatr::LoadSlottable_Execution()
 {
+    cout << "-----------------------------------" << endl;
     string stlotable_state_filename = "./config/SlottableExecution/Slottable_RXTX_State_" +
                                       to_string(static_cast<long long>(nodeId)) + ".txt";
     string stlotable_node_filename = "./config/SlottableExecution/Slottable_RXTX_Node_" +
@@ -242,7 +245,7 @@ void MacDaatr::LoadSlottable_Execution()
 /// @brief 读取调整阶段时隙表
 void MacDaatr::LoadSlottable_Adjustment()
 {
-    // cout << "Node " << nodeId << " 读入建链阶段时隙表" << endl;
+    cout << "Node " << nodeId << " 读入建链阶段时隙表" << endl;
     string stlotable_state_filename = "./config/SlottableAdjustment/Slottable_RXTX_State_" +
                                       to_string(static_cast<long long>(nodeId)) + ".txt";
     string stlotable_node_filename = "./config/SlottableAdjustment/Slottable_RXTX_Node_" +
@@ -345,6 +348,7 @@ void MacDaatr::MAC_NetworkLayerHasPacketToSend(msgFromControl *busin)
             if (busin->msgType != 2) // 一般数据包
             {
                 cout << "此时数据包的接收节点 " << busin->destAddr << " 不存在转发节点, 丢弃业务" << endl;
+                lock_buss_channel.unlock();
                 return;
             }
             else // type = 2 的探测包
@@ -419,6 +423,10 @@ void MacDaatr::MAC_NetworkLayerHasPacketToSend(msgFromControl *busin)
 /// @brief 对收到的mfcTemp进行处理
 void MacDaatr::processPktFromNet(msgFromControl *MFC_temp)
 {
+    vector<uint8_t> *data_control = (vector<uint8_t> *)MFC_temp->data;
+    unsigned int eventType = ((*data_control)[3] << 8) | (*data_control)[4];
+    // cout << "MFC_temp->msgType is " << MFC_temp->msgType << "  processPktFromNet  eventType is " << eventType << endl;
+
     if (MFC_temp->msgType == 1)
         MacDaatNetworkHasLowFreqChannelPacketToSend(MFC_temp);
     else
@@ -444,18 +452,19 @@ void MacDaatr::processPktFromNet(msgFromControl *MFC_temp)
 /// @brief 对收到的身份配置信息进行处理
 void MacDaatr::processNodeNotificationFromNet(NodeNotification *temp)
 {
+
     if (state_now == Mac_Execution)
     {
         switch (temp->nodeResponsibility)
         {
-        case NODENORMAL:
-        {
-            node_type = Node_Ordinary;
-            break;
-        }
         case INTRAGROUPCONTROL:
         {
             node_type = Node_Management;
+            break;
+        }
+        case RESERVEINTRAGROUPCONTROL: // 备份控制等同于普通节点(对于链路层而言)
+        {
+            node_type = Node_Ordinary;
             break;
         }
         case INTERGROUPGATEWAY:
@@ -463,20 +472,28 @@ void MacDaatr::processNodeNotificationFromNet(NodeNotification *temp)
             node_type = Node_Gateway;
             break;
         }
+        case NODENORMAL:
+        {
+            node_type = Node_Ordinary;
+            break;
+        }
         case ISOLATION:
         { // 代表此节点脱网
+            // cout << "代表此节点脱网  身份：" << temp->nodeResponsibility << endl;
             state_now = Mac_Access;
             access_state = DAATR_NEED_ACCESS;
-
             node_type = Node_Ordinary; // 普通节点
+            break;
         }
         }
 
         if (mana_node != temp->intragroupcontrolNodeId)
-        { // 如果网管节点发生变化,
+        {
+            // 如果节点觉察到网管节点发生变化,
             // 则需要修改网管信道时隙表
             int mana_node_pre = mana_node;
             int mana_node_now = temp->intragroupcontrolNodeId;
+
             if (nodeId == mana_node_pre)
             {
                 // TODO 更改检查进入频域调整阶段的定时器
@@ -499,6 +516,7 @@ void MacDaatr::processNodeNotificationFromNet(NodeNotification *temp)
         }
 
         mana_node = temp->intragroupcontrolNodeId;
+        cout << " ---------------------mana node change to NODE" << mana_node << "  ---------------" << endl;
         gateway_node = temp->intergroupgatewayNodeId;
         standby_gateway_node = temp->reserveintergroupgatewayNodeId;
         cout << "Node " << nodeId << " 新身份是 " << (int)temp->nodeResponsibility << endl;
@@ -726,13 +744,12 @@ void MacDaatr::networkToMacBufferHandle(uint8_t *rBuffer_mac)
     }
     case 0x10:
     { // 网络数据包（业务+信令） MSG_NETWORK_ReceiveNetworkPkt
-        cout << "[BufferInfo] Node " << nodeId << " 收到数据包  ";
-        printTime_ms();
+        // cout << "[BufferInfo] Node " << nodeId << " 收到数据包  ";
+        // printTime_ms();
 
         vector<uint8_t> curPktPayload(data, data + len);
         msgFromControl *MFC_temp = new msgFromControl();
         MFC_temp = convert_01_MFCPtr(&curPktPayload); // 解析数组, 还原为包结构体类型
-
         processPktFromNet(MFC_temp);
         delete MFC_temp;
         break;
@@ -840,7 +857,7 @@ void MacDaatr::macParameterInitialization(uint32_t idx)
     cout << "macInit " << nodeId << ": 配置 IP_Addr" << endl;
 #endif
     // 配置ip地址，ip地址配置策略为'192.168.'+ 子网号 + 节点ID
-    for (int i = 2; i <= subnet_node_num + 1; i++)
+    for (int i = 2; i <= 20 + 1; i++)
         in_subnet_id_to_ip[i - 1] = "192.168." + to_string(subnetId) + "." + to_string(i);
 
 #ifdef DEBUG_SETUP
@@ -852,7 +869,6 @@ void MacDaatr::macParameterInitialization(uint32_t idx)
     // clock_trigger = 199;
     currentSlotId = 0;
     currentStatus = DAATR_STATUS_IDLE;
-
     LoadSlottable_setup();
     generateSlottableExecution(this);
     LoadSlottable_Execution();

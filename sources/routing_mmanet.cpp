@@ -41,21 +41,7 @@ void *RoutingReceiveFromSvc(void *arg)
 		// 接收数据
 		memset(buffer_svc, 0, MAX_DATA_LEN);
 		svcToRouting_buffer.ringBuffer_get(buffer_svc);
-
-		if (mmanet->nodeAddr == 1)
-		{
-			usleep(2e6);
-			buffer_svc[0] = 0x08;
-			buffer_svc[1] = 0x08;
-			buffer_svc[2] = 0x08;
-			buffer_svc[3] = 16; // des
-			buffer_svc[4] = 2;	// src 1
-			for (int i = 5; i < (65535 - 100) / 8; i++)
-			{
-				buffer_svc[i] = 0xAD;
-			}
-		}
-
+		// 解析数据
 		uint8_t type = buffer_svc[0];
 		uint16_t len = (buffer_svc[1] << 8) | buffer_svc[2];
 		vector<uint8_t> dataPacket_svc(&buffer_svc[3], &buffer_svc[3] + len);
@@ -99,6 +85,9 @@ void *RoutingReceiveFromNet(void *arg)
 		uint16_t len = (buffer_net[1] << 8) | buffer_net[2];
 		vector<uint8_t> dataPacket_net(&buffer_net[3], &buffer_net[3] + len);
 
+		msgFromControl *tem;
+		vector<uint8_t> *data_control;
+		unsigned int eventType;
 		switch (type)
 		{
 		case 0: // 无数据接收
@@ -113,7 +102,11 @@ void *RoutingReceiveFromNet(void *arg)
 		case 0x1E: // 管控开销消息
 			uint8_t wBufferToMac[MAX_DATA_LEN];
 			// 封装层间接口
-			cout << "Routing收到管控开销消息" << endl;
+
+			tem = AnalysisLayer2MsgFromControl(&dataPacket_net);
+			data_control = (vector<uint8_t> *)tem->data;
+			eventType = ((*data_control)[3] << 8) | (*data_control)[4];
+			writeInfo("routing  eventType is   %d", eventType);
 			PackRingBuffer(wBufferToMac, &dataPacket_net, 0x10);
 			RoutingTomac_Buffer.ringBuffer_put(wBufferToMac, sizeof(wBufferToMac));
 			break;
@@ -157,11 +150,11 @@ void *RoutingReceiveFromMac(void *arg)
 
 		case 0x0D: // 接收本地链路状态信息
 			cout << "Routing本地链路状态信息" << endl;
-			MSG_ROUTING_ReceiveLocalLinkMsg(dataPacket_mac);
+			MSG_ROUTING_ReceiveLocalLinkMsg(dataPacket_mac, len);
 			break;
 
 		case 0x10: // 接收网络数据包(业务+信令)
-			cout << "Routing接收网络数据包(业务+信令)" << endl;
+			// cout << "Routing接收网络数据包(业务+信令)" << endl;
 			HandleMfcFromMac(dataPacket_mac);
 			break;
 
@@ -219,7 +212,7 @@ void HandleFormatMsgFromSvc(vector<uint8_t> curDataPacket)
 
 	// cout << "源地址为：" << (*msgFromControl_Array)[0]->srcAddr << endl;
 	// cout << "目的地址为：" << (*msgFromControl_Array)[0]->destAddr << endl;
-	// // cout << "该网络数据包的序列号为：" << (*msgFromControl_Array)[0]->seq << endl;
+	// cout << "该网络数据包的序列号为：" << (*msgFromControl_Array)[0]->seq << endl;
 	// cout << "mmanet->seq_Num发送序列号为: " << mmanet->seq_Num << endl;
 
 	unsigned char reTrans = ((curDataPacket[2] >> 1) & 0x01);	  // 读取重传标识
@@ -383,13 +376,17 @@ void HandleMfcFromMac(vector<uint8_t> &curPktPayload)
 	curPktPayload.pop_back();
 	curPktPayload.pop_back();
 	uint16_t temp_CRC = CRC16(&curPktPayload);
+	// cout << "cur_packet_type is " << cur_packet_type << endl;
 
 	if (cur_packet_type == 2)
 	{ // 消息为路由管理消息
+		// cout << "curmsgID->msgsub is " << curmsgID->msgsub << endl;
 		switch (curmsgID->msgsub)
 		{
 		case 3:
 		{
+			if (temp_CRC != cur_msgFromControl->CRC)
+				cout << "temp_CRC != cur_msgFromControl->CRC " << endl;
 			if (temp_CRC == cur_msgFromControl->CRC)
 			{ // 数据包未出错，接收
 				// 收到一个Hello包
@@ -408,7 +405,7 @@ void HandleMfcFromMac(vector<uint8_t> &curPktPayload)
 				newtable->Node_ID = cur_Node_ID;
 				mmanet->mapping_table.push_back(newtable);
 
-				// cout << "收到节点" << cur_srcAddr << "传来的HELLO包" << endl;
+				// cout << "!!!!!!!!!!!!收到节点" << cur_srcAddr << "传来的HELLO包" << endl;
 
 				// 启动ACK流程
 				msgFromControl *back_ack_pkt = new msgFromControl();
@@ -458,6 +455,7 @@ void HandleMfcFromMac(vector<uint8_t> &curPktPayload)
 				// 封装层间接口
 				PackRingBuffer(wBufferToMac, ACK_packetedDataPkt, 0x10);
 				RoutingTomac_Buffer.ringBuffer_put(wBufferToMac, sizeof(wBufferToMac));
+				// cout << "已发送ACK包给节点 " << lastSrcAddr << endl;
 				mmanet->signalOverhead += back_ack_pkt->packetLength;
 				// delete packetedDataPkt;
 				delete ACK_Array;
@@ -468,6 +466,8 @@ void HandleMfcFromMac(vector<uint8_t> &curPktPayload)
 		}
 		case 4:
 		{
+			if (temp_CRC != cur_msgFromControl->CRC)
+				cout << "temp_CRC != cur_msgFromControl->CRC " << endl;
 			if (temp_CRC == cur_msgFromControl->CRC)
 			{ // 数据包未出错，接收
 				// 收到一个ACK包
@@ -475,7 +475,7 @@ void HandleMfcFromMac(vector<uint8_t> &curPktPayload)
 				// 1.记录源节点
 				NodeAddress NeighAddress = cur_srcAddr;
 
-				// cout << "收到节点" << cur_srcAddr << "的ACK包" << endl;
+				// cout << "!!!!!!!!!!!!!!!!!收到节点" << cur_srcAddr << "的ACK包" << endl;
 
 				// 检查此节点在邻居表中是否已经存在
 				for (int i = 0; i < mmanet->temp_neighborList.size(); i++)
@@ -508,7 +508,7 @@ void HandleMfcFromMac(vector<uint8_t> &curPktPayload)
 			/*// cout << "crc比较    " << temp_CRC << "   " << cur_msgFromControl->CRC << endl;*/
 			NodeAddress ListNodeAddr = cur_srcAddr;
 			// // cout << "源节点" << cur_srcAddr << endl;
-			// cout << "收到源节点" << cur_srcAddr << "传来msgsub=5的包,拓扑表" << endl;
+			// cout << "收到源节点" << cur_srcAddr << "传来msgsub=5的包" << endl;
 			// // cout << "第几片" << cur_msgFromControl->fragmentSeq << endl;
 			// // cout << "总数" << cur_msgFromControl->fragmentNum << endl;
 			if (temp_CRC == cur_msgFromControl->CRC)
@@ -982,7 +982,8 @@ void HandleMfcFromMac(vector<uint8_t> &curPktPayload)
 		curPktPayload.push_back(temp_CRC & 0xFF);
 		uint8_t wBufferToMac[MAX_DATA_LEN];
 		PackRingBuffer(wBufferToMac, &curPktPayload, 0x1E);
-		RoutingTomac_Buffer.ringBuffer_put(wBufferToMac, sizeof(wBufferToMac));
+		cout << " 消息为链路层传给网管模块的消息，直接透传给网管模块 " << endl;
+		routingToNet_buffer.ringBuffer_put(wBufferToMac, sizeof(wBufferToMac));
 		// XXXXXX->ringBuffer_put(wBufferToMac, sizeof(wBufferToMac));
 	}
 }
@@ -1114,230 +1115,61 @@ void timer_callback(int signum, siginfo_t *si, void *uc)
 		// TIME_PrintClockInSecond(node->getNodeTime(), clockStr);
 		// // cout << "-----------广播 Current Time : " << clockStr << " Sec ------------" << endl;
 		mmanet->Hello_Ack_Flg = false;
-		mmanet->t2 = getCurrentTime() / 1000000000.0; // 记录此时的时间更新
 		// // cout << mmanet->t2 << endl;
-		// vector<nodeLocalNeighList *> *temp_gaosu = new vector<nodeLocalNeighList *>(); // 获取一个临时高速表去判断相较于上次探测生成的表项是否发生变化
-		// for (int i = 0; i < mmanet->temp_neighborList.size(); i++)
-		// {
-		// 	temp_gaosu->push_back(mmanet->temp_neighborList[i]);
-		// } // 将表项更新
-		// for (int i = 0; i < temp_gaosu->size(); i++)
-		// {
-		// 	if ((*temp_gaosu)[i]->Capacity < 0)
-		// 	{
-		// 		temp_gaosu->erase(temp_gaosu->begin() + i);
-		// 		i--;
-		// 	}
-		// }
-		vector<int> temp_flag(21, 0);
-		mmanet->new_flag = temp_flag;
-		if (/*node->nodeId == 1*/ 1)
+		vector<nodeLocalNeighList *> *temp_gaosu = new vector<nodeLocalNeighList *>(); // 获取一个临时高速表去判断相较于上次探测生成的表项是否发生变化
+		for (int i = 0; i < mmanet->temp_neighborList.size(); i++)
 		{
-			// cout << "临时存储本地节点邻居表节点: " << endl;
-			for (int i = 0; i < mmanet->temp_neighborList.size(); i++)
+			temp_gaosu->push_back(mmanet->temp_neighborList[i]);
+		} // 将表项更新
+		for (int i = 0; i < temp_gaosu->size(); i++)
+		{
+			if ((*temp_gaosu)[i]->Capacity < 0)
 			{
-				// cout << mmanet->temp_neighborList[i]->nodeAddr << " ";
+				temp_gaosu->erase(temp_gaosu->begin() + i);
+				i--;
 			}
-			// cout << endl;
-			// if (mmanet->time_Flg == false)
-			//{
-			//  time_Flg == false不是第一次记录时间  // 人为改变场景，并不是真实场景
-			for (int i = 0; i < mmanet->temp_neighborList.size(); i++)
+		}
+		if (mmanet->neighborList.size() == mmanet->temp_neighborList.size())
+		{
+			for (int j = 0; j < mmanet->neighborList.size(); j++)
 			{
-				if (mmanet->temp_neighborList[i]->Capacity < 0)
+				if (mmanet->neighborList[j]->nodeAddr != mmanet->temp_neighborList[j]->nodeAddr)
 				{
-					mmanet->new_flag[mmanet->temp_neighborList[i]->nodeAddr] = 2; // 低速标记为2
-				}
-				else
-				{
-					mmanet->new_flag[mmanet->temp_neighborList[i]->nodeAddr] = 1; // 高速标记为1
+					mmanet->List_Flg = true;
+					break;
 				}
 			}
-			//}
-			// else{
-			// 	mmanet->new_flag = mmanet->old_flag;
-			// 	if(mmanet->t2 > mmanet->data[mmanet->data_th] && mmanet->data_th < 50){
-			// 		if(mmanet->new_flag[4] == 1){
-			// 			mmanet->new_flag[4] = 0;
-			// 		}
-			// 		else{
-			// 			mmanet->new_flag[4] = 1;
-			// 		}
-			// 		mmanet->data_th++;
-			// 	}
-			// }
-			// for (int i = 1; i < mmanet->old_flag.size(); i++)
-			// {
-			// 	// cout << mmanet->old_flag[i] << " ";
-			// }
-			// // cout << endl;
-			// // cout << "mmanet->new_flag" << endl;
-			// for (int i = 1; i < mmanet->new_flag.size(); i++)
-			// {
-			// 	// cout << mmanet->new_flag[i] << " ";
-			// }
-			// cout << endl;
-			if (mmanet->time_Flg == false)
+			if (temp_gaosu->size() == mmanet->gaosu_neighborList.size())
 			{
-				for (int i = 1; i < mmanet->t1.size(); i++)
+				for (int j = 0; j < mmanet->gaosu_neighborList.size(); j++)
 				{
-					mmanet->t1[i] = getCurrentTime() / 1000000000.0; // 记录时间的单位是s
+					if (mmanet->gaosu_neighborList[j]->nodeAddr != (*temp_gaosu)[j]->nodeAddr)
+					{
+						mmanet->List_Flg = true;
+						break;
+					}
 				}
-				mmanet->time_Flg = true;
-				mmanet->List_Flg = true;
 			}
 			else
 			{
-				for (int i = 0; i < mmanet->new_flag.size(); i++)
-				{
-					if (mmanet->new_flag[i] != mmanet->old_flag[i])
-					{
-						mmanet->List_Flg = true;
-						if (i == 4)
-						{
-							mmanet->nolstm.push_back(mmanet->t2);
-						}
-						int k = 0;
-						for (int j = 0; j < mmanet->time_lag.size(); j++)
-						{
-							if (mmanet->time_lag[j]->nodeAddr == i)
-							{
-								mmanet->time_lag[j]->timelag.push_back((mmanet->t2 - mmanet->t1[i]) / 10);
-								k++;
-							}
-						}
-						if (k == 0)
-						{
-							NodeTime_lag *temp_tl = new NodeTime_lag();
-							temp_tl->nodeAddr = i;
-							temp_tl->timelag.push_back((mmanet->t2 - mmanet->t1[i]) / 10);
-							mmanet->time_lag.push_back(temp_tl);
-						}
-						mmanet->t1[i] = mmanet->t2;
-					}
-				}
-			}
-			for (int j = 0; j < mmanet->time_lag.size(); j++)
-			{
-				if (mmanet->time_lag[j]->timelag.size() == 5 && mmanet->Lstm_Flg == true)
-				{
-					for (int i = 0; i < mmanet->time_lag[j]->timelag.size(); i++)
-					{
-						// cout << (double)mmanet->time_lag[j]->timelag[i] << " ";
-					}
-					// cout << endl;
-
-					// 准备测试集数据
-					vector<double *> input;
-					/*vector<double> output_real;
-					vector<double> output;*/
-					double *testinput = new double[INPUT_N]; // INPUT_N个输入值
-					// double testoutput;//1个输出值
-					for (int k = 0; k < INPUT_N; k++)
-					{
-						testinput[k] = mmanet->time_lag[j]->timelag[k]; // 形成具体输入值
-					}
-					// testoutput = data[INPUT_N + i];//1个输出值（样本集真实数据）
-					input.push_back(testinput); // 输入值序列
-					// output_real.push_back(testoutput);//输出值（样本集真实数据）序列，用于比对
-
-					/////////////////////////////////////////
-					// 开始执行预测过程
-					// INPUT_N个输入值形成1个输出。
-					double *in = input[0];
-					double out;
-					out = lstm_predict(&mmanet->state[mmanet->time_lag[j]->nodeAddr], &mmanet->lstm_module[mmanet->time_lag[j]->nodeAddr], in); // 预测值，INPUT_N个输入值形成1个输出
-					// cout << out << endl;
-					mmanet->lstm1.push_back(out * 10);
-					mmanet->lstm2.push_back(mmanet->t2 + out * 10);
-					mmanet->time_lag[j]->timelag.erase(mmanet->time_lag[j]->timelag.begin());
-
-					// Message* timerMsg_Broadcast = MESSAGE_Alloc(node, NETWORK_LAYER, ROUTING_PROTOCOL_MMANET, MSG_ROUTING_HelloProcessTimer);
-					clocktype delay_hello = out * 10000;
-					// clocktype delay_hello = out * 10000 * MILLI_SECOND;
-					// MESSAGE_Send(node, timerMsg_Broadcast, delay_hello);
-					SetTimer2(0, delay_hello, 1);
-				}
-			}
-			mmanet->old_flag = mmanet->new_flag;
-			/*vector<int> temp_flag(21, 0);
-			mmanet->new_flag = temp_flag;*/
-			/*
-			if(mmanet->time_Flg == false){
-				mmanet->t1 = node->getNodeTime();
-				mmanet->time_Flg = true;
 				mmanet->List_Flg = true;
 			}
-			else{
-				if(mmanet->neighborList.size() == mmanet->temp_neighborList.size()){
-					for(int j = 0; j < mmanet->neighborList.size(); j++){
-						if(mmanet->neighborList[j]->nodeAddr != mmanet->temp_neighborList[j]->nodeAddr){
-							mmanet->List_Flg = true;
-							mmanet->time_lag.push_back((mmanet->t2 - mmanet->t1)/10000000000.0);
-							mmanet->nolstm.push_back(mmanet->t2 / 1000000000.0);
-							mmanet->t1 = node->getNodeTime();
-							return;
-						}
-					}
-					if(temp_gaosu->size() == mmanet->gaosu_neighborList.size()){
-						for(int j = 0; j < mmanet->gaosu_neighborList.size(); j++){
-							if(mmanet->gaosu_neighborList[j]->nodeAddr != (*temp_gaosu)[j]->nodeAddr){
-								mmanet->List_Flg = true;
-								mmanet->time_lag.push_back((mmanet->t2 - mmanet->t1)/10000000000.0);
-								mmanet->nolstm.push_back(mmanet->t2 / 1000000000.0);
-								mmanet->t1 = node->getNodeTime();
-								return;
-								}
-							}
-						}
-					else{
-						mmanet->List_Flg = true;
-						mmanet->time_lag.push_back((mmanet->t2 - mmanet->t1)/10000000000.0);
-						mmanet->nolstm.push_back(mmanet->t2 / 1000000000.0);
-						mmanet->t1 = node->getNodeTime();
-					}
+		}
+		else
+		{
+			mmanet->List_Flg = true;
+		}
 
-				}
-				else{
-					mmanet->List_Flg = true;
-					mmanet->time_lag.push_back((mmanet->t2 - mmanet->t1)/10000000000.0);
-					mmanet->nolstm.push_back(mmanet->t2 / 1000000000.0);
-					mmanet->t1 = node->getNodeTime();
+		// cout << endl;
+		if (mmanet->List_Flg == true)
+		{
+			cout << "!!!!!!!拓扑布局变化！！！！！！" << endl;
 
-				}
-				for(int i = 0; i < mmanet->time_lag.size(); i++){
-					// cout << (double)mmanet->time_lag[i] << " ";
-				}
-				// cout << endl;
-			}
-
-
-			if(mmanet->time_lag.size() == 5 && mmanet->Lstm_Flg == true){
-
-				*/
-			if (mmanet->t2 > 360.0 && mmanet->lstm_flag == false && mmanet->Lstm_Flg == true)
-			{ // 最后一次时间为321.3s
-				for (int i = 0; i < mmanet->nolstm.size(); i++)
-				{
-					// cout << mmanet->nolstm[i] << " ";
-				}
-				// cout << endl;
-				// cout << mmanet->nolstm.size() << endl;
-				for (int i = 0; i < mmanet->lstm2.size(); i++)
-				{
-					// cout << mmanet->lstm2[i] << " ";
-				}
-				// cout << endl;
-				// cout << mmanet->lstm2.size() << endl;
-				for (int i = 0; i < mmanet->lstm1.size(); i++)
-				{
-					// cout << mmanet->lstm1[i] << " ";
-				}
-				// cout << endl;
-				// cout << mmanet->lstm1.size() << endl;
-				saveRESULTfile(mmanet->nolstm, mmanet->lstm2, mmanet->lstm1, "result.txt", mmanet);
-				mmanet->lstm_flag = true;
-			}
+			// cout << "临时存储本地节点邻居表节点: " << endl;
+			// for (int i = 0; i < mmanet->temp_neighborList.size(); i++)
+			// {
+			// cout << mmanet->temp_neighborList[i]->nodeAddr << " ";
+			// }
 		}
 		mmanet->gaosu_neighborList.clear(); // 更新处理得到高速表
 		for (int i = 0; i < mmanet->temp_neighborList.size(); i++)
@@ -1371,10 +1203,11 @@ void timer_callback(int signum, siginfo_t *si, void *uc)
 			mmanet->neighborList.push_back(mmanet->temp_neighborList[i]);
 		} // 将表项更新
 		mmanet->temp_neighborList.clear();
-		// if(mmanet->neighborList.empty()){             //若此时邻接表为空，则判定此节点脱网
-		//	mmanet->NetNeighList.clear();
-		//	mmanet->disu_NetNeighList.clear();
-		// }
+		if (mmanet->neighborList.empty()) // 若此时邻接表为空，则判定此节点脱网
+		{
+			mmanet->NetNeighList.clear();
+			mmanet->disu_NetNeighList.clear();
+		}
 		if (!mmanet->gaosu_neighborList.empty())
 		{
 			nodeNetNeighList *cur_nodeNetNeighList = new nodeNetNeighList();
@@ -1412,10 +1245,10 @@ void timer_callback(int signum, siginfo_t *si, void *uc)
 		}
 
 		// cout << "存储高速全网邻居表:  " << mmanet->NetNeighList.size() << endl;
-		for (int ik = 0; ik < mmanet->NetNeighList.size(); ik++)
-		{
-			// cout << mmanet->NetNeighList[ik]->nodeAddr << "   " << mmanet->NetNeighList[ik]->localNeighList.size() << endl;
-		}
+		// for (int ik = 0; ik < mmanet->NetNeighList.size(); ik++)
+		// {
+		// 	cout << mmanet->NetNeighList[ik]->nodeAddr << "   " << mmanet->NetNeighList[ik]->localNeighList.size() << endl;
+		// }
 
 		if (mmanet->List_Flg == true)
 		{
@@ -1432,83 +1265,10 @@ void timer_callback(int signum, siginfo_t *si, void *uc)
 		// 触发邻居表广播函数
 		// 由于只需要广播一次，之后直接跳出，一旦收到新的ACK从而使得邻居表表项更新，那么就会在ACK中触发广播函数
 		// 注：触发的是广播的函数，不是此事件
-
-		// 测试，发送底层传输需求
-		ikl++;
-		if (ikl == 3 && mmanet->nodeAddr == 1)
-		{
-			TaskAssignment *task_Msg = new TaskAssignment();
-			task_Msg->begin_node = 1;
-			task_Msg->end_node = 2;
-			task_Msg->type = 3;
-			task_Msg->priority = 1;
-			task_Msg->size = 10.0;
-			task_Msg->QOS = 10;
-			task_Msg->begin_time[0] = 10;
-			task_Msg->begin_time[1] = 20;
-			task_Msg->begin_time[2] = 30;
-			task_Msg->end_time[0] = 40;
-			task_Msg->end_time[1] = 50;
-			task_Msg->end_time[2] = 60;
-			task_Msg->frequency = 1;
-			uint8_t arr1[MAX_DATA_LEN];
-			arr1[0] = 0x06;
-			// 封装数据长度字段
-			arr1[1] = (sizeof(TaskAssignment) >> 8) & 0xFF;
-			arr1[2] = sizeof(TaskAssignment) & 0xFF;
-
-			memcpy(&arr1[3], task_Msg, sizeof(TaskAssignment));
-			svcToNet_buffer.ringBuffer_put(arr1, sizeof(arr1));
-			// cout << "底层传输需求已发送给net层" << endl;
-			delete task_Msg;
-		}
 	}
 	else if (si->si_value.sival_int == 2)
 	{
 		// 此处编写定时器的具体功能
-	}
-}
-
-// 设置T2定时器
-void SetTimer2(long sc, long ms, int number)
-{
-	// 创建定时器
-	timer_t timerid;
-	struct sigevent sevp;
-	sevp.sigev_notify = SIGEV_SIGNAL | SIGEV_THREAD_ID;
-	sevp._sigev_un._tid = syscall(SYS_gettid); // 获取LWP，标识线程身份，交给cpu使用
-	sevp.sigev_signo = SIGUSR2;
-	sevp.sigev_value.sival_int = number; // 将定时器标识符传递给信号处理函数
-	timer_create(CLOCK_REALTIME, &sevp, &timerid);
-
-	// 设置定时器的超时时间和间隔
-	struct itimerspec its;
-	its.it_value.tv_sec = sc;			 // 初次超时时间秒数
-	its.it_value.tv_nsec = ms * 1000000; // 初次超时时间纳秒数
-	its.it_interval.tv_sec = 0;			 // 间隔时间：0秒
-	its.it_interval.tv_nsec = 0;
-	timer_settime(timerid, 0, &its, NULL);
-}
-
-// SIGUSR2信号的回调函数
-void timer_callback2(int signum, siginfo_t *si, void *uc)
-{
-
-	// si->si_value.sival_int为设置定时器时设置的定时器编号，再次用于区分不同定时器的功能
-	if (si->si_value.sival_int == 1)
-	{
-		if (mmanet->Hello_Ack_Flg == false)
-		{
-			// char clockStr[MAX_STRING_LENGTH];
-			// // cout<<"getCurrentTime : "<< getCurrentTime()<<endl;
-
-			// TIME_PrintClockInSecond(getCurrentTime(), clockStr);
-			// // cout << "-----------Current Time : " << clockStr << " Sec ------------" << endl;
-
-			MMANETBroadcastHello(); // 进行本次Hello包发送
-			mmanet->LastHelloBroadCastTime = getCurrentTime();
-		}
-		// 释放计时器
 	}
 }
 
@@ -1743,22 +1503,26 @@ void DijkstraAlgorithm()
 
 	// cout << "本地路由表表项：" << endl;
 	// cout << "目的节点 下一跳 跳数 时延" << endl;
-	int ji;
-	for (ji = 0; ji < mmanet->LFT_Entry.size(); ji++)
-	{
-		// cout << mmanet->LFT_Entry[ji]->destAddr << " " << mmanet->LFT_Entry[ji]->nextHop << " " << mmanet->LFT_Entry[ji]->hop << " " << mmanet->LFT_Entry[ji]->delay << endl;
-	}
-	// // cout<<"全网路由表表项："<<endl;
-	// // cout<<"源节点 目的节点 跳数 时延 下一跳"<<endl;
-	// for (const auto& innerVector : mmanet->NetRT_Entry) {
-	// 	for (const auto& element : innerVector) {
-	//     	if (element) {
-	//         	// cout << element->source << " " << element->dest << " " << element->hop << " " << element->delay << " " << element->nexthop << endl;
-	// 	 } else {
-	//         	// cout << "0 " << "0 "<< "0 "<< "0 "<< "0 "<<endl;
-	//     	}
+	// for (int ji = 0; ji < mmanet->LFT_Entry.size(); ji++)
+	// {
+	// 	cout << mmanet->LFT_Entry[ji]->destAddr << " " << mmanet->LFT_Entry[ji]->nextHop << " " << mmanet->LFT_Entry[ji]->hop << " " << mmanet->LFT_Entry[ji]->delay << endl;
+	// }
+	// cout << "全网路由表表项：" << endl;
+	// cout << "源节点 目的节点 跳数 时延 下一跳" << endl;
+	// for (const auto &innerVector : mmanet->NetRT_Entry)
+	// {
+	// 	for (const auto &element : innerVector)
+	// 	{
+	// 		if (element)
+	// 		{
+	// 			cout << element->source << " " << element->dest << " " << element->hop << " " << element->delay << " " << element->nexthop << endl;
+	// 		}
+	// 		else
+	// 		{
+	// 			cout << "0 " << "0 " << "0 " << "0 " << "0 " << endl;
+	// 		}
 	// 	}
-	// 	// cout << endl;
+	// 	cout << endl;
 	// }
 
 	// 将低速一跳可达的路径加入路由表中
@@ -1952,23 +1716,39 @@ void FillNetForwardingTable(routingTableMessage *newRTM, int src_coor, int dest_
 		newRTM->count--;
 	}
 	mmanet->NetRT_Entry[src_coor][dest_coor] = newNFT;
-
-	// // cout << "全网路由表表项：" << endl;
-	// for (const auto &innerVector : mmanet->NetRT_Entry)
-	// {
-	// 	for (const auto &element : innerVector)
-	// 	{
-	// 		if (element)
-	// 		{
-	// 			// cout << element->source << " " << element->dest << " " << element->hop << " " << element->delay << " " << element->nexthop << endl;
-	// 		}
-	// 		else
-	// 		{
-	// 			// cout << "0 " << "0 " << "0 " << "0 " << "0 " << endl;
-	// 		}
-	// 	}
-	// 	// cout << endl;
-	// }
+	std::ostringstream oss;
+	cout << "全网路由表表项：" << endl;
+	oss << "全网路由表表项：" << "\n";
+	for (const auto &innerVector : mmanet->NetRT_Entry)
+	{
+		for (const auto &element : innerVector)
+		{
+			if (element)
+			{
+				cout << element->source << " " << element->dest << " " << element->hop << " " << element->delay << " " << element->nexthop << endl;
+				oss << element->source << " " << element->dest << " " << element->hop << " " << element->delay << " " << element->nexthop << "\n";
+			}
+			else
+			{
+				cout << "0 " << "0 " << "0 " << "0 " << "0 " << endl;
+				oss << "0 0 0 0 0\n";
+			}
+		}
+		oss << "\n";
+		cout << endl;
+	}
+	/****************发送数据给上位机***************/
+	std::string data = oss.str();
+	extern MacDaatr daatr_str;
+	sockaddr_in recever; // 接收端地址
+	// 获取mac_daatr_low_freq_socket_fid的值，用于后续的发送操作
+	int sock_fd = daatr_str.mac_daatr_low_freq_socket_fid;
+	int send_num = 0;
+	daatr_str.initializeNodeIP(recever, 20, 8102);
+	// 尝试发送数据到指定接收者，sendto函数用于向特定地址发送数据
+	send_num = sendto(sock_fd, data.c_str(), data.size(), 0, (struct sockaddr *)&recever, sizeof(recever));
+	// printf("send_num  %d\n", send_num);
+	/****************发送数据给上位机***************/
 }
 
 // 同一源节点的路由项按照其目的节点地址大小进行升序排列
@@ -2099,6 +1879,7 @@ void SendTopologyTable()
 		}
 		(*Cur_Topo_Entry->netNetghPtr)[i] = toNetTopologyTable;
 	}
+
 	// 浅拷贝直接传指针
 	// NetworkTopologyMsg *Cur_Topo_Entry = new NetworkTopologyMsg();
 	// Cur_Topo_Entry->netNetghPtr = &(mmanet->NetNeighList);
@@ -2350,7 +2131,7 @@ bool CMP_neighborList(nodeLocalNeighList *a, nodeLocalNeighList *b)
 }
 
 // 从链路层接收链路状态信息
-void MSG_ROUTING_ReceiveLocalLinkMsg(vector<uint8_t> &curPktPayload)
+void MSG_ROUTING_ReceiveLocalLinkMsg(vector<uint8_t> &curPktPayload, uint16_t len)
 {
 	// char clockStr[MAX_STRING_LENGTH];
 	// TIME_PrintClockInSecond(node->getNodeTime(), clockStr);d
@@ -2358,28 +2139,28 @@ void MSG_ROUTING_ReceiveLocalLinkMsg(vector<uint8_t> &curPktPayload)
 	//  // cout << node->nodeId << endl;
 	//   Message *timerMsgPtr = & mmanet->timerMsg;
 	//  MESSAGE_CancelSelfMsg(node,timerMsgPtr);//取消1s定时器，防止流程冲突
-	// cout << "收链路状态信息" << endl;
+	cout << "收链路状态信息" << endl;
 	mmanet->ReceiveLocalLinkMsg_Flg = true;
-
 	if (mmanet->Hello_Ack_Flg == false)
 	{
-
-		ReceiveLocalLinkState_Msg *ReceiveLocalLinkState = (ReceiveLocalLinkState_Msg *)(&curPktPayload[0]);
-		// // cout << " ReceiveLocalLinkState->neighborList.size() " << ReceiveLocalLinkState->neighborList.size() << endl;
-		// // cout << "ReceiveLocalLinkState->neighborList[0].nodeaddress " << ReceiveLocalLinkState->neighborList[0].nodeAddr << endl;
-		// // cout << "ReceiveLocalLinkState->neighborList[1].nodeaddress " << ReceiveLocalLinkState->neighborList[1].nodeAddr << endl;
-
-		vector<nodeLocalNeighList> Cur_neighborList;
-
-		Cur_neighborList = ReceiveLocalLinkState->neighborList;
-		for (auto node : mmanet->cur_neighborList)
-		{
-			delete node;
+		ReceiveLocalLinkState_Msg *ReceiveLocalLinkState = nullptr;
+		if (len == 0)
+		{ // 节点脱网时
+			ReceiveLocalLinkState = new ReceiveLocalLinkState_Msg;
 		}
+		else
+		{
+			// ReceiveLocalLinkState_Msg *ReceiveLocalLinkState = (ReceiveLocalLinkState_Msg *)(&curPktPayload[0]);
+			ReceiveLocalLinkState = (ReceiveLocalLinkState_Msg *)(&curPktPayload[0]);
+		}
+		vector<nodeLocalNeighList> Cur_neighborList;
+		Cur_neighborList = ReceiveLocalLinkState->neighborList;
+
+		// 清空 cur_neighborList，但不要删除其中的元素，因为我们稍后要使用 old_neighborList
 		mmanet->cur_neighborList.clear();
 		mmanet->cur_neighborList = mmanet->old_neighborList;
 
-		// // cout << "节点" << mmanet->nodeAddr << "收到链路层发来的的本地链路状态信息为：";
+		// cout << "节点" << mmanet->nodeAddr << "收到链路层发来的的本地链路状态信息为：";
 		// for (int i = 0; i < Cur_neighborList->size(); i++)
 		// {
 		// 	// cout << " Cur_neighborList->nodeAddr " << (*Cur_neighborList)[i]->nodeAddr << " ";
@@ -2396,30 +2177,44 @@ void MSG_ROUTING_ReceiveLocalLinkMsg(vector<uint8_t> &curPktPayload)
 		// }
 		// mmanet->old_neighborList = (*Cur_neighborList);
 		// delete Cur_neighborList;
-		for (int i = 0; i < Cur_neighborList.size(); i++)
-		{
-			// // cout << " Cur_neighborList->nodeAddr " << (Cur_neighborList)[i].nodeAddr << " ";
-			// // cout << endl;
-			for (int j = 0; j < mmanet->cur_neighborList.size(); j++)
-			{
-				if (mmanet->cur_neighborList[j]->nodeAddr == (Cur_neighborList)[i].nodeAddr)
-				{
-					mmanet->cur_neighborList.erase(mmanet->cur_neighborList.begin() + j);
-					j--;
-				}
-			}
-			mmanet->cur_neighborList.push_back(new nodeLocalNeighList(Cur_neighborList[i]));
-			// // cout << " Cur_neighborList->nodeAddr " << (Cur_neighborList)[i].nodeAddr << " ";
-			// // cout << " mmanet->cur_neighborList " << mmanet->cur_neighborList[i]->nodeAddr << " " << endl;
-			// 动态分配,防止Cur_neighborList被销毁后，指针变得无效
-			// mmanet->cur_neighborList.push_back(&(Cur_neighborList)[i]);
-		}
-		// 更新mmanet.old_neighborList内容
-		for (auto node : mmanet->old_neighborList)
-		{
-			delete node;
-		}
+		// 清空 old_neighborList，但不要释放内存，因为我们已经将指针移动到 cur_neighborList
 		mmanet->old_neighborList.clear();
+
+		// 更新 cur_neighborList，删除不再存在的邻居，并添加新的邻居
+		// cout << " mmanet->cur_neighborList 添加邻居 : ";
+		for (const auto &newNeighbor : Cur_neighborList)
+		{
+			auto it = find_if(mmanet->cur_neighborList.begin(), mmanet->cur_neighborList.end(),
+							  [&newNeighbor](const nodeLocalNeighList *node)
+							  {
+								  return node->nodeAddr == newNeighbor.nodeAddr;
+							  });
+			if (it != mmanet->cur_neighborList.end())
+			{
+				mmanet->cur_neighborList.erase(it);
+			}
+			mmanet->cur_neighborList.push_back(new nodeLocalNeighList(newNeighbor));
+			// cout << " " << newNeighbor.nodeAddr;
+		}
+		// cout << "Done " << endl;
+
+		// for (int i = 0; i < Cur_neighborList.size(); i++)
+		// {
+		// 	for (int j = 0; j < mmanet->cur_neighborList.size(); j++)
+		// 	{
+		// 		if (mmanet->cur_neighborList[j]->nodeAddr == (Cur_neighborList)[i].nodeAddr)
+		// 		{
+		// 			mmanet->cur_neighborList.erase(mmanet->cur_neighborList.begin() + j);
+		// 			j--;
+		// 		}
+		// 	}
+		// 	mmanet->cur_neighborList.push_back(new nodeLocalNeighList(Cur_neighborList[i]));
+		// 	cout << (Cur_neighborList)[i].nodeAddr << " ";
+		// 	// cout << " mmanet->cur_neighborList " << mmanet->cur_neighborList[i]->nodeAddr << " " << endl;
+		// 	// 动态分配,防止Cur_neighborList被销毁后，指针变得无效
+		// 	// mmanet->cur_neighborList.push_back(&(Cur_neighborList)[i]);
+		// }
+
 		for (const auto &node : Cur_neighborList)
 		{
 			mmanet->old_neighborList.push_back(new nodeLocalNeighList(node));
@@ -2483,7 +2278,7 @@ void MSG_ROUTING_ReceiveLocalLinkMsg(vector<uint8_t> &curPktPayload)
 // 开始Hello流程
 void MMANETBroadcastHello()
 {
-	// cout << "开始Hello流程" << endl;
+	// cout << "Routing开始Hello流程" << endl;
 	// Message *newHelloMsg;
 	// newHelloMsg = MESSAGE_Alloc(node, NETWORK_LAYER, ROUTING_PROTOCOL_MMANET, MSG_ROUTING_ReceiveMsgFromLowerLayer);
 
@@ -2549,12 +2344,11 @@ void MMANETSendPacket(vector<uint8_t> *curPktPayload, NodeAddress srcAddr, NodeA
 		// vector<uint8_t> curPktPayload(curPktPayload1, curPktPayload1 + MESSAGE_ReturnPacketSize(msg)); // 取数组
 		msgFromControl *cur_msgFromControl = new msgFromControl();
 		cur_msgFromControl = AnalysisLayer2MsgFromControl(curPktPayload); // 解析数组，还原为包结构体类型
-		// // cout << "mmanet->cur_neighborList.size()" << mmanet->cur_neighborList.size() << endl;
 		if (i == 1 && mmanet->cur_neighborList.size() != 0)
 		{
 			for (int i = 0; i < mmanet->cur_neighborList.size(); i++)
 			{
-				// cout << "发送hello给邻居  " << mmanet->cur_neighborList[i]->nodeAddr << endl;
+				// cout << " 发送hello给邻居  " << mmanet->cur_neighborList[i]->nodeAddr << endl;
 				cur_msgFromControl->destAddr = mmanet->cur_neighborList[i]->nodeAddr;
 
 				vector<uint8_t> *Hello_packetedDataPkt = new vector<uint8_t>;

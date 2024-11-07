@@ -7,6 +7,8 @@
 #include <list>
 #include <cstdint>
 #include <mutex>
+#include <cstdint>
+#include <stdint.h>
 
 using namespace std;
 
@@ -119,7 +121,7 @@ struct TaskAssignment
 	unsigned short end_node;	  // 结束节点ID
 	unsigned short type;		  // 业务类型
 	unsigned short priority;	  // 链路优先级（0-MAX）
-	float size;					  // 业务量大小（单位：Byte）
+	unsigned short size;		  // 业务量大小（单位：Byte）
 	unsigned short QOS;			  // QOS需求（在几帧内传输）
 	unsigned short begin_time[3]; // 业务开始时间（第一位为时,第二位为分,第三位为秒）
 	unsigned short end_time[3];	  // 业务结束时间（第一位为时,第二位为分,第三位为秒）
@@ -138,7 +140,7 @@ struct LinkAssignment
 	unsigned short end_node;						// 链路接收节点ID
 	unsigned short type[BUSSINE_TYPE_NUM];			// 业务类型, 取值范围[1-16]
 	unsigned short priority[BUSSINE_TYPE_NUM];		// 业务优化级，取值范围为[1-16]
-	float size[BUSSINE_TYPE_NUM];					// 业务量大小（单位：Byte）；物理量范围为[0-1MB]，取值范围为[0-1048576]
+	unsigned short size[BUSSINE_TYPE_NUM];			// 业务量大小（单位：Byte）；物理量范围为[0-1MB]，取值范围为[0-1048576]
 	unsigned short QOS[BUSSINE_TYPE_NUM];			// QOS需求；物理量范围为[0-5s],取值范围为[0-2000],时延=取值*2.5ms,
 	unsigned short begin_time[BUSSINE_TYPE_NUM][3]; // 业务开始时间（每行第一位为时,取值范围为[1-24]，第二位为分,取值范围为[0-60]，第三位为秒,取值范围为[0-60]）；
 	unsigned short end_time[BUSSINE_TYPE_NUM][3];	// 业务结束时间（每行第一位为时,取值范围为[1-24]，第二位为分,取值范围为[0-60]，第三位为秒,取值范围为[0-60]）
@@ -213,6 +215,7 @@ struct NodeNotification
 	unsigned int nodeIIndex;
 	unsigned int groupID;
 	unsigned int nodeResponsibility;
+
 	unsigned int mastercontrolNodeId;
 	unsigned int reservemastercontrolNodeId;
 	unsigned int intragroupcontrolNodeId;	// 所属群控制节点ID

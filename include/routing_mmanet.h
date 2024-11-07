@@ -4,7 +4,6 @@
 #include <vector>
 #include <signal.h>
 #include "common_struct.h"
-#include "lstm.h"
 using namespace std;
 
 #define MMANET_MFC_DATASIZE 145				// msgFromControl的data字节数
@@ -153,9 +152,6 @@ typedef struct struct_network_mmanet_str
 	vector<nodeNetNeighList *> disu_NetNeighList;	 // 存储低速全网邻居表
 	vector<vector<uint16_t>> neighMatrix;			 // 存储邻接矩阵
 	vector<uint16_t> NodeAddrToIndex;				 // 邻接矩阵中下标与节点地址的映射表
-	// vector<clocktype> time_lag;//存储邻接表发生变化的时间间隔，用于智能预测
-	// clocktype t1;
-	// clocktype t2; //这两个变量用于计算这次邻接表发生变化距离上一次邻接表发生变化的时间间隔
 
 	vector<vector<uint16_t>> Layer2_ForwardingTable;	  // 发给层2的转发表
 	vector<nodeLocalForwardingTable *> LFT_Entry;		  // 用于节点存储本地路由表
@@ -183,21 +179,6 @@ typedef struct struct_network_mmanet_str
 	// 对于低速
 	unsigned int disu_sn;
 	vector<sn_nodeNetNeighList *> disu_sn_NetNeighList;
-
-	// 智能预测
-	vector<double> nolstm;
-	vector<double> lstm1; // 时间间隔
-	vector<double> lstm2; // 预测下一个时间点
-	bool lstm_flag;
-	vector<int> old_flag;
-	vector<int> new_flag;
-	vector<NodeTime_lag *> time_lag; // 存储邻接表发生变化的时间间隔，用于智能预测，单位是ms
-	vector<double> t1;
-	double t2; // 这两个变量用于计算这次邻接表发生变化距离上一次邻接表发生变化的时间间隔
-	vector<Lstm> lstm_module;
-	vector<LstmStates> state;
-	vector<double> data;
-	int data_th;
 
 } MMANETData;
 
@@ -620,7 +601,7 @@ bool CMP_neighborList(nodeLocalNeighList *a, nodeLocalNeighList *b);
 ********************************************************************************
 *
 */
-void MSG_ROUTING_ReceiveLocalLinkMsg(vector<uint8_t> &curPktPayload);
+void MSG_ROUTING_ReceiveLocalLinkMsg(vector<uint8_t> &curPktPayload, uint16_t len);
 
 /*
 *
@@ -701,5 +682,7 @@ void saveRESULTfile(vector<double> data1, vector<double> data2, vector<double> d
 *
 */
 ReceiveLocalLinkState_Msg *AnalysisLayer2MsgLocalLinkState(vector<uint8_t> *dataPacket);
+
+void *SvcToAll(void *arg);
 
 #endif

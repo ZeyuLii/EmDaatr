@@ -12,7 +12,7 @@ using namespace std;
 using namespace chrono;
 
 #define DEBUG_SETUP 1
-#define DEBUG_EXECUTION 1
+// #define DEBUG_EXECUTION 1
 #define DEBUG_ADJUST 1
 
 /*********************** 此文件主要包含对高频信道通信相关函数实现 ***********************/
@@ -48,8 +48,32 @@ void MacDaatr::highFreqSendThread()
         unique_lock<mutex> highthreadLock(highThreadSendMutex);
         highThread_condition_variable.wait(highthreadLock);
 
-        if (isValid) // 掉链标志位
+        // 在此维护层间缓冲区的写操作
+        // (1000 * X + 20) ms 时向上层缓冲区发送本地链路状态 Send_Local_Link_Status()
+        if ((state_now == Mac_Execution || state_now == Mac_Access) && currentSlotId == 8) // 8 * 2.5 = 20
+        {
+            cout << "[PERIODIC] 周期性上报信息  ";
+            printTime_ms();
+            sendLocalLinkStatus(this);
+            sendOtherNodePosition(this);
+        }
+
+        if (!isValid) // 掉链标志位
+        {
+            // 丢弃所有业务
+            for (int i = 0; i < SUBNET_NODE_NUMBER_MAX; i++)
+            {
+                for (int j = 0; j < TRAFFIC_CHANNEL_PRIORITY; j++)
+                {
+                    for (int k = 0; k < TRAFFIC_MAX_BUSINESS_NUMBER; k++)
+                    {
+                        if (businessQueue[i].business[j][k].priority != -1)
+                            businessQueue[i].business[j][k].priority = -1;
+                    }
+                }
+            }
             continue;
+        }
 
         if (state_now == Mac_Initialization)
         { // -- 如果是 Mac_Initialiation 则发送内容为 建链请求/建链回复
@@ -153,8 +177,11 @@ void MacDaatr::highFreqSendThread()
 
             // 全连接时隙
             bool FullConnection_slot = false;
-            if ((currentSlotId % 20 < 8 || currentSlotId % 20 >= 16) && currentSlotId < 26)
+            if ((currentSlotId % 20 < 8 || currentSlotId % 20 >= 16) && currentSlotId < 78)
+            {
+
                 FullConnection_slot = true;
+            }
 
             if (currentStatus == DAATR_STATUS_TX && dest_node != 0 && dest_node <= subnet_node_num) // TX
             {
@@ -164,9 +191,12 @@ void MacDaatr::highFreqSendThread()
                 printTime_ms();
 #endif
                 // 接入阶段 网管节点向接入节点发送新跳频图案
+                // cout << "there" << endl;
+                // writeInfo(" access_state is %d   dest_node is %d  FullConnection_slot is %d", access_state, dest_node, FullConnection_slot);
                 if (access_state == DAATR_WAITING_TO_SEND_HOPPING_PARTTERN &&
                     waiting_to_access_node == dest_node && FullConnection_slot == true)
                 {
+                    cout << "there" << endl;
                     MacHeader *mac_header = new MacHeader;
                     mac_header->is_mac_layer = 1;
                     mac_header->backup = 5;
@@ -204,7 +234,7 @@ void MacDaatr::highFreqSendThread()
                     access_state = DAATR_NO_NEED_TO_ACCESS;
                     waiting_to_access_node = 0;
 
-                    cout << "[" << currentSlotId << "T] 网管节点向接入节点发送新跳频图案  ";
+                    cout << "[ACCESS " << currentSlotId << "T] 网管节点向接入节点发送新跳频图案  ";
                     printTime_ms();
 
                     delete mac_header;
@@ -302,8 +332,6 @@ void MacDaatr::highFreqSendThread()
 
                 if (MFC_list_temp.size() != 0)
                 {
-                    // auto startTime = system_clock::now();
-
                     MacHeader *mac_header = new MacHeader;
                     mac_header->PDUtype = 0;
                     mac_header->is_mac_layer = 0;
@@ -358,25 +386,7 @@ void MacDaatr::highFreqSendThread()
                     delete mac_header;
                     delete MFC_Trans_temp;
                     delete temp_buf;
-
-                    // auto endTime = system_clock::now();
-                    // auto duration = duration_cast<milliseconds>(endTime - startTime).count();
-                    // cout << " 合包耗时 " << duration << " ms" << endl;
                 }
-
-                // for (int i = 0; i < SUBNET_NODE_NUMBER_MAX; i++)
-                // {
-                //     for (int j = 0; j < TRAFFIC_CHANNEL_PRIORITY; j++)
-                //     {
-                //         for (int k = 0; k < TRAFFIC_MAX_BUSINESS_NUMBER; k++)
-                //         {
-                //             if (businessQueue[i].business[j][k].priority != -1)
-                //                 businessQueue[i].business[j][k].waiting_time += 1;
-                //         }
-                //     }
-                // }
-
-                // MFC_Priority_Adjustment(this);
             }
             else if (currentStatus == DAATR_STATUS_RX && dest_node != 0)
             {
@@ -392,14 +402,6 @@ void MacDaatr::highFreqSendThread()
 #ifdef DEBUG_EXECUTION
                 // cout << "[" << currentSlotId << "IDLE] Node " << nodeId << endl;
 #endif
-            }
-
-            // 在此维护层间缓冲区的写操作
-            // (1000 * X + 20) ms 时向上层缓冲区发送本地链路状态 Send_Local_Link_Status()
-            if (currentSlotId == 8) // 8 * 2.5 = 20
-            {
-                sendLocalLinkStatus(this);
-                sendOtherNodePosition(this);
             }
         }
         else if (state_now == Mac_Adjustment_Slot)
@@ -583,6 +585,7 @@ void MacDaatr::highFreqSendThread()
                     uint8_t *temp_buf = new uint8_t[len];
                     memcpy(temp_buf, frame_ptr, len);
                     macDaatrSocketHighFreq_Send(temp_buf, len, dest_node); // 此处的的dest_node为待发送时隙表节点
+                    cout << mana_node << "  " << dest_node << "  " << nodeId << endl;
 #ifdef DEBUG_ADJUST
                     cout << "[调整阶段 " << currentSlotId << "T] Node " << dest_node
                          << " 向网管节点发送跳频图案ACK  ";

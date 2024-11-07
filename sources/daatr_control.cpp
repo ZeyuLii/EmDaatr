@@ -8,12 +8,13 @@ using namespace std;
 
 int over_count = 0;
 bool firstExce = 1;
+extern MacDaatr daatr_str;
+extern bool end_simulation;
+
 // 总控线程主函数
 // 每 100 us 调用一次这个函数 就可以实现时间的流动
 void macDaatrControlThread(int signum, siginfo_t *info, void *context)
 {
-    extern MacDaatr daatr_str;
-    extern bool end_simulation;
 
     // 线程结束标志(以什么样的条件终止线程)
     if (end_simulation)
@@ -46,9 +47,8 @@ void macDaatrControlThread(int signum, siginfo_t *info, void *context)
     {
         // 业务信道线程触发 (节点间的收发线程)
         if (end_simulation == true)
-        {
             cout << "Node send end_simulation" << endl;
-        }
+
         daatr_str.highThread_condition_variable.notify_one();                   // 唤醒阻塞在发送线程 highFreqSendThread() 的 wait()
         daatr_str.networkToMacBufferReadThread_condition_variable.notify_one(); // 唤醒缓存区读函数
 
@@ -57,10 +57,13 @@ void macDaatrControlThread(int signum, siginfo_t *info, void *context)
             // 网管信道线程触发(网管信道 节点间 收发线程)
             daatr_str.clock_trigger = 0; // 每次网管信道发送时为一个周期，清空计数
             daatr_str.lowthreadcondition_variable.notify_one();
+            writeInfo("mana_node is %d", daatr_str.mana_node);
+            writeInfo("daatr_str.access_state is %d", daatr_str.access_state);
+            writeInfo("state is %d", daatr_str.state_now);
             // parseCpuTimes();
         }
     }
-
+    eventTimerUpdate();
     // 线程结束标志(以什么样的条件终止线程)
     if (end_simulation)
     {

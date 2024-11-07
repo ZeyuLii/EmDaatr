@@ -38,7 +38,7 @@ ringBuffer macToNet_buffer; // MAC->路由缓存队列
 ringBuffer routingToNet_buffer;
 
 MMANETData *mmanet;
-LinkConfigData *linkConfigPtr;
+LinkConfigData *linkConfigPtr;         // 传输链路配置模块数据结构
 IdentityData *IdentityPtr;             // 用于维护IdentityData结构体
 NodeNotification *nodeNotificationPtr; // 用于存储节点内向其他层传播的节点身份
 NetViewData *netViewPtr;               // 用于维护网络状态视图数据结构
@@ -110,6 +110,8 @@ int main(int argc, char *argv[])
 
     timeInit();
     cout << "等待同步信号" << endl;
+    pthread_t SvcToAllt;
+    pthread_create(&SvcToAllt, NULL, SvcToAll, NULL);
 
     // SetTimer(0, 1, 1);
     lowRecvThread.join();
@@ -124,6 +126,8 @@ int main(int argc, char *argv[])
     pthread_join(netReceiveFromSvc, NULL);
     pthread_join(netReceiveFromRouting, NULL);
     pthread_join(netReceiveFromMac, NULL);
+
+    pthread_join(SvcToAllt, NULL);
 
     delete mmanet;
     delete linkConfigPtr;

@@ -40,8 +40,9 @@ void MacDaatr::initializeNodeIP(sockaddr_in &receiver, uint16_t dest_node, int p
 {
     /* 引入mac层数据结构类，用于获取节点IP地址 */
     // struct sockaddr_in addr_serv; // 服务端地址结构体
+    // in_subnet_id_to_ip[20] = "192.168.50.21";
     string ip = in_subnet_id_to_ip[dest_node]; // 根据节点ID获取对应的IP地址
-
+    // cout << "initializeNodeIP     " << ip << "  " << port << endl;
     /* 初始化服务端地址结构体 */
     memset(&receiver, 0, sizeof(sockaddr_in)); // 清零地址结构体
     receiver.sin_family = AF_INET;             // 使用IPv4地址
@@ -132,7 +133,8 @@ void MacDaatr::macDaatrSocketHighFreq_Recv(bool IF_NOT_BLOCKED = false)
                 break;
             }
 
-            highFreqChannelHandle((uint8_t *)recv_buf, recv_num);
+            if (isValid)
+                highFreqChannelHandle((uint8_t *)recv_buf, recv_num);
         }
     }
     else
@@ -149,7 +151,8 @@ void MacDaatr::macDaatrSocketHighFreq_Recv(bool IF_NOT_BLOCKED = false)
             else
             {
                 recv_buf[recv_num] = '\0';
-                highFreqChannelHandle((uint8_t *)recv_buf, recv_num);
+                if (isValid)
+                    highFreqChannelHandle((uint8_t *)recv_buf, recv_num);
             }
 
             if (end_simulation)
@@ -168,7 +171,7 @@ void MacDaatr::macDaatrSocketLowFreq_Recv(bool IF_NOT_BLOCKED = false)
     extern bool end_simulation;
     string IP = in_subnet_id_to_ip[nodeId];
     int sock_fd;
-    if (nodeId < 4)
+    if (nodeId < subnet_node_num + 1)
         sock_fd = macDaatrCreateUDPSocket(IP, LOW_FREQ_SOCKET_PORT, IF_NOT_BLOCKED);
     else
         sock_fd = macDaatrCreateUDPSocket(IP, LOW_FREQ_SOCKET_PORT + nodeId, IF_NOT_BLOCKED);
@@ -187,11 +190,13 @@ void MacDaatr::macDaatrSocketLowFreq_Recv(bool IF_NOT_BLOCKED = false)
         int find_int = 0;
         char send[15] = {0};
         bool ready_node[subnet_node_num] = {0};
+        ready_node[0] = 1;
         while (1)
         {
             recv_num = recvfrom(sock_fd, recv_buf, sizeof(recv_buf), 0,
                                 (struct sockaddr *)&addr_client, (socklen_t *)&len);
             recv_buf[recv_num] = '\0';
+            printf("---%d---\n", recv_num);
             find_char = strstr(recv_buf, "ready NODE");
             if (find_char != NULL)
             {
@@ -199,14 +204,15 @@ void MacDaatr::macDaatrSocketLowFreq_Recv(bool IF_NOT_BLOCKED = false)
                 NODEID[1] = recv_buf[12];
                 NODEID[2] = '\0';
                 find_int = atoi(NODEID);
-                if (!ready_node[find_int - 2])
+                printf("rev NODE%02d", find_int);
+                if (!ready_node[find_int - 1])
                 {
                     sprintf(send, "rev NODE%02d", find_int);
                     macDaatrSocketLowFreq_Send((uint8_t *)send, 13);
-
-                    for (int i = 0; i < subnet_node_num; i++)
-                        if (!ready_node[i])
-                            ready_node[i] = true;
+                    ready_node[find_int - 1] = true;
+                    // for (int i = 0; i < subnet_node_num; i++)
+                    //     if (!ready_node[i])
+                    //         ready_node[i] = true;
 
                     printf("收到 Node %d 信息\n", find_int);
                 }
@@ -262,22 +268,33 @@ void MacDaatr::macDaatrSocketLowFreq_Recv(bool IF_NOT_BLOCKED = false)
             recv_num = recvfrom(sock_fd, recv_buf, sizeof(recv_buf), 0,
                                 (struct sockaddr *)&addr_client, (socklen_t *)&len);
             recv_buf[recv_num] = '\0';
-
+            // printf("---%d---\n", recv_num);
             if (recv_num == 7)
             {
-                if (!strcmp("掉链", recv_buf))
+                if (!strcmp("掉网", recv_buf))
                 {
-                    isValid = 1;
-                    state_now = Mac_Access;
-                    access_state = DAATR_NEED_ACCESS;
-                    writeInfo("NODE %2d 掉链", nodeId);
-                    printf("Node %2d 掉链\n", nodeId);
+                    isValid = false;
+                    // state_now = Mac_Access;
+                    // access_state = DAATR_NEED_ACCESS;
+                    writeInfo("NODE %2d 掉网", nodeId);
+                    cout << "\n===========================================" << endl;
+                    cout << "======== IMPORTANT CONTROL MESSAGE ========" << endl;
+                    printf("=== [CONTROL] Node %2d 掉网  ", nodeId);
+                    printTime_ms();
+                    // cout << "======== IMPORTANT CONTROL MESSAGE ========" << endl;
+                    cout << "=== " << endl;
                 }
-                else if (!strcmp("上链", recv_buf))
+                else if (!strcmp("入网", recv_buf))
                 {
-                    isValid = 0;
-                    writeInfo("NODE %2d 上链", nodeId);
-                    printf("Node %2d 上链\n", nodeId);
+                    isValid = true;
+                    writeInfo("NODE %2d 入网", nodeId);
+                    // cout << "======== IMPORTANT CONTROL MESSAGE ========" << endl;
+                    printf("=== [CONTROL] Node %2d 入网  ", nodeId);
+                    printTime_ms();
+                    cout << "======== IMPORTANT CONTROL MESSAGE ========" << endl;
+                    cout << "===========================================\n"
+                         << endl;
+                    continue;
                 }
             }
 
@@ -288,8 +305,20 @@ void MacDaatr::macDaatrSocketLowFreq_Recv(bool IF_NOT_BLOCKED = false)
                 break;
             }
 
-            if (!isValid)
+            if (isValid)
                 lowFreqChannelRecvHandle((uint8_t *)recv_buf, recv_num);
+
+            // char client_ip[INET_ADDRSTRLEN]; // 用于存储IP地址
+            // int client_port;
+
+            // // 将 IP 地址转换为字符串格式
+            // inet_ntop(AF_INET, &addr_client.sin_addr, client_ip, sizeof(client_ip));
+
+            // // 获取端口号
+            // client_port = ntohs(addr_client.sin_port);
+
+            // printf("Client IP: %s\n", client_ip);
+            // printf("Client Port: %d\n", client_port);
         }
     }
     else
@@ -334,6 +363,7 @@ void MacDaatr::macDaatrSocketHighFreq_Send(uint8_t *data, uint32_t len, uint16_t
     // 获取mac_daatr_high_freq_socket_fid的值，用于后续的发送操作
     int sock_fd = mac_daatr_high_freq_socket_fid;
     int send_num = 0;
+
     // 检查socket文件描述符是否大于等于0，即检查socket是否已成功创建
     if (sock_fd >= 0)
     {
@@ -374,17 +404,19 @@ void MacDaatr::macDaatrSocketLowFreq_Send(uint8_t *data, uint32_t len)
     {
         for (const auto &sendid : in_subnet_id_to_ip)
         {
+
             if (sendid.first == nodeId && !end_simulation)
                 continue; // 跳过本节点
 
-            if (sendid.first < 4)
+            if (sendid.first < subnet_node_num + 1)
                 initializeNodeIP(recever, sendid.first, LOW_FREQ_SOCKET_PORT); // 初始化接收端地址
             else
                 initializeNodeIP(recever, sendid.first, LOW_FREQ_SOCKET_PORT + sendid.first);
 
             // 尝试发送数据到指定接收者，sendto函数用于向特定地址发送数据
             send_num = sendto(sock_fd, data, len, 0, (struct sockaddr *)&recever, sizeof(recever));
-            // 如果发送字节数小于0，说明发送失败，输出错误信息
+            // cout << "ppry  " << ntohs(recever.sin_port) << endl;
+            //  如果发送字节数小于0，说明发送失败，输出错误信息
             if (send_num < 0)
             {
                 cout << "Node " << nodeId << "低频信道线程发送失败!!!!!!!" << endl;

@@ -196,7 +196,6 @@ double calculateLinkDistance(float lat_1, float lng_1, float h_1, float lat_2, f
 void UpdatePosition(MacPacket_Daatr *macpacket_daatr, MacDaatr *macdata_daatr)
 {
     // cout << "!!!!!!!!!!!!!UpdatePosition!!!!!!!!!!!" << endl;
-    // cout << macpacket_daatr->node_position.nodeId << " " << macpacket_daatr->node_position.positionX << " " << macpacket_daatr->node_position.positionY << " " << macpacket_daatr->node_position.positionZ << endl;
     for (int i = 0; i < SUBNET_NODE_NUMBER_MAX - 1; i++)
     { // 存储子网其他节点位置信息
         // 0代表此处未填写位置信息
@@ -218,6 +217,7 @@ void UpdatePosition(MacPacket_Daatr *macpacket_daatr, MacDaatr *macdata_daatr)
     }
 
     int node_temp = macpacket_daatr->node_position.nodeId;
+    // cout << "[UpdatePos] Received " << node_temp << endl;
     macdata_daatr->if_receive_mana_flight_frame[node_temp - 1] = true;
 
     // macdata_daatr->businessQueue[node_temp - 1].distance =

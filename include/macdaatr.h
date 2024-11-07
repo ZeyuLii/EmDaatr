@@ -24,7 +24,7 @@
 
 // 子网信息
 #define SUBNET_NODE_NUMBER_MAX 20                // 子网最大节点数
-#define FREQUENCY_DIVISION_MULTIPLEXING_NUMBER 1 // 子网内通信频分复用允许最大复用数(1/2,向下取整)
+#define FREQUENCY_DIVISION_MULTIPLEXING_NUMBER 2 // 子网内通信频分复用允许最大复用数(1/2,向下取整)
 #define FULL_CONNECTION_NODE_NUMBER 10           // 当前使用的全连接时隙表的节点数
 #define SUBNET_NUM 10                            // 子网数
 #define END_LINK_BUILD_TIME 1000                 // 结束建链阶段时间（单位：ms）
@@ -162,7 +162,7 @@ typedef struct LinkAssignment_single
     unsigned short end_node;   // 链路接收节点ID
     unsigned short type;       // 业务类型, 取值范围[1-16]
     unsigned short priority;   // 业务优化级, 取值范围为[1-16]
-    float size;                // 业务量大小(单位: Byte); 物理量范围为[0-1MB], 取值范围为[0-1048576]
+    unsigned short size;       // 业务量大小(单位: Byte); 物理量范围为[0-1MB], 取值范围为[0-1048576]
     unsigned short QOS;        // QOS需求; 物理量范围为[0-5s], 取值范围为[0-2000], 时延=取值*2.5ms,
     unsigned short frequency;  // 业务频率, 物理量范围为[2.5ms/次-5s/次], 取值范围为[1-2000], 业务频率=取值*2.5ms/次
 
@@ -318,7 +318,7 @@ public:
     low_freq_slot low_freq_other_stage_slot_table[MANAGEMENT_SLOT_NUMBER_OTHER_STAGE]; // 其他阶段网管信道时隙表
     uint8_t need_change_state;                                                         // 网管节点的阶段转换标志(默认为0) 1 表示时域调整 2 表示频域调整
     bool if_receive_mana_flight_frame[SUBNET_NODE_NUMBER_MAX];                         // 是否在本帧内收到新的其他节点的飞行状态信息
-
+    // bool flag_mana_access_reply;                                                       // 判断是否收到网管接入回复
     /*高频信道线程相关*/
     uint32_t currentSlotId; // 当前高频信道所处的时隙idx (由::UpdateTimer函数进行更新)
     uint32_t currentStatus;
@@ -371,7 +371,7 @@ public:
     // unique_lock<mutex> nTmBufferReadlock(daatr_str.nTmBufferReadmutex);
 
     // 掉链标志位
-    bool isValid;
+    bool isValid; // true表示节点在网 false表示节点脱网
     // 类函数
 public:
     // 初始化相关
@@ -404,6 +404,7 @@ public:
     // void lowFreqSendThread();
     bool MacDaatNetworkHasLowFreqChannelPacketToSend(msgFromControl *busin);
     bool getLowChannelBusinessFromQueue(msgFromControl *busin);
+    void clearBusiness();
     void macDaatrSocketLowFreq_Send(uint8_t *data, uint32_t len);
     void macDaatrSocketLowFreq_Recv(bool IF_NOT_BLOCKED);
 

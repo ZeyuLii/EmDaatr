@@ -1,6 +1,6 @@
 
 #include "socket_control.h"
-
+using namespace std;
 using namespace std;
 #define subnet_node_num 20
 #define SEND_BUFFER_SIZE 65536     // 发送缓冲区大小
@@ -20,6 +20,7 @@ void initializeNodeIP(sockaddr_in &receiver, uint16_t dest_node, int port)
 {
     extern string in_subnet_id_to_ip[subnet_node_num];
     string ip = in_subnet_id_to_ip[dest_node]; // 根据节点ID获取对应的IP地址
+    printf("%s  %d\n", ip.c_str(), port);
     /* 初始化服务端地址结构体 */
     memset(&receiver, 0, sizeof(sockaddr_in)); // 清零地址结构体
     receiver.sin_family = AF_INET;             // 使用IPv4地址
@@ -100,14 +101,15 @@ void macDaatrSocketLowFreq_Send(uint8_t *data, uint32_t len, int id)
     // 检查socket文件描述符是否大于等于0，即检查socket是否已成功创建
     if (sock_fd >= 0)
     {
-
         initializeNodeIP(recever, id, LOW_FREQ_SOCKET_PORT); // 初始化接收端地址
 
         // 尝试发送数据到指定接收者，sendto函数用于向特定地址发送数据
         send_num = sendto(sock_fd, data, len, 0, (struct sockaddr *)&recever, sizeof(recever));
-        // 如果发送字节数小于0，说明发送失败，输出错误信息
-        if (send_num < 0)
+        // printf("send_num : %d ", send_num);
+        //  如果发送字节数小于0，说明发送失败，输出错误信息
+        if (send_num <= 0)
         {
+            printf("send_num : %d ", send_num);
             perror("sendto");
             printf("发送失败\n");
         }
@@ -115,5 +117,44 @@ void macDaatrSocketLowFreq_Send(uint8_t *data, uint32_t len, int id)
     else
     {
         printf("未创建低频信道线程，无法发送!!!!!!\n");
+    }
+}
+void link_data_print()
+{
+    extern int sock_fd;
+    char recv_buf[60000];
+    struct sockaddr_in addr_client;
+    socklen_t len = sizeof(sockaddr_in);
+    int last_segment;
+    while (1)
+    {
+        int recv_num = recvfrom(sock_fd, recv_buf, sizeof(recv_buf), 0,
+                                (struct sockaddr *)&addr_client, (socklen_t *)&len);
+        recv_buf[recv_num] = '\0';
+        char *ip_str = inet_ntoa(addr_client.sin_addr);
+        // std::cout << "Client IP: " << ip_str << std::endl;
+
+        // 使用 strtok 分离最后两段 IP 地址
+        char *token = std::strtok(ip_str, ".");
+        int segments[4], i = 0;
+        while (token != nullptr && i < 4)
+        {
+            segments[i++] = std::stoi(token);
+            token = std::strtok(nullptr, ".");
+        }
+
+        if (i == 4)
+        {
+            last_segment = segments[3];
+        }
+        else
+        {
+            std::cerr << "Failed to parse IP address\n";
+        }
+
+        // cout << "===========NODE " << last_segment - 1 << " data come=========" << endl;
+        // cout << recv_buf;
+        // cout << "===========NODE " << last_segment - 1 << " data over=========" << endl
+        //      << endl;
     }
 }
