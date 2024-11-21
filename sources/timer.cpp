@@ -1,4 +1,5 @@
 #include "timer.h"
+#include <signal.h>
 
 #define USBCOM "/dev/ttyPS1"
 #define EVENT_MAX_NUMBER 25 // 定时器最大数量
@@ -43,14 +44,10 @@ uint16_t event_number_now = 0;
  * @return true 成功插入事件定时器
  * @return false 事件列表已满，无法插入新的定时器
  */
-bool insertEventTimer_us(uint64_t time_del, event_function event_func)
-{
-    if (event_number_now >= EVENT_MAX_NUMBER)
-        return false;
-    for (int i = 0; i < EVENT_MAX_NUMBER; i++)
-    {
-        if (event_list[i].if_used == false)
-        { // 是否是空闲
+bool insertEventTimer_us(uint64_t time_del, event_function event_func) {
+    if (event_number_now >= EVENT_MAX_NUMBER) return false;
+    for (int i = 0; i < EVENT_MAX_NUMBER; i++) {
+        if (event_list[i].if_used == false) { // 是否是空闲
             event_list[i].if_used = true;
             event_list[i].time_delay = time_del;
             event_list[i].func = event_func;
@@ -69,13 +66,10 @@ bool insertEventTimer_us(uint64_t time_del, event_function event_func)
  * @return true 成功插入事件定时器
  * @return false 事件列表已满，无法插入新的定时器
  */
-bool insertEventTimer_ms(double time_del, event_function event_func)
-{
+bool insertEventTimer_ms(double time_del, event_function event_func) {
     time_del *= 1000; // 转化成us
-    for (int i = 0; i < EVENT_MAX_NUMBER; i++)
-    {
-        if (event_list[i].if_used == false)
-        { // 是否是空闲
+    for (int i = 0; i < EVENT_MAX_NUMBER; i++) {
+        if (event_list[i].if_used == false) { // 是否是空闲
             event_list[i].if_used = true;
             event_list[i].time_delay = time_del;
             event_list[i].func = event_func;
@@ -88,17 +82,12 @@ bool insertEventTimer_ms(double time_del, event_function event_func)
     return false;
 }
 
-void eventTimerUpdate()
-{
-    if (event_number_now == 0)
-        return;
-    for (int i = 0; i < EVENT_MAX_NUMBER; i++)
-    {
-        if (event_list[i].if_used == true)
-        { // 是否是空闲
+void eventTimerUpdate() {
+    if (event_number_now == 0) return;
+    for (int i = 0; i < EVENT_MAX_NUMBER; i++) {
+        if (event_list[i].if_used == true) { // 是否是空闲
             event_list[i].time_has_passed += TIME_PRECISION;
-            if (event_list[i].time_has_passed >= event_list[i].time_delay)
-            {
+            if (event_list[i].time_has_passed >= event_list[i].time_delay) {
                 event_list[i].func();
                 event_list[i].if_used = false;
                 event_number_now -= 1;
@@ -107,8 +96,7 @@ void eventTimerUpdate()
     }
 }
 
-int utcToint(const char *str, int find)
-{
+int utcToint(const char *str, int find) {
 
     printf("time is :%s\n", str);
     char time[8];
@@ -122,12 +110,10 @@ int utcToint(const char *str, int find)
     return atoi(time);
 }
 
-int utcGet()
-{
+int utcGet() {
 
     int fd = open(USBCOM, O_RDONLY);
-    if (fd == -1)
-    {
+    if (fd == -1) {
         perror("open error!");
         exit(-1);
     }
@@ -136,8 +122,7 @@ int utcGet()
     // 1.save the old data of attr  oldtms
     struct termios newtms, oldtms;
     bzero(&newtms, sizeof(struct termios));
-    if (tcgetattr(fd, &oldtms) == -1)
-    {
+    if (tcgetattr(fd, &oldtms) == -1) {
         perror("tegetattr error!");
         exit(-1);
     }
@@ -147,13 +132,11 @@ int utcGet()
     newtms.c_cflag |= CLOCAL;
 
     // 3.set bound
-    if (cfsetispeed(&newtms, B115200) == -1)
-    {
+    if (cfsetispeed(&newtms, B115200) == -1) {
         perror("cfsetispeed error!");
         exit(-1);
     }
-    if (cfsetospeed(&newtms, B115200) == -1)
-    {
+    if (cfsetospeed(&newtms, B115200) == -1) {
         perror("cfsetospeed error!");
         exit(-1);
     }
@@ -172,15 +155,13 @@ int utcGet()
     newtms.c_cc[VMIN] = 1;
 
     // 8.引用对象
-    if (tcflush(fd, TCIOFLUSH) == -1)
-    {
+    if (tcflush(fd, TCIOFLUSH) == -1) {
         perror("tcflush error!");
         exit(-1);
     }
 
     // 9.激活设置
-    if (tcsetattr(fd, TCSANOW, &newtms) == -1)
-    {
+    if (tcsetattr(fd, TCSANOW, &newtms) == -1) {
         perror("tcsetattr error!");
         exit(-1);
     }
@@ -191,19 +172,15 @@ int utcGet()
     char *find;
     int res = 0;
     bzero(&buf, 512);
-    while (1)
-    {
+    while (1) {
         // 清除buf中数据，包括'\0'
         ir = read(fd, buf + count, 25);
-        if (ir > 0)
-        {
+        if (ir > 0) {
             count = count + ir;
             find = strstr(buf, "$GNRMC,");
-            if (find != NULL)
-            {
+            if (find != NULL) {
                 res = utcToint(buf, find - buf);
-                if (res)
-                {
+                if (res) {
                     close(fd);
                     return res;
                 }
@@ -215,8 +192,7 @@ int utcGet()
     return 0;
 }
 
-void microsecondIRQ()
-{
+void microsecondIRQ() {
     const char *dev_name = "/dev/mydev_clk";
     extern void macDaatrControlThread(int signum, siginfo_t *info, void *context);
 
@@ -224,8 +200,7 @@ void microsecondIRQ()
     pid = getpid();
 
     // 打开GPIO
-    if ((fd_irq = open(dev_name, O_RDWR | O_NDELAY)) < 0)
-    {
+    if ((fd_irq = open(dev_name, O_RDWR | O_NDELAY)) < 0) {
         printf("open dev failed! \n");
         return;
     }
@@ -243,15 +218,13 @@ void microsecondIRQ()
     // set PID
 }
 
-void ppsIRQ()
-{
+void ppsIRQ() {
     const char *dev_name_pps = "/dev/mydev";
     int fd_irq_pps = 0;
     int pid_pps = getpid();
 
     // 打开GPIO
-    if ((fd_irq_pps = open(dev_name_pps, O_RDWR | O_NDELAY)) < 0)
-    {
+    if ((fd_irq_pps = open(dev_name_pps, O_RDWR | O_NDELAY)) < 0) {
         printf("open dev failed! \n");
         return;
     }
@@ -273,11 +246,9 @@ void ppsIRQ()
     close(fd_irq_pps);
 }
 
-void ppsIRQHandle(int signum, siginfo_t *info, void *context)
-{
+void ppsIRQHandle(int signum, siginfo_t *info, void *context) {
 
-    if (!PPS_overcount)
-    {
+    if (!PPS_overcount) {
         printf("开始仿真\n\n");
         extern int fd_irq;
         extern int pid;
@@ -298,21 +269,18 @@ void ppsIRQHandle(int signum, siginfo_t *info, void *context)
         daatr_str.initializeNodeIP(recever, 20, 8102);
         // 尝试发送数据到指定接收者，sendto函数用于向特定地址发送数据
         send_num = sendto(sock_fd, send, 6, 0, (struct sockaddr *)&recever, sizeof(recever));
-    }
-    else
+    } else
         PPS_overcount++;
     return;
 }
 
 // 解析 /proc/stat 文件中的 CPU 时间
-void parseCpuTimes()
-{
+void parseCpuTimes() {
     // system("cat /proc/stat");
     ifstream file("/proc/stat");
     string line;
 
-    if (file.is_open())
-    {
+    if (file.is_open()) {
         getline(file, line); // 读取第一行 (以 "cpu" 开头)
         file.close();
 
@@ -327,23 +295,19 @@ void parseCpuTimes()
         // printf(" \nhhhhhh%lld %lld\n", (long long)idleTime, (long long)totalTime);
         // cout << "  " << cpu << "  " << user << "  " << nice << "  " << system << "  " << endl;
         // cout << "  " << idle << "  " << iowait << "  " << irq << "  " << softirq << "  " << steal << endl;
-    }
-    else
-    {
+    } else {
         cerr << "无法打开 /proc/stat 文件" << endl;
     }
 }
 // 计算 CPU 占用率
-double calculateCpuUsage()
-{
+double calculateCpuUsage() {
     unsigned long long newIdleTime, newTotalTime;
     // system("cat /proc/stat");
     //  读取初始 CPU 时间
     ifstream file("/proc/stat");
     string line;
 
-    if (file.is_open())
-    {
+    if (file.is_open()) {
         getline(file, line); // 读取第一行 (以 "cpu" 开头)
         file.close();
 
@@ -358,9 +322,7 @@ double calculateCpuUsage()
         // printf(" \njisuan%lld %lld\n", (long long)newIdleTime, (long long)newTotalTime);
         // cout << "  " << cpu << "  " << user << "  " << nice << "  " << system << "  " << endl;
         // cout << "  " << idle << "  " << iowait << "  " << irq << "  " << softirq << "  " << steal << endl;
-    }
-    else
-    {
+    } else {
         cerr << "无法打开 /proc/stat 文件" << endl;
     }
 
@@ -374,8 +336,7 @@ double calculateCpuUsage()
     return cpuUsage;
 }
 
-void _writeInfo(bool addTimeHeadFlag, const char *fmt, ...)
-{
+void _writeInfo(bool addTimeHeadFlag, const char *fmt, ...) {
 
     static char sprint_buf[2048];
     struct timespec tptemp;
@@ -387,19 +348,15 @@ void _writeInfo(bool addTimeHeadFlag, const char *fmt, ...)
     vsprintf(sprint_buf, fmt, args);
     va_end(args);
 
-    if (!addTimeHeadFlag)
-    {
-        sprintf(simInfo[simInfoPosition++],
-                "%s\n",
-                sprint_buf);
+    if (!addTimeHeadFlag) {
+        sprintf(simInfo[simInfoPosition++], "%s\n", sprint_buf);
         mtxWriteStr.unlock();
         return;
     }
 
     clock_gettime(CLOCK_MONOTONIC, &tptemp);
 
-    long long temp = tptemp.tv_nsec +
-                     (long long)(tptemp.tv_sec - tpstart.tv_sec) * 1e9 - tpstart.tv_nsec;
+    long long temp = tptemp.tv_nsec + (long long)(tptemp.tv_sec - tpstart.tv_sec) * 1e9 - tpstart.tv_nsec;
 
     long long temp_sec = temp / 1e9;
     temp = temp - temp_sec * 1e9;
@@ -409,15 +366,12 @@ void _writeInfo(bool addTimeHeadFlag, const char *fmt, ...)
     long long temp_nsec = temp % 1000;
 
     // mtxWritePos.lock();
-    sprintf(simInfo[simInfoPosition++],
-            "[ %3d ,  %3lld %3lld %3lld] %s\n",
-            temp_sec, temp_msec, temp_usec, temp_nsec, sprint_buf);
+    sprintf(simInfo[simInfoPosition++], "[ %3d ,  %3lld %3lld %3lld] %s\n", temp_sec, temp_msec, temp_usec, temp_nsec, sprint_buf);
     // mtxWritePos.unlock();
     mtxWriteStr.unlock();
 }
 
-void timeInit()
-{
+void timeInit() {
     system("echo system_wrapper.bin > /sys/class/fpga_manager/fpga0/firmware");
     system("echo spi32766.0 > /sys/bus/spi/drivers/ads7846/unbind");
     system("echo 960 > /sys/class/gpio/export");
@@ -429,21 +383,17 @@ void timeInit()
     system("insmod irq_start.ko");
     system("insmod irq.ko");
 
-    if (daatr_str.nodeId == daatr_str.mana_node)
-    {
+    if (daatr_str.nodeId == daatr_str.mana_node) {
         while (!daatr_str.start_irq)
             ;
 
         char *send = "start";
         daatr_str.macDaatrSocketLowFreq_Send((uint8_t *)send, 6);
         printf("发送开始信号 \n");
-    }
-    else
-    {
+    } else {
         char send[15] = {0};
         sprintf(send, "ready NODE%02d", daatr_str.nodeId);
-        while (!daatr_str.init_send)
-        {
+        while (!daatr_str.init_send) {
             daatr_str.macDaatrSocketLowFreq_Send((uint8_t *)send, 13);
             printf("NODE %2d send\n", daatr_str.nodeId);
 

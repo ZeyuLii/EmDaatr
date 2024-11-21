@@ -18,9 +18,7 @@ std::string in_subnet_id_to_ip[21];
 int main()
 {
     if (!link_init())
-    {
         return 0;
-    }
 
     printf("等待节点启动\n");
     char recv_buf[60000];
