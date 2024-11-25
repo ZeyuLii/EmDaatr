@@ -1,24 +1,24 @@
+#include <algorithm>
+#include <fstream>
 #include <iostream>
+#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
-#include <vector>
-#include <algorithm>
-#include <pthread.h>
-#include <unistd.h>
-#include <time.h>
-#include <fstream>
-#include <sys/time.h>
 #include <sys/syscall.h>
+#include <sys/time.h>
+#include <time.h>
+#include <unistd.h>
+#include <vector>
 
-#include <string>
-#include <sstream>
 #include <chrono>
+#include <sstream>
+#include <string>
 
 #include <bitset>
 
-#include "routing_mmanet.h"
 #include "common_struct.h"
 #include "network.h"
+#include "routing_mmanet.h"
 
 extern MMANETData *mmanet; // routing_mmanet模块本节点所需要的数据，在主函数中初始化，通过全局变量引用
 // routing_mmanet模块所需的循环缓冲区
@@ -42,8 +42,7 @@ int lengthdata = 300; // 发送格式化消息数据长度300byte
 using namespace std;
 
 // 定义格式化消息结构体
-struct svcToMac
-{
+struct svcToMac {
     unsigned int dest : 10;
     unsigned int src : 10;
     unsigned int priority : 2;
@@ -58,8 +57,7 @@ struct svcToMac
     vector<uint8_t> data;
 };
 
-vector<uint8_t> *PackMsgSvc(svcToMac *packet, int length)
-{
+vector<uint8_t> *PackMsgSvc(svcToMac *packet, int length) {
     std::vector<uint8_t> *buffer = new std::vector<uint8_t>;
 
     // 封装第一个字节
@@ -87,27 +85,23 @@ vector<uint8_t> *PackMsgSvc(svcToMac *packet, int length)
     // 封装第八个字节
     // buffer->push_back(((packet->fragmentNum << 4) | packet->fragmentSeq) & 0xFF);
 
-    for (size_t i = 0; i < length; i++)
-    {
+    for (size_t i = 0; i < length; i++) {
         buffer->push_back(packet->data[i]);
     }
 
     return buffer;
 }
 
-void readFlightStatusFile(FlightStatus *flightstatusptr, const string filename, int lineNum)
-{
+void readFlightStatusFile(FlightStatus *flightstatusptr, const string filename, int lineNum) {
     // 创建一个输入文件流对象
     ifstream infile(filename);
 
     // 检查文件是否成功打开
-    if (!infile)
-    {
+    if (!infile) {
         cerr << "无法打开文件: " << filename << endl;
         return;
     }
-    if (infile.peek() == ifstream::traits_type::eof())
-    {
+    if (infile.peek() == ifstream::traits_type::eof()) {
         cerr << "文件 " << filename << " 为空！" << endl;
         infile.close();
         return;
@@ -117,15 +111,14 @@ void readFlightStatusFile(FlightStatus *flightstatusptr, const string filename, 
     int inlinenum = lineNum % 80;
 
     // 逐行读取文件
-    while (getline(infile, line))
-    {
+    while (getline(infile, line)) {
         currentLine++;
-        if (currentLine == inlinenum)
-        {
+        if (currentLine == inlinenum) {
             stringstream ss(line);
             int lineIndex;   // 用于存储行索引
             ss >> lineIndex; // 读取第一个数字，表示行号
-            ss >> flightstatusptr->positionX >> flightstatusptr->positionY >> flightstatusptr->positionZ >> flightstatusptr->speedX >> flightstatusptr->speedY >> flightstatusptr->speedZ;
+            ss >> flightstatusptr->positionX >> flightstatusptr->positionY >> flightstatusptr->positionZ >> flightstatusptr->speedX >>
+                flightstatusptr->speedY >> flightstatusptr->speedZ;
             flightstatusptr->nodeId = mmanet->nodeAddr;
             // cout << "readFlightStatusFile mmanet->nodeAddr" << mmanet->nodeAddr << " flightstatusptr->nodeId " << flightstatusptr->nodeId << endl;
             infile.close();
@@ -133,8 +126,7 @@ void readFlightStatusFile(FlightStatus *flightstatusptr, const string filename, 
     }
 }
 
-void *SvcToAll(void *arg)
-{
+void *SvcToAll(void *arg) {
     extern bool end_simulation;
     cout << "创建Svc线程成功!" << endl;
     sleep(5);
@@ -142,8 +134,7 @@ void *SvcToAll(void *arg)
     int currentime = 0;
     cout << "***********************" << endl;
 
-    while (!end_simulation)
-    {
+    while (!end_simulation) {
 
         // 测试飞行状态信息，读文件
         // cout << "***********************" << endl;
@@ -152,20 +143,15 @@ void *SvcToAll(void *arg)
         char *msgToSendPtr = (char *)malloc(fullpacketSize);
         FlightStatus *nodePosPtr = (FlightStatus *)msgToSendPtr;
         int currentlint;
-        if (mmanet->nodeAddr == 1)
-        {
+        if (mmanet->nodeAddr == 1) {
             currentlint = currentime + mmanet->nodeAddr;
         }
-        if (mmanet->nodeAddr == 2)
-        {
+        if (mmanet->nodeAddr == 2) {
             currentlint = currentime + mmanet->nodeAddr + 19;
         }
-        if (mmanet->nodeAddr == 3)
-        {
+        if (mmanet->nodeAddr == 3) {
             currentlint = currentime + mmanet->nodeAddr + 38;
-        }
-        else
-        {
+        } else {
             currentlint = currentime + mmanet->nodeAddr + 57;
         }
         // int currentlint = currentime * TEXTNODENUM + mmanet->nodeAddr;
@@ -175,7 +161,8 @@ void *SvcToAll(void *arg)
         PackRingBuffer(arr5, msgToSendPtr, fullpacketSize, 0x01);
         svcToNet_buffer.ringBuffer_put(arr5, sizeof(arr5));
         // cout << "已发送本地飞行状态信息给网络层" << endl;
-        // cout << nodePosPtr->nodeId << " positionX " << nodePosPtr->positionX << "  positionY " << nodePosPtr->positionY << " positionZ " << nodePosPtr->positionZ << " speedX " << nodePosPtr->speedX<< " speedY " << nodePosPtr->speedY<< " speedZ " << nodePosPtr->speedZ<< endl;
+        // cout << nodePosPtr->nodeId << " positionX " << nodePosPtr->positionX << "  positionY " << nodePosPtr->positionY << " positionZ " <<
+        // nodePosPtr->positionZ << " speedX " << nodePosPtr->speedX<< " speedY " << nodePosPtr->speedY<< " speedZ " << nodePosPtr->speedZ<< endl;
         // cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
 
         // 格式化消息
@@ -183,8 +170,7 @@ void *SvcToAll(void *arg)
         {
             uint8_t buffer_svc1[MAX_DATA_LEN];
             svcToMac *svc1 = new svcToMac();
-            if (mmanet->nodeAddr == 1)
-            {
+            if (mmanet->nodeAddr == 1) {
                 svc1->dest = 0b0000100001; // 目的地址
                 svc1->src = 0b0011100111;  // 源地址
                 svc1->priority = 3;
@@ -195,9 +181,7 @@ void *SvcToAll(void *arg)
                 svc1->fragmentNum = 3;
                 svc1->msgType = 7;
                 svc1->submsgType = 10;
-            }
-            else if (mmanet->nodeAddr == 2)
-            {
+            } else if (mmanet->nodeAddr == 2) {
                 svc1->dest = 0b0000100010; // 目的地址
                 svc1->src = 0b0011100111;  // 源地址
                 svc1->priority = 3;
@@ -208,9 +192,7 @@ void *SvcToAll(void *arg)
                 svc1->fragmentNum = 3;
                 svc1->msgType = 7;
                 svc1->submsgType = 10;
-            }
-            else if (mmanet->nodeAddr == 3)
-            {
+            } else if (mmanet->nodeAddr == 3) {
                 svc1->dest = 0b0000100011; // 目的地址
                 svc1->src = 0b0011100111;  // 源地址
                 svc1->priority = 3;
@@ -224,17 +206,15 @@ void *SvcToAll(void *arg)
             }
             // 分配内存给svc1->data，长度为lengthdata
             svc1->data = vector<uint8_t>();
-            for (size_t i = 0; i < lengthdata; ++i)
-            {
+            for (size_t i = 0; i < lengthdata; ++i) {
                 svc1->data.push_back(0xAD);
             }
             // vector<uint8_t> *repeat = PackMsgSvc(svc1, lengthdata);
             // PackRingBuffer(buffer_svc1, repeat, 0x08);
 
             // 调试信息
-            //  cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! svc1->data.size() " << svc1->data.size() << " <repeat->size() " << repeat->size() << endl;
-            //  svcToRouting_buffer.ringBuffer_put(buffer_svc1, sizeof(buffer_svc1));
-            //  for (int i = 0; i < 8; i++)
+            //  cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! svc1->data.size() " << svc1->data.size() << " <repeat->size() " <<
+            //  repeat->size() << endl; svcToRouting_buffer.ringBuffer_put(buffer_svc1, sizeof(buffer_svc1)); for (int i = 0; i < 8; i++)
             //  {
             //      bitset<8> binary(buffer_svc1[3 + i]); // 创建一个8位的bitset，并用buffer_svc1[3+i]初始化
             //      cout << " " << binary.to_string();    // 输出二进制字符串表示
@@ -253,8 +233,7 @@ void *SvcToAll(void *arg)
         {
             TaskAssignment *task_Msg = new TaskAssignment();
             // 发送底层传输需求
-            if (mmanet->nodeAddr == 1)
-            {
+            if (mmanet->nodeAddr == 1) {
                 task_Msg->begin_node = 1;
                 task_Msg->end_node = 2;
                 task_Msg->type = 3;
@@ -268,9 +247,7 @@ void *SvcToAll(void *arg)
                 // task_Msg->end_time[1] = 50;
                 // task_Msg->end_time[2] = 60;
                 // task_Msg->frequency = 1;
-            }
-            else if (mmanet->nodeAddr == 2)
-            {
+            } else if (mmanet->nodeAddr == 2) {
 
                 task_Msg->begin_node = 2;
                 task_Msg->end_node = 3;
@@ -285,9 +262,7 @@ void *SvcToAll(void *arg)
                 // task_Msg->end_time[1] = 50;
                 // task_Msg->end_time[2] = 60;
                 // task_Msg->frequency = 1;
-            }
-            else if (mmanet->nodeAddr == 3)
-            {
+            } else if (mmanet->nodeAddr == 3) {
                 task_Msg->begin_node = 3;
                 task_Msg->end_node = 1;
                 task_Msg->type = 3;
@@ -301,9 +276,7 @@ void *SvcToAll(void *arg)
                 // task_Msg->end_time[1] = 50;
                 // task_Msg->end_time[2] = 60;
                 // task_Msg->frequency = 1;
-            }
-            else if (mmanet->nodeAddr == 4)
-            {
+            } else if (mmanet->nodeAddr == 4) {
                 task_Msg->begin_node = 4;
                 task_Msg->end_node = 3;
                 task_Msg->type = 3;

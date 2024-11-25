@@ -368,13 +368,20 @@ void MacDaatr::highFreqSendThread() {
 #endif
             }
         } else if (state_now == Mac_Adjustment_Slot) {
-            currentStatus = slottable_adjustment[currentSlotId].state;
-            int dest_node = slottable_adjustment[currentSlotId].send_or_recv_node;
+            int dest_node;
+            if (nodeId == mana_node) {
+                currentStatus = slottable_adjustment_mana[currentSlotId].state;
+                dest_node = slottable_adjustment_mana[currentSlotId].send_or_recv_node;
+            } else {
+                currentStatus = slottable_adjustment[currentSlotId].state;
+                dest_node = slottable_adjustment[currentSlotId].send_or_recv_node;
+                dest_node = dest_node != 0 ? mana_node : 0; // 对于普通节点而言 在调整阶段destnode只等于mana_node或0
+            }
 
-            // 在调整阶段的最后一个时隙，将状态切换为 Mac_Execution(保险起见设为倒数第二个)
-            if (currentSlotId == TRAFFIC_SLOT_NUMBER - 2) state_now = Mac_Execution;
+            // 在调整阶段的最后一个时隙，将状态切换为 Mac_Execution(保险起见设为倒数第1个)
+            if (currentSlotId == TRAFFIC_SLOT_NUMBER - 1) state_now = Mac_Execution;
 
-            if (currentStatus == DAATR_STATUS_TX && dest_node != 0) {
+            if (currentStatus == DAATR_STATUS_TX && dest_node != 0 && dest_node != nodeId) {
                 // TX
                 if (nodeId == mana_node) {
                     // 网管节点发送时隙表
@@ -438,13 +445,13 @@ void MacDaatr::highFreqSendThread() {
                     memcpy(temp_buf, frame_ptr, len);
                     macDaatrSocketHighFreq_Send(temp_buf, len, dest_node); // 此处的的dest_node为待发送时隙表节点
 #ifdef DEBUG_ADJUST
-                    cout << "[调整阶段 " << currentSlotId << "T] Node " << dest_node << " 向网管节点发送时隙表ACK  ";
+                    cout << "[调整阶段 " << currentSlotId << "T] Node " << nodeId << " 向网管节点发送时隙表ACK  ";
                     printTime_ms();
 #endif
                     delete mac_header;
                     delete temp_buf;
                 }
-            } else if (currentStatus == DAATR_STATUS_RX && dest_node != 0) {
+            } else if (currentStatus == DAATR_STATUS_RX && dest_node != 0 && dest_node != nodeId) {
                 // cout << "[" << currentSlotId << "R] Node " << nodeId << "<-" << dest_node << endl;
                 // 在执行阶段 收到的内容是 时隙表 和 接收时隙表ACK
             } else {
@@ -452,14 +459,21 @@ void MacDaatr::highFreqSendThread() {
                 // IDLE
             }
         } else if (state_now == Mac_Adjustment_Frequency) {
-            currentStatus = slottable_adjustment[currentSlotId].state;
-            int dest_node = slottable_adjustment[currentSlotId].send_or_recv_node;
+            int dest_node;
+            if (nodeId == mana_node) {
+                currentStatus = slottable_adjustment_mana[currentSlotId].state;
+                dest_node = slottable_adjustment_mana[currentSlotId].send_or_recv_node;
+            } else {
+                currentStatus = slottable_adjustment[currentSlotId].state;
+                dest_node = slottable_adjustment[currentSlotId].send_or_recv_node;
+                dest_node = dest_node != 0 ? mana_node : 0; // 对于普通节点而言 在调整阶段destnode只等于mana_node或0
+            }
 
-            // 在调整阶段的最后一个时隙，将状态切换为 Mac_Execution(保险起见设为倒数第二个)
-            if (currentSlotId == TRAFFIC_SLOT_NUMBER - 2) state_now = Mac_Execution;
+            // 在调整阶段的最后一个时隙，将状态切换为 Mac_Execution(保险起见设为倒数第1个)
+            if (currentSlotId == TRAFFIC_SLOT_NUMBER - 1) state_now = Mac_Execution;
 
-            if (currentStatus == DAATR_STATUS_TX && dest_node != 0) { // TX
-                if (nodeId == mana_node) {                            // 网管节点发送跳频图案
+            if (currentStatus == DAATR_STATUS_TX && dest_node != 0 && dest_node != nodeId) { // TX
+                if (nodeId == mana_node) {                                                   // 网管节点发送跳频图案
                     if (dest_node <= subnet_node_num) {
                         MacHeader *mac_header = new MacHeader;
                         mac_header->PDUtype = 0;
@@ -521,15 +535,16 @@ void MacDaatr::highFreqSendThread() {
                     uint8_t *temp_buf = new uint8_t[len];
                     memcpy(temp_buf, frame_ptr, len);
                     macDaatrSocketHighFreq_Send(temp_buf, len, dest_node); // 此处的的dest_node为待发送时隙表节点
-                    cout << mana_node << "  " << dest_node << "  " << nodeId << endl;
+
+                    // cout << mana_node << "  " << dest_node << "  " << nodeId << endl;
 #ifdef DEBUG_ADJUST
-                    cout << "[调整阶段 " << currentSlotId << "T] Node " << dest_node << " 向网管节点发送跳频图案ACK  ";
+                    cout << "[调整阶段 " << currentSlotId << "T] Node " << nodeId << " 向网管节点发送跳频图案ACK  ";
                     printTime_ms();
 #endif
                     delete mac_header;
                     delete temp_buf;
                 }
-            } else if (currentStatus == DAATR_STATUS_RX && dest_node != 0) {
+            } else if (currentStatus == DAATR_STATUS_RX && dest_node != 0 && dest_node != nodeId) {
                 // cout << "[" << currentSlotId << "R] Node " << nodeId << "<-" << dest_node << endl;
             } else {
                 // cout << "[" << currentSlotId << "IDLE] Node " << nodeId << endl;

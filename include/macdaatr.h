@@ -24,7 +24,7 @@
 
 // 子网信息
 #define SUBNET_NODE_NUMBER_MAX 20                // 子网最大节点数
-#define FREQUENCY_DIVISION_MULTIPLEXING_NUMBER 2 // 子网内通信频分复用允许最大复用数(1/2,向下取整)
+#define FREQUENCY_DIVISION_MULTIPLEXING_NUMBER 1 // 子网内通信频分复用允许最大复用数(1/2,向下取整)
 #define FULL_CONNECTION_NODE_NUMBER 10           // 当前使用的全连接时隙表的节点数
 #define SUBNET_NUM 10                            // 子网数
 #define END_LINK_BUILD_TIME 1000                 // 结束建链阶段时间（单位：ms）
@@ -314,9 +314,10 @@ class MacDaatr {
     uint32_t blTimes;                                     // 已经发送建链请求的数量 与MacHeader seq相关
     uint16_t Forwarding_Table[SUBNET_NODE_NUMBER_MAX][2]; // 转发表
 
-    highFreqSlottableUnit slottable_execution[TRAFFIC_SLOT_NUMBER];                                // 业务信道时隙表(执行阶段)
-    highFreqSlottableUnit slottable_setup[TRAFFIC_SLOT_NUMBER];                                    // 业务信道时隙表(建链阶段)
-    highFreqSlottableUnit slottable_adjustment[TRAFFIC_SLOT_NUMBER];                               // 业务信道时隙表(调整阶段)
+    highFreqSlottableUnit slottable_execution[TRAFFIC_SLOT_NUMBER];  // 业务信道时隙表(执行阶段)
+    highFreqSlottableUnit slottable_setup[TRAFFIC_SLOT_NUMBER];      // 业务信道时隙表(建链阶段)
+    highFreqSlottableUnit slottable_adjustment[TRAFFIC_SLOT_NUMBER]; // 业务信道时隙表(调整阶段)
+    highFreqSlottableUnit slottable_adjustment_mana[TRAFFIC_SLOT_NUMBER];
     highFreqSlottableUnit slot_traffic_execution_new[SUBNET_NODE_NUMBER_MAX][TRAFFIC_SLOT_NUMBER]; // 存储子网内所有节点的业务信道时隙表
 
     highFreqBusinessQueue businessQueue[SUBNET_NODE_NUMBER_MAX]; // 业务信道的待发送队列
@@ -369,6 +370,7 @@ class MacDaatr {
     void LoadSlottable_setup(); // 读取建链阶段时隙表
     void LoadSlottable_Execution();
     void LoadSlottable_Adjustment();
+    void LoadSlottable_Adjustment_ManageNode();
 
     void highFreqSendThread();                                                      // 高频信道发送线程函数
     void macDaatrSocketHighFreq_Send(uint8_t *data, uint32_t len, uint16_t nodeId); // 高频信道Socket发送

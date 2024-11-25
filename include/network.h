@@ -1,8 +1,8 @@
 #ifndef NETWORK_H
 #define NETWORK_H
-#include <list>
-
 #include "common_struct.h"
+#include <list>
+#include <signal.h>
 
 /*
 *
@@ -44,20 +44,16 @@ void timer_callbackUser2(int signum, siginfo_t *si, void *uc);
 
 /*------------------------network_translinkconfig.h------------------------------------*/
 // 传输链路配置模块数据结构
-struct LinkConfigData
-{
-	NodeAddress nodeId;
-	// unsigned char nodeIdentity;
-	vector<vector<nodeNetForwardingTable *>> *netRTtablePtr;
-	list<LinkAssignment *> linkAllocList;
-	// LinkAssignment *linkAssList;
-	//************ 新增链路运行状态***********************
-	unsigned int linkStatus; // 标志链路运行状态
-	//****************************************************
-	LinkConfigData()
-	{
-		this->netRTtablePtr = nullptr;
-	}
+struct LinkConfigData {
+    NodeAddress nodeId;
+    // unsigned char nodeIdentity;
+    vector<vector<nodeNetForwardingTable *>> *netRTtablePtr;
+    list<LinkAssignment *> linkAllocList;
+    // LinkAssignment *linkAssList;
+    //************ 新增链路运行状态***********************
+    unsigned int linkStatus; // 标志链路运行状态
+    //****************************************************
+    LinkConfigData() { this->netRTtablePtr = nullptr; }
 };
 
 void LinkConfigInit(LinkConfigData *linkConfigPtr);
@@ -126,75 +122,67 @@ static const double F = 1.0 / INV_F;
 static const double E2 = 2.0 * F - F * F;
 
 // 自身网络视图存储的一个邻居链路
-struct LinkQuality
-{
-	unsigned int nodeId;
-	float linkUsageRate;
-	unsigned short linkDelay;
-	LinkQuality() {}
-	LinkQuality(unsigned int id) : nodeId(id) {}
+struct LinkQuality {
+    unsigned int nodeId;
+    float linkUsageRate;
+    unsigned short linkDelay;
+    LinkQuality() {}
+    LinkQuality(unsigned int id) : nodeId(id) {}
 };
 
-struct NodeSpeed
-{
-	float speedX;
-	float speedY;
-	float speedZ;
+struct NodeSpeed {
+    float speedX;
+    float speedY;
+    float speedZ;
 };
 
-struct NodePosition1
-{
-	float positionX;
-	float positionY;
-	float positionZ;
+struct NodePosition1 {
+    float positionX;
+    float positionY;
+    float positionZ;
 };
 
 // 自身网络视图存储的一个节点及其邻居
-struct NodeCondition
-{
-	unsigned int nodeId;
+struct NodeCondition {
+    unsigned int nodeId;
 
-	// from route
-	unsigned int nodeType; // 节点身份
-	list<LinkQuality *> neighborList;
-	unsigned int queueLength;
-	unsigned int usedLength;
-	float queueLoadRate;
+    // from route
+    unsigned int nodeType; // 节点身份
+    list<LinkQuality *> neighborList;
+    unsigned int queueLength;
+    unsigned int usedLength;
+    float queueLoadRate;
 
-	// from MAC
-	NodeSpeed thisSpeed;
-	NodePosition1 thisPos;
+    // from MAC
+    NodeSpeed thisSpeed;
+    NodePosition1 thisPos;
 
-	NodeCondition(unsigned int id)
-	{
-		nodeId = id;
-		nodeType = NODENORMAL; // 节点身份构造默认为普通节点
-	}
-	NodeCondition()
-	{
-		nodeType = NODENORMAL; // 节点身份构造默认为普通节点
-	}
+    NodeCondition(unsigned int id) {
+        nodeId = id;
+        nodeType = NODENORMAL; // 节点身份构造默认为普通节点
+    }
+    NodeCondition() {
+        nodeType = NODENORMAL; // 节点身份构造默认为普通节点
+    }
 };
 
 // 网络状态视图模块数据结构
-struct NetViewData
-{
-	unsigned int nodeId;
-	// 群内网络状态视图
-	list<NodeCondition *> netViewList;
+struct NetViewData {
+    unsigned int nodeId;
+    // 群内网络状态视图
+    list<NodeCondition *> netViewList;
 
-	// list<NodeNotification*> nodeResponse;
+    // list<NodeNotification*> nodeResponse;
 
-	FlightStatus *netPosPtr;
-	unsigned int nodeNum; // 指示群内节点数组，用于读位置速度等
+    FlightStatus *netPosPtr;
+    unsigned int nodeNum; // 指示群内节点数组，用于读位置速度等
 
-	// 初始化函数
-	NetViewData()
-	{
-		netPosPtr = NULL;
-		nodeNum = 0;
-		printf("Node init NetView module \n");
-	}
+    // 初始化函数
+    NetViewData() {
+        netPosPtr = NULL;
+        nodeNum = 0;
+        printf("Node init NetView module \n");
+    }
 };
 
 void NetViewInit();
@@ -232,130 +220,118 @@ void HandleIdentityUpdate(NodeNotification *nodeReponseMsgPtr);
 #define e2 (f * (2 - f))
 
 // 更新因子
-struct UpdateFactor
-{
-	unsigned int nodeId;
-	unsigned int groupId;
-	float nodeDistance;
-	float nodeSpeed;
-	float nodePayLoad;
-	float nodePriorityFactor;
+struct UpdateFactor {
+    unsigned int nodeId;
+    unsigned int groupId;
+    float nodeDistance;
+    float nodeSpeed;
+    float nodePayLoad;
+    float nodePriorityFactor;
 
-	UpdateFactor()
-	{
-		nodeId = 0;
-		groupId = 0;
-		nodeDistance = 0.0;
-		nodeSpeed = 0.0;
-		nodePayLoad = 0.0;
-		nodePriorityFactor = 0.0;
-	};
-	// UpdateFactor(unsigned int id):nodeId(id){};
+    UpdateFactor() {
+        nodeId = 0;
+        groupId = 0;
+        nodeDistance = 0.0;
+        nodeSpeed = 0.0;
+        nodePayLoad = 0.0;
+        nodePriorityFactor = 0.0;
+    };
+    // UpdateFactor(unsigned int id):nodeId(id){};
 };
 
-struct Satellite
-{
-	float SATELLITE_longitude;
-	float SATELLITE_latitude;
-	float SATELLITE_high;
-	float SATELLITE_posx;
-	float SATELLITE_posy;
-	float SATELLITE_posz;
-	float SATELLITE_xspeed;
-	float SATELLITE_yspeed;
-	float SATELLITE_zspeed;
+struct Satellite {
+    float SATELLITE_longitude;
+    float SATELLITE_latitude;
+    float SATELLITE_high;
+    float SATELLITE_posx;
+    float SATELLITE_posy;
+    float SATELLITE_posz;
+    float SATELLITE_xspeed;
+    float SATELLITE_yspeed;
+    float SATELLITE_zspeed;
 };
 
-struct LBH_Coordinate
-{
-	float longitude;
-	float latitude;
-	float sate_Height;
+struct LBH_Coordinate {
+    float longitude;
+    float latitude;
+    float sate_Height;
 
-	LBH_Coordinate()
-	{
-		longitude = 0.0;
-		latitude = 0.0;
-		sate_Height = 0.0;
-	}
+    LBH_Coordinate() {
+        longitude = 0.0;
+        latitude = 0.0;
+        sate_Height = 0.0;
+    }
 };
 
-struct SatebasedUpd_Factor
-{
-	unsigned int nodeId;
-	unsigned int groupId;
-	float covertime;
-	SatebasedUpd_Factor()
-	{
-		nodeId = 0;
-		groupId = 0;
-		covertime = 0.0;
-	}
+struct SatebasedUpd_Factor {
+    unsigned int nodeId;
+    unsigned int groupId;
+    float covertime;
+    SatebasedUpd_Factor() {
+        nodeId = 0;
+        groupId = 0;
+        covertime = 0.0;
+    }
 };
 
 // 新加身份通知改为广播 && 身份通知合并
 // 身份配置模块的数据结构（存储的临时变量，以及没有通知全网的身份）
-struct IdentityData
-{
-	unsigned int nodeId;
-	// 最新一轮群内身份temp
-	unsigned int groupID_Temp;
-	unsigned int mastercontrol_Temp;				// 总控制节点
-	unsigned int reservemastercontrol_Temp;			// 总控制节点备份
-	unsigned int intragroupcontrol_Temp;			// 所属群控制节点ID
-	unsigned int reserveintracontrol_Temp;			// 所属群备用控制
-	unsigned int timereference_Temp;				// 时间基准网关
-	unsigned int reservetimereference_Temp;			// 备用时间基准网关
-	unsigned int intergroupgateway_Temp;			// 所属群网关节点ID
-	unsigned int reserveintergroupgateway_Temp;		// 所属群备用网关
-	unsigned int satellitebasedgateway_Temp;		// 所属群星基网关
-	unsigned int reservesatellitebasedgateway_Temp; // 所属群备用星基网关
-	// 新加 身份配置信息状态指示
-	unsigned int SerialNum; // 当前本轮待广播身份序列号
-	bool IsBroadcast;		// 是否广播成功
-	// 新加 确定真实群节点数目
-	unsigned int nodeNumInGroup; // 初始定义为群最大节点数目
-	// 新加 毁伤
-	list<NodeAddress> damaged_Processed; // 已处理毁伤列表
-	list<NodeAddress> damaged_Pending;	 // 待处理毁伤列表
-	// 新增 群内网络状态视图
-	list<NodeCondition *> netViewList;
-	// 新增 计算更新时间
-	clocktype Identity_Trigger;		// 触发身份开始计算的时间
-	clocktype delay_IdentityUpdate; // 身份更新完成的时间
-	bool Is_IdentityUpdate;			// 关键节点身份是否变化
-	// 新增测试
-	vector<NodeAddress> damagedTest;
-	// 新增 判断是否进行了身份计算
-	bool If_calculated;
-	// 新增 记录路由表全体成员
-	vector<NodeAddress> *netNodes;
+struct IdentityData {
+    unsigned int nodeId;
+    // 最新一轮群内身份temp
+    unsigned int groupID_Temp;
+    unsigned int mastercontrol_Temp;                // 总控制节点
+    unsigned int reservemastercontrol_Temp;         // 总控制节点备份
+    unsigned int intragroupcontrol_Temp;            // 所属群控制节点ID
+    unsigned int reserveintracontrol_Temp;          // 所属群备用控制
+    unsigned int timereference_Temp;                // 时间基准网关
+    unsigned int reservetimereference_Temp;         // 备用时间基准网关
+    unsigned int intergroupgateway_Temp;            // 所属群网关节点ID
+    unsigned int reserveintergroupgateway_Temp;     // 所属群备用网关
+    unsigned int satellitebasedgateway_Temp;        // 所属群星基网关
+    unsigned int reservesatellitebasedgateway_Temp; // 所属群备用星基网关
+    // 新加 身份配置信息状态指示
+    unsigned int SerialNum; // 当前本轮待广播身份序列号
+    bool IsBroadcast;       // 是否广播成功
+    // 新加 确定真实群节点数目
+    unsigned int nodeNumInGroup; // 初始定义为群最大节点数目
+    // 新加 毁伤
+    list<NodeAddress> damaged_Processed; // 已处理毁伤列表
+    list<NodeAddress> damaged_Pending;   // 待处理毁伤列表
+    // 新增 群内网络状态视图
+    list<NodeCondition *> netViewList;
+    // 新增 计算更新时间
+    clocktype Identity_Trigger;     // 触发身份开始计算的时间
+    clocktype delay_IdentityUpdate; // 身份更新完成的时间
+    bool Is_IdentityUpdate;         // 关键节点身份是否变化
+    // 新增测试
+    vector<NodeAddress> damagedTest;
+    // 新增 判断是否进行了身份计算
+    bool If_calculated;
+    // 新增 记录路由表全体成员
+    vector<NodeAddress> *netNodes;
 
-	// 初始化函数
-	IdentityData()
-	{
-		groupID_Temp = 0;
-		mastercontrol_Temp = 0;
-		reservemastercontrol_Temp = 0;
-		intragroupcontrol_Temp = 0;
-		reserveintracontrol_Temp = 0;
-		timereference_Temp = 0;
-		reservetimereference_Temp = 0;
-		intergroupgateway_Temp = 0;
-		reserveintergroupgateway_Temp = 0;
-		satellitebasedgateway_Temp = 0;
-		reservesatellitebasedgateway_Temp = 0;
-		SerialNum = 0;
-		IsBroadcast = true;
-		nodeNumInGroup = NODENUMINGROUP;
-		If_calculated = false;
-		netNodes = nullptr;
-	}
-	//********************意外退出了，百度说查析构，暂加一个析构函数********
-	~IdentityData()
-	{
-		cout << "IdentityData 析构函数调用 " << endl;
-	}
+    // 初始化函数
+    IdentityData() {
+        groupID_Temp = 0;
+        mastercontrol_Temp = 0;
+        reservemastercontrol_Temp = 0;
+        intragroupcontrol_Temp = 0;
+        reserveintracontrol_Temp = 0;
+        timereference_Temp = 0;
+        reservetimereference_Temp = 0;
+        intergroupgateway_Temp = 0;
+        reserveintergroupgateway_Temp = 0;
+        satellitebasedgateway_Temp = 0;
+        reservesatellitebasedgateway_Temp = 0;
+        SerialNum = 0;
+        IsBroadcast = true;
+        nodeNumInGroup = NODENUMINGROUP;
+        If_calculated = false;
+        netNodes = nullptr;
+    }
+    //********************意外退出了，百度说查析构，暂加一个析构函数********
+    ~IdentityData() { cout << "IdentityData 析构函数调用 " << endl; }
 };
 
 void NetUpdateAndMaintenanceInit(); // 起始化
@@ -368,9 +344,11 @@ void IntraGroupUpdate(); // 节点身份主要更新函数
 
 void ReceiveAMsgFromOtherNodes(char *msgPtr); // 节点接收数据包的函数
 
-void ReceiveDamagedNodesmsg(const vector<uint8_t> &DamagedNodeMsgPtr); /// 接收传过来的损毁节点信息并在当前节点进行删除无身份节点并向新的控制节点传送该消息
+void ReceiveDamagedNodesmsg(
+    const vector<uint8_t> &DamagedNodeMsgPtr); /// 接收传过来的损毁节点信息并在当前节点进行删除无身份节点并向新的控制节点传送该消息
 
-void ControlNodeDealWithDamage(msgFromControl *controlMsgPtr); // 新的控制节点接收到整理后的消息，进行一个去重复和转移相关有身份节点的操作?  目前的问题什么时候传送
+void ControlNodeDealWithDamage(
+    msgFromControl *controlMsgPtr); // 新的控制节点接收到整理后的消息，进行一个去重复和转移相关有身份节点的操作?  目前的问题什么时候传送
 
 bool sortByNodePriorityFactor(UpdateFactor node1, UpdateFactor node2); // 按照优先级排序
 

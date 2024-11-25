@@ -522,7 +522,8 @@ void lowFreqSendThread() {
                         if (daatr_str.state_now != Mac_Adjustment_Slot && daatr_str.state_now != Mac_Adjustment_Frequency) {
                             // 若当前状态不为时隙调整阶段且不为时隙调整阶段
                             state = 1;
-                            cout << "网管节点改变自己节点 state_now 为 Adjustment_Slot" << endl;
+                            cout << "网管节点改变自己节点 state_now 为 Adjustment_Slot  ";
+                            printTime_ms();
                             daatr_str.state_now = Mac_Adjustment_Slot; // 调整网管节点（本节点）为时隙调整阶段
                             daatr_str.need_change_state = 0;           // 已转变状态, 状态位复原
                             daatr_str.receivedSlottableTimes++;        // 初始未收到时隙表
@@ -531,7 +532,8 @@ void lowFreqSendThread() {
                         if (daatr_str.state_now != Mac_Adjustment_Slot && daatr_str.state_now != Mac_Adjustment_Frequency) {
                             // 若当前状态不为时隙调整阶段且不为时隙调整阶段
                             state = 2;
-                            cout << "网管节点改变自己节点 state_now 为 Mac_Adjustment_Frequency" << endl;
+                            cout << "网管节点改变自己节点 state_now 为 Mac_Adjustment_Frequency ";
+                            printTime_ms();
                             daatr_str.state_now = Mac_Adjustment_Frequency; // 调整网管节点（本节点）为频率调整阶段
                             daatr_str.need_change_state = 0;                // 已转变状态, 状态位复原
                             daatr_str.has_received_sequence = false;
@@ -622,6 +624,7 @@ void lowFreqSendThread() {
                         delete mac_header2_ptr;
                         writeInfo("身份配置信息已发送，通知网络层");
                         cout << "身份配置信息已发送，通知网络层" << endl;
+
                         // 向网络层通知全网通告消息已发送
                         if (eventType == 1) {
                             IdentityStatus *identityMessage = new IdentityStatus();

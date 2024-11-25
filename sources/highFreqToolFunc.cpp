@@ -361,10 +361,8 @@ void ReAllocate_Traffic_slottable(MacDaatr *macdata_daatr, vector<Alloc_slot_tra
         }
 
         Calculate_slotnum_per_frame(macdata_daatr, la); // 计算LA_single的时隙数
-        // cout << "data_slot_per_frame: " << (*la).data_slot_per_frame << endl;
 
-        if (Judge_If_Include_Gateway(macdata_daatr, la)) // 包含
-        {
+        if (Judge_If_Include_Gateway(macdata_daatr, la)) { // 包含
             m = 0;
             for (j = 0; j <= TRAFFIC_SLOT_NUMBER - 20; j += 20) {
                 for (k = 0; k < 8; k++) {
@@ -409,8 +407,7 @@ void ReAllocate_Traffic_slottable(MacDaatr *macdata_daatr, vector<Alloc_slot_tra
                     break;
                 }
             }
-        } else // 不包含网关节点
-        {
+        } else {   // 不包含网关节点
             m = 0; // m作为已分配时隙数
             for (j = 0; j < TRAFFIC_SLOT_NUMBER; j++) {
                 if (Judge_If_Choose_Slot(la, &Alloc_slottable_traffic[j], 1)) {
@@ -435,7 +432,6 @@ void ReAllocate_Traffic_slottable(MacDaatr *macdata_daatr, vector<Alloc_slot_tra
     // Full Multiplexing
     vector<int> node_pair_1; // 1 是非子网间时隙的分配结果
     vector<int> node_pair_2; // 2 是8-15时隙
-    // srand((unsigned)time(NULL));
 
     for (i = 0; i < TRAFFIC_SLOT_NUMBER; i++) {
         vector<int>().swap(node_pair_1);
@@ -444,15 +440,14 @@ void ReAllocate_Traffic_slottable(MacDaatr *macdata_daatr, vector<Alloc_slot_tra
         if (Alloc_slottable_traffic[i].multiplexing_num == FREQUENCY_DIVISION_MULTIPLEXING_NUMBER) // 此时隙未分配任何链路
         {
             node_pair_1.push_back(macdata_daatr->mana_node);
-            if (macdata_daatr->gateway_node != 0) {
+            if (macdata_daatr->gateway_node != 0 && macdata_daatr->gateway_node <= macdata_daatr->subnet_node_num) {
                 node_pair_1.push_back(macdata_daatr->gateway_node);
             }
-            if (macdata_daatr->standby_gateway_node != 0) {
+            if (macdata_daatr->standby_gateway_node != 0 && macdata_daatr->standby_gateway_node <= macdata_daatr->subnet_node_num) {
                 node_pair_1.push_back(macdata_daatr->standby_gateway_node);
             }
 
             node_pair_2.push_back(macdata_daatr->mana_node);
-
             for (int ii = 1; ii <= macdata_daatr->subnet_node_num; ii++) {
                 if (ii != macdata_daatr->mana_node && ii != macdata_daatr->gateway_node && ii != macdata_daatr->standby_gateway_node) {
                     node_pair_1.push_back(ii);
@@ -692,7 +687,7 @@ void generateSlottableExecution(MacDaatr *macdata_daatr) {
 
         // 生成射前时隙表
         int dest_node;
-        cout << "网管节点生成子网时隙表" << endl;
+        cout << "\n网管节点生成子网时隙表" << endl;
         for (dest_node = 1; dest_node <= macdata_daatr->subnet_node_num; dest_node++) {
             ofstream fout1, fout2;
             string stlotable_state_filename =
@@ -703,7 +698,6 @@ void generateSlottableExecution(MacDaatr *macdata_daatr) {
             fout2.open(stlotable_node_filename);
 
             if (!fout1.is_open()) cout << "Could Not Open Execution File1" << endl;
-
             if (!fout2.is_open()) cout << "Could Not Open Execution File2" << endl;
 
             for (int i = 0; i < TRAFFIC_SLOT_NUMBER; i++) {

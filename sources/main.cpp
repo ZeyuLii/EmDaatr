@@ -15,12 +15,10 @@
 #include "high_freq_channel.h"
 #include "low_freq_channel.h"
 #include "macdaatr.h"
+#include "network.h"
 #include "routing_mmanet.h"
 #include "socket_control.h"
 #include "timer.h"
-//
-#include "network.h"
-#include "routing_mmanet.h"
 
 using namespace std;
 
@@ -32,6 +30,7 @@ ringBuffer RoutingTomac_Buffer; // 网络层->MAC缓存队列
 ringBuffer macToRouting_buffer; // MAC->网络层缓存队列
 ringBuffer netToRouting_buffer;
 ringBuffer svcToRouting_buffer;
+
 // network模块所需的循环缓冲区
 ringBuffer svcToNet_buffer;
 ringBuffer macToNet_buffer; // MAC->路由缓存队列
@@ -100,18 +99,19 @@ int main(int argc, char *argv[]) {
     pthread_t routingReceiveFromSvc, routingReceiveFromNet, routingReceiveFromMac;
     pthread_create(&routingReceiveFromMac, NULL, RoutingReceiveFromMac, NULL);
     pthread_create(&routingReceiveFromNet, NULL, RoutingReceiveFromNet, NULL);
-    // pthread_create(&routingReceiveFromSvc, NULL, RoutingReceiveFromSvc, NULL);
+    pthread_create(&routingReceiveFromSvc, NULL, RoutingReceiveFromSvc, NULL);
 
     // 创建network模块多线程
     pthread_t netReceiveFromSvc, netReceiveFromRouting, netReceiveFromMac;
     pthread_create(&netReceiveFromMac, NULL, NetReceiveFromMac, NULL);
     pthread_create(&netReceiveFromRouting, NULL, NetReceiveFromRouting, NULL);
-    // pthread_create(&netReceiveFromSvc, NULL, NetReceiveFromSvc, NULL);
+    pthread_create(&netReceiveFromSvc, NULL, NetReceiveFromSvc, NULL);
 
     timeInit();
     cout << "等待同步信号" << endl;
-    // pthread_t SvcToAllt;
-    // pthread_create(&SvcToAllt, NULL, SvcToAll, NULL);
+
+    pthread_t SvcToAllt;
+    pthread_create(&SvcToAllt, NULL, SvcToAll, NULL);
 
     // SetTimer(0, 1, 1);
     lowRecvThread.join();
@@ -120,14 +120,14 @@ int main(int argc, char *argv[]) {
     highRecvThread.join();
     highSendThread.join();
 
-    // pthread_join(routingReceiveFromSvc, NULL);
+    pthread_join(routingReceiveFromSvc, NULL);
     pthread_join(routingReceiveFromNet, NULL);
     pthread_join(routingReceiveFromMac, NULL);
-    // pthread_join(netReceiveFromSvc, NULL);
+    pthread_join(netReceiveFromSvc, NULL);
     pthread_join(netReceiveFromRouting, NULL);
     pthread_join(netReceiveFromMac, NULL);
 
-    // pthread_join(SvcToAllt, NULL);
+    pthread_join(SvcToAllt, NULL);
 
     delete mmanet;
     delete linkConfigPtr;
@@ -136,7 +136,7 @@ int main(int argc, char *argv[]) {
     delete netViewPtr;
 
     sleep(1);
-    cout << simInfoPosition << "    " << over_count << "    " << PPS_overcount << endl;
+    // cout << simInfoPosition << "    " << over_count << "    " << PPS_overcount << endl;
 
     // 将仿真数据写入文件
     char filePath[50];
