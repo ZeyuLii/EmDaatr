@@ -1,20 +1,17 @@
+#include <fcntl.h>
 #include <fstream>
+#include <pthread.h>
 #include <sstream>
-#include <thread>
-#include <unistd.h>
+#include <string>
+#include <sys/stat.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <sys/time.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <string>
-#include <pthread.h>
+#include <thread>
+#include <unistd.h>
 
-#include "timer.h"
-#include "macdaatr.h"
 #include "common_struct.h"
 #include "daatr_control.h"
-<<<<<<< Updated upstream
 #include "high_freq_channel.h"
 #include "low_freq_channel.h"
 #include "macdaatr.h"
@@ -22,15 +19,6 @@
 #include "routing_mmanet.h"
 #include "socket_control.h"
 #include "timer.h"
-=======
-#include "socket_control.h"
-#include "low_freq_channel.h"
-#include "high_freq_channel.h"
-#include "routing_mmanet.h"
-//
-#include "routing_mmanet.h"
-#include "network.h"
->>>>>>> Stashed changes
 
 using namespace std;
 
@@ -54,8 +42,7 @@ IdentityData *IdentityPtr;             // 用于维护IdentityData结构体
 NodeNotification *nodeNotificationPtr; // 用于存储节点内向其他层传播的节点身份
 NetViewData *netViewPtr;               // 用于维护网络状态视图数据结构
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     system("clear");
     system("source ./rm.sh");
 
@@ -88,8 +75,7 @@ int main(int argc, char *argv[])
     struct sched_param param;
     policy = SCHED_RR;         // 使用实时调度策略
     param.sched_priority = 20; // 设置优先级，值越高优先级越高
-    if (pthread_setschedparam(tid, policy, &param) != 0)
-    {
+    if (pthread_setschedparam(tid, policy, &param) != 0) {
         perror("pthread_setschedparam");
         exit(EXIT_FAILURE);
     }
@@ -121,10 +107,6 @@ int main(int argc, char *argv[])
 
     timeInit();
     cout << "等待同步信号" << endl;
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes
     pthread_t SvcToAllt;
     pthread_create(&SvcToAllt, NULL, SvcToAll, NULL);
 
@@ -158,11 +140,9 @@ int main(int argc, char *argv[])
     sprintf(filePath, "./res/NODE%d.txt", id);
     int file = open(filePath, O_CREAT | O_TRUNC | O_WRONLY);
 
-    if (!file)
-        cout << "文件打开错误" << endl;
+    if (!file) cout << "文件打开错误" << endl;
 
-    for (int j = 0; j < simInfoPosition; j++)
-    {
+    for (int j = 0; j < simInfoPosition; j++) {
         write(file, simInfo[j], strlen(simInfo[j]));
     }
 

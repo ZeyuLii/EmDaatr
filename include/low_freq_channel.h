@@ -3,6 +3,7 @@
 
 // std::mutex lowthreadmutex;
 // std::condition_variable lowthreadcondition_variable;
+#include "macdaatr.h"
 
 void lowFreqSendThread();
 bool MacDaatNetworkHasLowFreqChannelPacketToSend(msgFromControl *busin, MacDaatr *macdata_daatr);
