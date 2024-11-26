@@ -1,17 +1,17 @@
-#include "low_freq_channel.h"
-#include "beam_maintenance.h"
-#include "common_struct.h"
-#include "highFreqToolFunc.h"
 #include "macdaatr.h"
+#include "low_freq_channel.h"
+#include "common_struct.h"
 #include "socket_control.h"
 #include "struct_converter.h"
+#include "beam_maintenance.h"
+#include "highFreqToolFunc.h"
 #include "timer.h"
 
 #include <string.h>
 
+#include <stdlib.h>
 #include <stddef.h>
 #include <stdio.h>
-#include <stdlib.h>
 using namespace std;
 int bus_count = 0;
 /*****************************此文件主要包含对低频信道通信相关函数实现******************************/
@@ -22,7 +22,8 @@ int bus_count = 0;
  * @param macdata_daatr 指向MAC数据模块数据结构的指针，包含业务队列信息
  * @return 返回true表示成功找到空闲队列位置并添加了业务，返回false表示业务队列已满无法添加新业务
  */
-bool MacDaatr::MacDaatNetworkHasLowFreqChannelPacketToSend(msgFromControl *busin) {
+bool MacDaatr::MacDaatNetworkHasLowFreqChannelPacketToSend(msgFromControl *busin)
+{
     int i = 0;
     int j = 0;
     int flag = 0; // 表征是否成功将busin插入业务队列
@@ -32,8 +33,10 @@ bool MacDaatr::MacDaatNetworkHasLowFreqChannelPacketToSend(msgFromControl *busin
     unsigned int eventType = ((*data_control)[3] << 8) | (*data_control)[4];
     // cout << "cur_packet_type is  " << cur_packet_type << "    eventType is " << eventType << endl;
     lock_mana_channel.lock();
-    for (i = 0; i < MANA_MAX_BUSINESS_NUMBER; i++) {
-        if (low_freq_channel_business_queue[i].state == 0) {        // 此队列对应位置没有被占用
+    for (i = 0; i < MANA_MAX_BUSINESS_NUMBER; i++)
+    {
+        if (low_freq_channel_business_queue[i].state == 0)
+        {                                                           // 此队列对应位置没有被占用
             low_freq_channel_business_queue[i].busin_data = *busin; // 将此业务添加进队列
             low_freq_channel_business_queue[i].state = 1;           // 将此队列位置占用
             flag = 1;                                               // 证明已添加队列
@@ -43,7 +46,8 @@ bool MacDaatr::MacDaatNetworkHasLowFreqChannelPacketToSend(msgFromControl *busin
             break;
         }
     }
-    if (flag == 0) {
+    if (flag == 0)
+    {
         cout << "网管信道队列已满" << endl;
     }
     // delete busin;//删除发送的业务内存空间（？是否需要删除）
@@ -52,11 +56,14 @@ bool MacDaatr::MacDaatNetworkHasLowFreqChannelPacketToSend(msgFromControl *busin
 }
 
 // 搜寻对应节点时隙位置
-static vector<uint8_t> *MacDaatrSearchSlotLocation(int nodeId, MacDaatr *macdata_daatr) {
+static vector<uint8_t> *MacDaatrSearchSlotLocation(int nodeId, MacDaatr *macdata_daatr)
+{
     int i = 0;
     vector<uint8_t> *slot_location = new vector<uint8_t>;
-    for (i = 0; i < MANAGEMENT_SLOT_NUMBER_OTHER_STAGE; i++) {
-        if (macdata_daatr->low_freq_other_stage_slot_table[i].nodeId == nodeId) {
+    for (i = 0; i < MANAGEMENT_SLOT_NUMBER_OTHER_STAGE; i++)
+    {
+        if (macdata_daatr->low_freq_other_stage_slot_table[i].nodeId == nodeId)
+        {
             slot_location->push_back(i);
         }
     }
@@ -74,13 +81,16 @@ static vector<uint8_t> *MacDaatrSearchSlotLocation(int nodeId, MacDaatr *macdata
  * 向前移动一位，以腾出空间并保持队列的有序性。如果队列为空，则不进行
  * 任何操作并返回false。
  */
-bool MacDaatr::getLowChannelBusinessFromQueue(msgFromControl *busin) {
+bool MacDaatr::getLowChannelBusinessFromQueue(msgFromControl *busin)
+{
     int i = 0;
     bool flag = false;
     lock_mana_channel.lock();
-    if (low_freq_channel_business_queue[i].state == 1) {        // 证明当前队列有业务
+    if (low_freq_channel_business_queue[i].state == 1)
+    {                                                           // 证明当前队列有业务
         *busin = low_freq_channel_business_queue[i].busin_data; // 将当前队列中的业务赋值给输入的空白业务
-        for (i = 0; i < MANA_MAX_BUSINESS_NUMBER - 1; i++) {    // 将当前业务队列中的业务前移一位
+        for (i = 0; i < MANA_MAX_BUSINESS_NUMBER - 1; i++)
+        { // 将当前业务队列中的业务前移一位
             low_freq_channel_business_queue[i] = low_freq_channel_business_queue[i + 1];
         }
         low_freq_channel_business_queue[MANA_MAX_BUSINESS_NUMBER - 1].state = 0; // 队列尾清空
@@ -89,7 +99,9 @@ bool MacDaatr::getLowChannelBusinessFromQueue(msgFromControl *busin) {
         //  cout << "已成功从网管信道队列中取出业务,"
         //       << "目的地址为：" << busin->destAddr << endl;
         flag = true;
-    } else {
+    }
+    else
+    {
         // cout << "网管信道队列业务为空" << endl;
         writeInfo("网管信道队列业务为空");
     }
@@ -97,7 +109,8 @@ bool MacDaatr::getLowChannelBusinessFromQueue(msgFromControl *busin) {
     return flag;
 }
 
-void MacDaatr::clearBusiness() {
+void MacDaatr::clearBusiness()
+{
     lock_mana_channel.lock();
     for (int i = 0; i < MANA_MAX_BUSINESS_NUMBER; i++)
         low_freq_channel_business_queue[i].state = 0;
@@ -110,7 +123,8 @@ void MacDaatr::clearBusiness() {
 //     if (!daatr_str.flag_mana_access_reply)
 //         daatr_str.access_state = DAATR_NEED_ACCESS;
 // }
-static void judgeIfBackToAccessAccessReply() {
+static void judgeIfBackToAccessAccessReply()
+{
     extern MacDaatr daatr_str;
     if (daatr_str.access_state == DAATR_HAS_SENT_ACCESS_REQUEST) // 断开节点已发送接入请求
     {                                                            // 如果节点尚未收到网管节点请求接入回复
@@ -121,10 +135,12 @@ static void judgeIfBackToAccessAccessReply() {
         daatr_str.access_backoff_number = num;
     }
 }
-static void judgeIfBackToAccessFrequencyParttern() {
+static void judgeIfBackToAccessFrequencyParttern()
+{
     extern MacDaatr daatr_str;
 
-    if (daatr_str.access_state == DAATR_WAITING_TO_ACCESS) { // 如果节点已收到同意接入, 但是未收到全网跳频图案, 此时可能出现丢包, 重新进入接入状态
+    if (daatr_str.access_state == DAATR_WAITING_TO_ACCESS)
+    { // 如果节点已收到同意接入, 但是未收到全网跳频图案, 此时可能出现丢包, 重新进入接入状态
         cout << "Node " << daatr_str.nodeId << " ";
         cout << "等待全网跳频图案接收时间时间超过阈值, 重新进入接入状态" << endl;
         daatr_str.access_state = DAATR_NEED_ACCESS;
@@ -133,7 +149,8 @@ static void judgeIfBackToAccessFrequencyParttern() {
 
 // 低频信道 发送线程 每20ms被调用一次
 // 在调用的时候查看当前的状态信息
-void lowFreqSendThread() {
+void lowFreqSendThread()
+{
     extern MacDaatr daatr_str;
     extern bool end_simulation;
     MacState state_now = daatr_str.state_now;
@@ -149,43 +166,55 @@ void lowFreqSendThread() {
     struct sched_param param;
     policy = SCHED_RR;         // 使用实时调度策略
     param.sched_priority = 10; // 设置优先级，值越高优先级越高
-    if (pthread_setschedparam(tid, policy, &param) != 0) {
+    if (pthread_setschedparam(tid, policy, &param) != 0)
+    {
         perror("pthread_setschedparam");
         exit(EXIT_FAILURE);
     }
     //...........................//
 
-    while (1) {
+    while (1)
+    {
         daatr_str.lowthreadcondition_variable.wait(lowthreadlock);
         writeInfo("时隙:%2d---------------------------------------------------------------------", daatr_str.low_slottable_should_read);
         state_now = daatr_str.state_now;
         int slot_num = daatr_str.low_slottable_should_read;
         daatr_str.low_slottable_should_read++;
-        if (state_now == Mac_Initialization) {               // 建链阶段
-            if (daatr_str.low_slottable_should_read == 25) { // 经过一帧
+        if (state_now == Mac_Initialization)
+        { // 建链阶段
+            if (daatr_str.low_slottable_should_read == 25)
+            { // 经过一帧
                 daatr_str.low_slottable_should_read = 0;
             }
-        } else {
-            if (daatr_str.low_slottable_should_read == 50) { // 经过一帧
+        }
+        else
+        {
+            if (daatr_str.low_slottable_should_read == 50)
+            { // 经过一帧
                 daatr_str.low_slottable_should_read = 0;
             }
         }
 
         // 读取频谱感知结果
-        if (file_open_flag && timeadd == 300) {
+        if (file_open_flag && timeadd == 300)
+        {
             char filePath[100];
             char spec_temp_buffer[TOTAL_FREQ_POINT + 1] = {0};
             sprintf(filePath, "/nfs/Spectrum_sensing/NODE%d/time%d.txt", daatr_str.nodeId, file_open_time);
             Spectrum_sensing_file = open(filePath, O_RDONLY);
 
-            if (!Spectrum_sensing_file) file_open_flag = 0;
+            if (!Spectrum_sensing_file)
+                file_open_flag = 0;
 
-            if (file_open_flag) {
+            if (file_open_flag)
+            {
                 int resnum = read(Spectrum_sensing_file, spec_temp_buffer, TOTAL_FREQ_POINT + 1);
-                if (resnum == -1) {
+                if (resnum == -1)
+                {
                     perror("read()");
                 }
-                for (int i = 0; i < TOTAL_FREQ_POINT; i++) {
+                for (int i = 0; i < TOTAL_FREQ_POINT; i++)
+                {
                     if (spec_temp_buffer[i] == '0')
                         daatr_str.spectrum_sensing_node[i] = 0;
                     else
@@ -195,14 +224,16 @@ void lowFreqSendThread() {
                 file_open_time++;
                 timeadd = 0;
 
-                if (daatr_str.nodeId != daatr_str.mana_node) {
+                if (daatr_str.nodeId != daatr_str.mana_node)
+                {
                     MacDaatr_struct_converter mac_converter_Spec(5);
                     mac_converter_Spec.set_struct((uint8_t *)daatr_str.spectrum_sensing_node, 5);
                     mac_converter_Spec.daatr_freq_sense_to_0_1();
                     uint8_t *bit_seq = mac_converter_Spec.get_sequence(); // 63 byte
 
                     vector<uint8_t> *SpecData = new vector<uint8_t>;
-                    for (int i = 0; i < 63; i++) {
+                    for (int i = 0; i < 63; i++)
+                    {
                         SpecData->push_back(bit_seq[i]);
                     }
 
@@ -218,13 +249,16 @@ void lowFreqSendThread() {
 
                     // cout << "节点 " << daatr_str.nodeId << " 将结果存入业务队列中" << endl;
                     daatr_str.MAC_NetworkLayerHasPacketToSend(MFC_temp); // 将此业务添加进业务信道队列
-                } else {
+                }
+                else
+                {
                     for (int i = 0; i < TOTAL_FREQ_POINT; i++)
                         daatr_str.spectrum_sensing_sum[daatr_str.mana_node - 1][i] = daatr_str.spectrum_sensing_node[i];
                 }
 
                 // 只有网管节点会对频域调整阶段进行判定
-                if (daatr_str.nodeId == daatr_str.mana_node) {
+                if (daatr_str.nodeId == daatr_str.mana_node)
+                {
                     judgeIfEnterFreqAdjustment(&daatr_str);
                 }
             }
@@ -232,9 +266,11 @@ void lowFreqSendThread() {
             _writeInfo(0, "当前频谱感知结果为:\n");
             char temp[TOTAL_FREQ_POINT];
             int count = 0;
-            for (int i = 1; i < TOTAL_FREQ_POINT + 1; i++) {
+            for (int i = 1; i < TOTAL_FREQ_POINT + 1; i++)
+            {
                 count += sprintf(temp + count, "%d", daatr_str.spectrum_sensing_node[i - 1]);
-                if (i % 100 == 0 || i == TOTAL_FREQ_POINT) {
+                if (i % 100 == 0 || i == TOTAL_FREQ_POINT)
+                {
                     sprintf(temp + count, "\n");
                     _writeInfo(0, temp);
                     memset(temp, 0, TOTAL_FREQ_POINT);
@@ -244,19 +280,23 @@ void lowFreqSendThread() {
         }
         timeadd++;
 
-        if (!daatr_str.isValid) {
+        if (!daatr_str.isValid)
+        {
             daatr_str.clearBusiness();
             continue;
         }
 
-        if (state_now == Mac_Initialization) {               // 建链阶段
-            if (daatr_str.low_slottable_should_read == 25) { // 经过一帧
-                daatr_str.low_slottable_should_read = 0;
-            }
+        if (state_now == Mac_Initialization)
+        { // 建链阶段
+            // if (daatr_str.low_slottable_should_read == 25)
+            // { // 经过一帧
+            //     daatr_str.low_slottable_should_read = 0;
+            // }
             // 向物理层发送信道参数
 
             if (daatr_str.low_freq_link_build_slot_table[slot_num].nodeId == daatr_str.nodeId &&
-                daatr_str.low_freq_link_build_slot_table[slot_num].state == DAATR_STATUS_FLIGHTSTATUS_SEND) { // 飞行状态信息广播时隙
+                daatr_str.low_freq_link_build_slot_table[slot_num].state == DAATR_STATUS_FLIGHTSTATUS_SEND)
+            { // 飞行状态信息广播时隙
                 MacHeader2 *mac_header2_ptr = new MacHeader2;
                 // macpacket_daatr1.mac_header = new MacHeader;
                 mac_header2_ptr->PDUtype = 1;
@@ -267,9 +307,12 @@ void lowFreqSendThread() {
                 mac_header2_ptr->fragment_tail_identification = 1; // 分片尾标识
                 FlightStatus flight_sta = daatr_str.local_node_position_info;
                 Low_Freq_Packet_Type packet_type;
-                if (daatr_str.node_type != Node_Management) {
+                if (daatr_str.node_type != Node_Management)
+                {
                     packet_type.type = 4; // 普通节点飞行状态信息通告
-                } else {
+                }
+                else
+                {
                     packet_type.type = 5; // 网管节点飞行状态信息通告
                 }
                 MacDaatr_struct_converter mac_converter1(2); // PDU2
@@ -293,35 +336,45 @@ void lowFreqSendThread() {
                 printTime_ms();
                 delete temp_buf;
                 delete mac_header2_ptr;
-            } else { // 接收，向物理层发送信道参数
             }
-        } else { // 非建链阶段
+            else
+            { // 接收，向物理层发送信道参数
+            }
+        }
+        else
+        { // 非建链阶段
 
-            if (daatr_str.low_slottable_should_read == 50) { // 经过一帧
-                daatr_str.low_slottable_should_read = 0;
-            }
+            // if (daatr_str.low_slottable_should_read == 50)
+            // { // 经过一帧
+            //     daatr_str.low_slottable_should_read = 0;
+            // }
             // 向物理层发送信道参数
 
             // cout << "[CtrlMsg] 当前节点身份为 " << daatr_str.node_type;
             // printTime_ms();
 
             if (daatr_str.low_freq_other_stage_slot_table[slot_num].nodeId == daatr_str.nodeId ||
-                daatr_str.low_freq_other_stage_slot_table[slot_num].state ==
-                    DAATR_STATUS_ACCESS_REQUEST) { // 如果此时隙是本节点发送时隙，或者是接入请求时隙
+                daatr_str.low_freq_other_stage_slot_table[slot_num].state == DAATR_STATUS_ACCESS_REQUEST)
+            { // 如果此时隙是本节点发送时隙，或者是接入请求时隙
                 uint16_t slot_state = daatr_str.low_freq_other_stage_slot_table[slot_num].state;
                 // cout << "Enter Here  " << slot_num << " ";
                 // cout << slot_state << "  " << daatr_str.low_freq_other_stage_slot_table[slot_num].nodeId << endl;
 
-                switch (slot_state) {
-                case DAATR_STATUS_ACCESS_REQUEST: {          // 接入请求
-                    if (daatr_str.state_now != Mac_Access) { // 节点未处于接入状态, 不需要广播接入请求
-                                                             // printTime_ms(); // 打印时间
-                                                             //   cout << "[接入广播-MANA] Node ID " << node->nodeId << " 未处于接入状态,
-                                                             //   非建链阶段不需要广播 网管信道 接入请求 "; cout << "Time : " << time << "ms" << endl;
-                                                             // temp_Management_Channel_Information.SendOrReceive = 2;
-                    } else if (daatr_str.access_state == DAATR_NEED_ACCESS &&
-                               daatr_str.state_now == Mac_Access) { // 节点处于接入状态,且未发送接入请求, 需要广播接入请求
-                        if (daatr_str.access_backoff_number == 0) { // 如果等待退避数目时隙数为0
+                switch (slot_state)
+                {
+                case DAATR_STATUS_ACCESS_REQUEST:
+                { // 接入请求
+                    if (daatr_str.state_now != Mac_Access)
+                    { // 节点未处于接入状态, 不需要广播接入请求
+                      // printTime_ms(); // 打印时间
+                      //   cout << "[接入广播-MANA] Node ID " << node->nodeId << " 未处于接入状态, 非建链阶段不需要广播 网管信道 接入请求 ";
+                      //   cout << "Time : " << time << "ms" << endl;
+                      // temp_Management_Channel_Information.SendOrReceive = 2;
+                    }
+                    else if (daatr_str.access_state == DAATR_NEED_ACCESS && daatr_str.state_now == Mac_Access)
+                    { // 节点处于接入状态,且未发送接入请求, 需要广播接入请求
+                        if (daatr_str.access_backoff_number == 0)
+                        { // 如果等待退避数目时隙数为0
                             // cout << endl;
                             // printTime_ms(); // 打印时间
                             MacHeader2 *mac_header2_ptr = new MacHeader2;
@@ -355,23 +408,30 @@ void lowFreqSendThread() {
                             printf("[ACCESS-MANA] Node %2d 已发送接入请求  ", daatr_str.nodeId);
                             printTime_ms();
 
-                            if (!insertEventTimer_ms(ACCESS_REQUREST_WAITING_MAX_TIME, judgeIfBackToAccessAccessReply)) {
+                            if (!insertEventTimer_ms(ACCESS_REQUREST_WAITING_MAX_TIME, judgeIfBackToAccessAccessReply))
+                            {
                                 cout << "事件队列已满，无法进行事件插入!!!!!!!!!" << endl;
                             }
-                        } else { // 等待退避数减1
+                        }
+                        else
+                        { // 等待退避数减1
                             daatr_str.access_backoff_number--;
                             cout << endl;
-                            cout << "[ACCESS-MANA] Node " << daatr_str.nodeId << " 处于退避状态, 还需要退避 " << (int)daatr_str.access_backoff_number
-                                 << " 接入时隙  ";
+                            cout << "[ACCESS-MANA] Node " << daatr_str.nodeId << " 处于退避状态, 还需要退避 "
+                                 << (int)daatr_str.access_backoff_number << " 接入时隙  ";
                             printTime_ms(); // 打印时间
                         }
-                    } else if (daatr_str.access_state == DAATR_HAS_SENT_ACCESS_REQUEST) {
+                    }
+                    else if (daatr_str.access_state == DAATR_HAS_SENT_ACCESS_REQUEST)
+                    {
                         cout << "[ACCESS-MANA] Node " << daatr_str.nodeId << " 处于等待接收网管节点回复接入请求状态  ";
                         printTime_ms();
 
                         writeInfo("[接入广播-MANA] Node %2d 处于等待接收网管节点回复接入请求状态", daatr_str.nodeId);
                         // printTime_ms(); // 打印时间
-                    } else if (daatr_str.access_state == DAATR_WAITING_TO_ACCESS) {
+                    }
+                    else if (daatr_str.access_state == DAATR_WAITING_TO_ACCESS)
+                    {
                         writeInfo("|接入广播-MANA| Node %2d 已收到同意接入回复, 处于等待接收网管节点发送全网跳频图案状态", daatr_str.nodeId);
                         // cout << endl;
                         cout << "[ACCESS-MANA] Node " << daatr_str.nodeId << " 已收到同意接入回复, 处于等待接收网管节点发送全网跳频图案状态  ";
@@ -379,12 +439,17 @@ void lowFreqSendThread() {
                     }
                     break;
                 }
-                case DAATR_STATUS_ACCESS_REPLY: { // 接入请求回复
-                    if (daatr_str.state_now == Mac_Access) {
+                case DAATR_STATUS_ACCESS_REPLY:
+                { // 接入请求回复
+                    printTime_ms();
+                    printf("接入请求回复shixi\n");
+                    if (daatr_str.state_now == Mac_Access)
+                    {
                         // cout << "处于接入阶段，停止收发" << endl;
                         break;
                     }
-                    if (daatr_str.access_state == DAATR_WAITING_TO_REPLY && daatr_str.state_now == Mac_Execution) { // 如果网管节点有需要回复的节点
+                    if (daatr_str.access_state == DAATR_WAITING_TO_REPLY && daatr_str.state_now == Mac_Execution)
+                    { // 如果网管节点有需要回复的节点
                         writeInfo("|接入广播-MANA| Node %2d  网管信道 接入请求回复", daatr_str.nodeId);
                         // cout << endl;
                         cout << "[ACCESS-MANA] Node " << daatr_str.nodeId << " 网管信道 接入请求回复  ";
@@ -394,15 +459,18 @@ void lowFreqSendThread() {
                         slot_location = MacDaatrSearchSlotLocation(daatr_str.waiting_to_access_node, &daatr_str);
                         mana_access_reply access_reply;
                         int i = 0;
-                        for (i = 0; i < FREQUENCY_COUNT; i++) {
+                        for (i = 0; i < FREQUENCY_COUNT; i++)
+                        {
                             access_reply.mana_node_hopping[i] = daatr_str.freqSeq[daatr_str.nodeId][i]; // 将网管节点的跳频序列赋值进去
                             // access_reply.mana_node_hopping[i] = i;//测试用
                         }
-                        for (i = 0; i < 5; i++) {
+                        for (i = 0; i < 5; i++)
+                        {
                             access_reply.slot_location[i] = 60;
                         }
                         access_reply.slot_num = slot_location->size();
-                        for (i = 0; i < access_reply.slot_num; i++) {
+                        for (i = 0; i < access_reply.slot_num; i++)
+                        {
                             access_reply.slot_location[i] = slot_location->at(i);
                         }
                         MacHeader2 *mac_header2_ptr = new MacHeader2;
@@ -435,7 +503,9 @@ void lowFreqSendThread() {
                         daatr_str.access_state = DAATR_WAITING_TO_SEND_HOPPING_PARTTERN;
                         cout << "接入节点 " << daatr_str.waiting_to_access_node << endl;
                         writeInfo("接入节点 %d", daatr_str.waiting_to_access_node);
-                    } else if (daatr_str.access_state == DAATR_WAITING_TO_REPLY && daatr_str.state_now != Mac_Execution) { // 不处于执行阶段, 拒绝接入
+                    }
+                    else if (daatr_str.access_state == DAATR_WAITING_TO_REPLY && daatr_str.state_now != Mac_Execution)
+                    { // 不处于执行阶段, 拒绝接入
                         // cout << endl;
                         cout << "[ACCESS-MANA] Node " << daatr_str.nodeId << " 非建链阶段广播 网管信道 拒绝接入请求回复  ";
                         printTime_ms(); // 打印时间
@@ -465,7 +535,9 @@ void lowFreqSendThread() {
                         delete temp_buf;
                         delete mac_header2_ptr;
                         daatr_str.waiting_to_access_node = 0;
-                    } else {
+                    }
+                    else
+                    {
                         // 网管节点无需回复
                         // cout << endl;
                         // cout << "无接入节点, 网管节点无需回复 ";
@@ -474,7 +546,8 @@ void lowFreqSendThread() {
                     }
                     break;
                 }
-                case DAATR_STATUS_FLIGHTSTATUS_SEND: { // 飞行状态信息广播
+                case DAATR_STATUS_FLIGHTSTATUS_SEND:
+                { // 飞行状态信息广播
                     MacHeader2 *mac_header2_ptr = new MacHeader2;
                     // macpacket_daatr1.mac_header = new MacHeader;
                     mac_header2_ptr->PDUtype = 1;
@@ -486,9 +559,12 @@ void lowFreqSendThread() {
                     FlightStatus flight_sta = daatr_str.local_node_position_info;
 
                     Low_Freq_Packet_Type packet_type;
-                    if (daatr_str.node_type != Node_Management) {
+                    if (daatr_str.node_type != Node_Management)
+                    {
                         packet_type.type = 4; // 普通节点飞行状态信息通告
-                    } else {
+                    }
+                    else
+                    {
                         packet_type.type = 5; // 网管节点飞行状态信息通告
                     }
                     MacDaatr_struct_converter mac_converter1(2); // PDU2
@@ -513,13 +589,19 @@ void lowFreqSendThread() {
                     delete mac_header2_ptr;
                     break;
                 }
-                case DAATR_STATUS_MANA_ANNOUNCEMENT: { // 网管节点信息通告
-                                                       //  发送网管节点通告消息
+                case DAATR_STATUS_MANA_ANNOUNCEMENT:
+                { // 网管节点信息通告
+                  //  发送网管节点通告消息
                     int state = 0;
-                    if (daatr_str.need_change_state == 0) { // 若当前不转变状态
+                    if (daatr_str.need_change_state == 0)
+                    { // 若当前不转变状态
                         state = 0;
-                    } else if (daatr_str.need_change_state == 1) { // 若转变为时隙调整阶段
-                        if (daatr_str.state_now != Mac_Adjustment_Slot && daatr_str.state_now != Mac_Adjustment_Frequency) {
+                    }
+                    else if (daatr_str.need_change_state == 1)
+                    { // 若转变为时隙调整阶段
+                        if (daatr_str.state_now != Mac_Adjustment_Slot &&
+                            daatr_str.state_now != Mac_Adjustment_Frequency)
+                        {
                             // 若当前状态不为时隙调整阶段且不为时隙调整阶段
                             state = 1;
                             cout << "网管节点改变自己节点 state_now 为 Adjustment_Slot  ";
@@ -528,8 +610,11 @@ void lowFreqSendThread() {
                             daatr_str.need_change_state = 0;           // 已转变状态, 状态位复原
                             daatr_str.receivedSlottableTimes++;        // 初始未收到时隙表
                         }
-                    } else if (daatr_str.need_change_state == 2) { // 若转变为频率调整阶段
-                        if (daatr_str.state_now != Mac_Adjustment_Slot && daatr_str.state_now != Mac_Adjustment_Frequency) {
+                    }
+                    else if (daatr_str.need_change_state == 2)
+                    { // 若转变为频率调整阶段
+                        if (daatr_str.state_now != Mac_Adjustment_Slot && daatr_str.state_now != Mac_Adjustment_Frequency)
+                        {
                             // 若当前状态不为时隙调整阶段且不为时隙调整阶段
                             state = 2;
                             cout << "网管节点改变自己节点 state_now 为 Mac_Adjustment_Frequency ";
@@ -538,11 +623,15 @@ void lowFreqSendThread() {
                             daatr_str.need_change_state = 0;                // 已转变状态, 状态位复原
                             daatr_str.has_received_sequence = false;
                         }
-                    } else if (daatr_str.need_change_state == 3) { // 若在转变时隙调整阶段过程中发生频率调整阶段
+                    }
+                    else if (daatr_str.need_change_state == 3)
+                    {                                              // 若在转变时隙调整阶段过程中发生频率调整阶段
                         daatr_str.state_now = Mac_Adjustment_Slot; // 调整网管节点（本节点）为时隙调整阶段
                         state = 1;
                         daatr_str.need_change_state = 2; // 转变成需要进入频率调整阶段
-                    } else if (daatr_str.need_change_state == 4) { // 若在转变频率调整阶段过程中发生时隙调整阶段, 需要先进入频率调整阶段
+                    }
+                    else if (daatr_str.need_change_state == 4)
+                    {                                                   // 若在转变频率调整阶段过程中发生时隙调整阶段, 需要先进入频率调整阶段
                         daatr_str.state_now = Mac_Adjustment_Frequency; // 调整网管节点（本节点）为时隙调整阶段
                         state = 2;
                         daatr_str.need_change_state = 1; // 转变成需要进入频率调整阶段
@@ -579,8 +668,10 @@ void lowFreqSendThread() {
                     delete mac_header2_ptr;
                     break;
                 }
-                case DAATR_STATUS_NETWORK_LAYER_SEND: { // 网络层管控信息通告
-                    if (daatr_str.state_now == Mac_Access) {
+                case DAATR_STATUS_NETWORK_LAYER_SEND:
+                { // 网络层管控信息通告
+                    if (daatr_str.state_now == Mac_Access)
+                    {
                         cout << "[ACCESS-MANA] 处于接入阶段，停止收发  ";
                         printTime_ms();
                         writeInfo("处于接入阶段，停止收发");
@@ -589,7 +680,8 @@ void lowFreqSendThread() {
                     writeInfo("网络层管控信息通告");
 
                     msgFromControl buss_to_be_sent;
-                    if (daatr_str.getLowChannelBusinessFromQueue(&buss_to_be_sent)) { // 如果业务队列不为空, 有待发送业务
+                    if (daatr_str.getLowChannelBusinessFromQueue(&buss_to_be_sent))
+                    { // 如果业务队列不为空, 有待发送业务
                         uint16_t cur_srcAddr = buss_to_be_sent.srcAddr;
                         uint16_t cur_packet_type = buss_to_be_sent.msgType;
                         vector<uint8_t> *data_control = (vector<uint8_t> *)buss_to_be_sent.data;
@@ -626,7 +718,8 @@ void lowFreqSendThread() {
                         cout << "身份配置信息已发送，通知网络层" << endl;
 
                         // 向网络层通知全网通告消息已发送
-                        if (eventType == 1) {
+                        if (eventType == 1)
+                        {
                             IdentityStatus *identityMessage = new IdentityStatus();
                             identityMessage->isBroadcast = true;
                             identityMessage->seq = buss_to_be_sent.seq;
@@ -639,7 +732,8 @@ void lowFreqSendThread() {
                 }
             }
         }
-        if (end_simulation) {
+        if (end_simulation)
+        {
             printf("Node %2d LowSendThread is Over\n", daatr_str.nodeId);
             break;
         }
@@ -648,25 +742,34 @@ void lowFreqSendThread() {
 
 MacHeader2 mac_header2_temp;
 int flag_node_conflict = 0;
-void NODE_ACCESS_CONFLICT() {
+void NODE_ACCESS_CONFLICT()
+{
     extern MacDaatr daatr_str;
-    if (flag_node_conflict == 1) {
+    if (flag_node_conflict == 1)
+    {
         flag_node_conflict = 0;
         cout << "随遇接入请求" << endl;
-        if (daatr_str.nodeId == daatr_str.mana_node && daatr_str.waiting_to_access_node == 0) { // 如果本节点是网管节点
-            cout << endl << "[ACCESS-MANA] 网管节点 " << daatr_str.nodeId << " 已收到节点 " << mac_header2_temp.srcAddr << " 接入请求  ";
+        if (daatr_str.nodeId == daatr_str.mana_node && daatr_str.waiting_to_access_node == 0)
+        { // 如果本节点是网管节点
+            cout << endl
+                 << "[ACCESS-MANA] 网管节点 " << daatr_str.nodeId << " 已收到节点 " << mac_header2_temp.srcAddr << " 接入请求  ";
             printTime_ms(); // 打印时间
 
             writeInfo("网管节点 NODE %2d 已收到节点 NODE %2d 接入请求", daatr_str.nodeId, mac_header2_temp.srcAddr);
             daatr_str.access_state = DAATR_WAITING_TO_REPLY; // 网管节点已收到接入请求, 等待下一接入请求恢复时隙回复
             daatr_str.waiting_to_access_node = mac_header2_temp.srcAddr;
-        } else if (daatr_str.nodeId == daatr_str.mana_node && daatr_str.waiting_to_access_node != 0) {
+        }
+        else if (daatr_str.nodeId == daatr_str.mana_node && daatr_str.waiting_to_access_node != 0)
+        {
             cout << "当前子网已有待接入节点, 待网管节点发送完全子网跳频图案后, 在进行接入" << endl;
             writeInfo("当前子网已有待接入节点, 待网管节点发送完全子网跳频图案后, 在进行接入");
         }
     }
-    cout << "存在节点冲突,感知到前请求节点冲突" << endl;
-    flag_node_conflict = 0;
+    else
+    {
+        cout << "存在节点冲突,感知到前请求节点冲突" << endl;
+        flag_node_conflict = 0;
+    }
 }
 
 /**
@@ -675,7 +778,8 @@ void NODE_ACCESS_CONFLICT() {
  * @param bit_seq 指向接收到的位序列的指针。
  * @param len 位序列的长度。
  */
-void lowFreqChannelRecvHandle(uint8_t *bit_seq, uint64_t len) {
+void lowFreqChannelRecvHandle(uint8_t *bit_seq, uint64_t len)
+{
     extern MacDaatr daatr_str;
     MacDaatr_struct_converter mac_converter(255);
     int frame_length = mac_converter.get_PDU2_sequence_length(bit_seq);
@@ -689,28 +793,38 @@ void lowFreqChannelRecvHandle(uint8_t *bit_seq, uint64_t len) {
     MacHeader2 *mac_header2_ptr = (MacHeader2 *)mac_converter2.get_struct();
     MacHeader2 mac_header2;
     mac_header2 = *mac_header2_ptr;
-    if (mac_header2.backup == 1) { // 链路层数据包
+    if (mac_header2.backup == 1)
+    { // 链路层数据包
         mac_converter2.set_type(8);
         mac_converter2 - mac_converter; // 网管信道消息类型
         uint8_t *temp_ptr = mac_converter2.get_sequence();
         Low_Freq_Packet_Type packet_type;
         packet_type.type = temp_ptr[0];
-        switch (packet_type.type) {
-        case 1: { // 随遇接入请求
-            if (daatr_str.nodeId == daatr_str.mana_node) {
+        switch (packet_type.type)
+        {
+        case 1:
+        { // 随遇接入请求
+
+            if (daatr_str.nodeId == daatr_str.mana_node)
+            {
                 flag_node_conflict++;
-                if (flag_node_conflict >= 2) {
+                if (flag_node_conflict >= 2)
+                {
                     cout << "存在节点冲突,感知到后请求节点冲突" << endl;
                     break;
                 }
+                printTime_ms();
                 mac_header2_temp = mac_header2;
-                insertEventTimer_ms(20, NODE_ACCESS_CONFLICT);
+                insertEventTimer_ms(1, NODE_ACCESS_CONFLICT);
             }
             break;
         }
-        case 2: { // 同意随遇接入请求
-            if (daatr_str.nodeId == mac_header2.destAddr) {
-                cout << endl << "[ACCESS-MANA] Node " << daatr_str.nodeId << "已收到网管节点同意接入请求回复  ";
+        case 2:
+        { // 同意随遇接入请求
+            if (daatr_str.nodeId == mac_header2.destAddr)
+            {
+                cout << endl
+                     << "[ACCESS-MANA] Node " << daatr_str.nodeId << "已收到网管节点同意接入请求回复  ";
                 printTime_ms(); // 打印时间
 
                 writeInfo("NODE %2d 已收到网管节点同意接入请求回复", daatr_str.nodeId);
@@ -719,10 +833,12 @@ void lowFreqChannelRecvHandle(uint8_t *bit_seq, uint64_t len) {
                 mac_converter2.daatr_0_1_to_struct();
                 mana_access_reply *access_reply = (mana_access_reply *)mac_converter2.get_struct();
                 int slot_location = 0;
-                for (i = 0; i < FREQUENCY_COUNT; i++) {
+                for (i = 0; i < FREQUENCY_COUNT; i++)
+                {
                     daatr_str.freqSeq[mac_header2.srcAddr - 1][i] = access_reply->mana_node_hopping[i]; // 将网管节点的跳频序列赋值进去
                 }
-                for (i = 0; i < 1; i++) { // 第一个时隙为飞行状态信息
+                for (i = 0; i < 1; i++)
+                { // 第一个时隙为飞行状态信息
                     slot_location = access_reply->slot_location[i];
                     // cout << "[ACCESS TEST] EnterHere" << slot_location << "  " << daatr_str.nodeId << endl;
 
@@ -730,7 +846,8 @@ void lowFreqChannelRecvHandle(uint8_t *bit_seq, uint64_t len) {
                     daatr_str.low_freq_other_stage_slot_table[slot_location].nodeId = daatr_str.nodeId;
                     daatr_str.low_freq_other_stage_slot_table[slot_location].state = DAATR_STATUS_FLIGHTSTATUS_SEND;
                 }
-                for (i = 1; i < access_reply->slot_num; i++) { // 剩余时隙为网络层业务时隙
+                for (i = 1; i < access_reply->slot_num; i++)
+                { // 剩余时隙为网络层业务时隙
                     slot_location = access_reply->slot_location[i];
                     // cout << slot_location << " "; // 测试用
                     daatr_str.low_freq_other_stage_slot_table[slot_location].nodeId = daatr_str.nodeId;
@@ -738,7 +855,8 @@ void lowFreqChannelRecvHandle(uint8_t *bit_seq, uint64_t len) {
                 }
                 daatr_str.access_state = DAATR_WAITING_TO_ACCESS; // 节点已收到网管节点同意请求, 等待接收全网跳频图案
                 daatr_str.mana_node = mac_header2.srcAddr;        // 此时的请求回复的源地址即为网管节点, 重新更新
-                if (!insertEventTimer_ms(ACCESS_SUBNET_FREQUENCY_PARTTERN_WAITTING_MAX_TIME, judgeIfBackToAccessFrequencyParttern)) {
+                if (!insertEventTimer_ms(ACCESS_SUBNET_FREQUENCY_PARTTERN_WAITTING_MAX_TIME, judgeIfBackToAccessFrequencyParttern))
+                {
                     cout << "事件队列已满，无法进行事件插入!!!!!!!!!" << endl;
                 }
 
@@ -750,8 +868,10 @@ void lowFreqChannelRecvHandle(uint8_t *bit_seq, uint64_t len) {
             }
             break;
         }
-        case 3: { // 拒绝随遇接入请求
-            if (daatr_str.nodeId == mac_header2.destAddr) {
+        case 3:
+        { // 拒绝随遇接入请求
+            if (daatr_str.nodeId == mac_header2.destAddr)
+            {
                 cout << "\nNode " << daatr_str.nodeId << "收到网管节点拒绝接入回复 ";
                 printTime_ms(); // 打印时间
                 int num = rand() % (MAX_RANDOM_BACKOFF_NUM + 1);
@@ -766,7 +886,8 @@ void lowFreqChannelRecvHandle(uint8_t *bit_seq, uint64_t len) {
             }
             break;
         }
-        case 4: { // 普通节点飞行状态信息
+        case 4:
+        { // 普通节点飞行状态信息
 
             writeInfo("NODE %2d 收到普通节点飞行状态信息", daatr_str.nodeId);
 
@@ -779,10 +900,13 @@ void lowFreqChannelRecvHandle(uint8_t *bit_seq, uint64_t len) {
             macpacket_daatr.node_position = *flight_sta;
             macpacket_daatr.node_position.nodeId = mac_header2.srcAddr;
             UpdatePosition(&macpacket_daatr, &daatr_str);
-            Get_Angle_Info(&macpacket_daatr, &daatr_str);
+            daatr_str.subnet_other_node_ang[mac_header2.srcAddr] = Get_Angle_Info(&macpacket_daatr, &daatr_str);
+            daatr_str.subnet_other_node_ang_flag[mac_header2.srcAddr] = 1;
+            // daatr_str.printAngInfo();
             break;
         }
-        case 5: { // 网管节点飞行状态信息
+        case 5:
+        { // 网管节点飞行状态信息
             writeInfo("NODE %2d 收到网管节点飞行状态信息", daatr_str.nodeId);
             // printf("Node %2d  收到网管节点飞行状态信息\n", daatr_str.nodeId);
             MacPacket_Daatr macpacket_daatr;
@@ -793,11 +917,13 @@ void lowFreqChannelRecvHandle(uint8_t *bit_seq, uint64_t len) {
             macpacket_daatr.node_position = (FlightStatus)*flight_sta;
             macpacket_daatr.node_position.nodeId = mac_header2.srcAddr;
             daatr_str.mana_node = mac_header2.srcAddr; // 更新网管节点
-            UpdatePosition(&macpacket_daatr, &daatr_str);
-            Get_Angle_Info(&macpacket_daatr, &daatr_str);
+            daatr_str.subnet_other_node_ang[mac_header2.srcAddr] = Get_Angle_Info(&macpacket_daatr, &daatr_str);
+            daatr_str.subnet_other_node_ang_flag[mac_header2.srcAddr] = 1;
+            // daatr_str.printAngInfo();
             break;
         }
-        case 6: {
+        case 6:
+        {
             // 网管节点通告消息
             // 网管节点的macdata_daatr->state_now 在"MAC_DAATR_ReceiveTaskInstruct"中更改
             // 非网管节点的 在此处更改, 接收网管节点的消息后根据数据包内容更改
@@ -805,13 +931,15 @@ void lowFreqChannelRecvHandle(uint8_t *bit_seq, uint64_t len) {
             mac_converter2 - mac_converter; // 网管节点通告消息
             mac_converter2.daatr_0_1_to_struct();
             if_need_change_state *change_state = (if_need_change_state *)mac_converter2.get_struct();
-            if (change_state->state == 0) {
+            if (change_state->state == 0)
+            {
                 // cout << "节点 " << daatr_str.nodeId << " 此时未收到状态调整信息" << endl;
                 // printTime_ms();//打印时间
                 writeInfo("NODE %2d 此时未收到状态调整信息", daatr_str.nodeId);
             }
 
-            else if (change_state->state == 1) {
+            else if (change_state->state == 1)
+            {
                 daatr_str.state_now = Mac_Adjustment_Slot; // 调整本节点为时隙调整阶段
                 daatr_str.receivedSlottableTimes++;        // 初始未收到时隙表
                 cout << "节点 " << daatr_str.nodeId << " 收到网管节点广播消息, 并改变自己节点 state_now 为 Adjustment_Slot. " << endl;
@@ -819,7 +947,9 @@ void lowFreqChannelRecvHandle(uint8_t *bit_seq, uint64_t len) {
                 // 在收到网管节点发来的状态调整信息后, 立刻将自己的波束指向网管节点, 等待接收时隙表(需要调整！！！！！)
                 // Node *dest_node_ptr = MAPPING_GetNodePtrFromHash(node->partitionData->nodeIdHash, macdata_daatr->mana_node);
                 // Attach_Status_Information_To_Packet(node, dest_node_ptr, macdata_daatr, DAATR_STATUS_RX, 0);
-            } else if (change_state->state == 2) {
+            }
+            else if (change_state->state == 2)
+            {
                 daatr_str.state_now = Mac_Adjustment_Frequency; // 调整本节点为时隙调整阶段
                 daatr_str.has_received_sequence = false;
                 cout << "节点 " << daatr_str.nodeId << " 收到网管节点广播消息, 并改变自己节点 state_now 为 Adjustment_Freqency. " << endl;
@@ -827,13 +957,17 @@ void lowFreqChannelRecvHandle(uint8_t *bit_seq, uint64_t len) {
                 // 在收到网管节点发来的状态调整信息后, 立刻将自己的波束指向网管节点, 等待接收时隙表
                 // Node *dest_node_ptr = MAPPING_GetNodePtrFromHash(node->partitionData->nodeIdHash, macdata_daatr->mana_node);
                 // Attach_Status_Information_To_Packet(node, dest_node_ptr, macdata_daatr, DAATR_STATUS_RX, 0);
-            } else {
+            }
+            else
+            {
                 cout << "Incorrect Data!" << endl;
             }
             break;
         }
         }
-    } else if (mac_header2.backup == 0) {
+    }
+    else if (mac_header2.backup == 0)
+    {
         // 网络层数据包发送
         writeInfo("Node %2d 收到网管信道数据包, 并向网络层传递", daatr_str.nodeId);
         MacDaatr_struct_converter mac_converter_MFCs(100); // 用来盛放帧除去包头外的MFC的01序列

@@ -1506,6 +1506,7 @@ void FillNetForwardingTable(routingTableMessage *newRTM, int src_coor, int dest_
     newNFT->nexthop = ReturnAddrinLocalNeighMatrix(newRTM->path[newRTM->count]);
     newNFT->hop = newRTM->dist[dest_coor];
 
+<<<<<<< Updated upstream
     newNFT->Relaynodes.push_back(newNFT->source);
     while (newRTM->count >= 0) {
         uint16_t curAddr = ReturnAddrinLocalNeighMatrix(newRTM->path[newRTM->count]);
@@ -1541,6 +1542,49 @@ void FillNetForwardingTable(routingTableMessage *newRTM, int src_coor, int dest_
     send_num = sendto(sock_fd, data.c_str(), data.size(), 0, (struct sockaddr *)&recever, sizeof(recever));
     // printf("send_num  %d\n", send_num);
     /****************发送数据给上位机***************/
+=======
+	newNFT->Relaynodes.push_back(newNFT->source);
+	while (newRTM->count >= 0)
+	{
+		uint16_t curAddr = ReturnAddrinLocalNeighMatrix(newRTM->path[newRTM->count]);
+		newNFT->Relaynodes.push_back(curAddr);
+		newRTM->count--;
+	}
+	mmanet->NetRT_Entry[src_coor][dest_coor] = newNFT;
+	// std::ostringstream oss;
+	// cout << "全网路由表表项：" << endl;
+	// oss << "全网路由表表项：" << "\n";
+	// for (const auto &innerVector : mmanet->NetRT_Entry)
+	// {
+	// 	for (const auto &element : innerVector)
+	// 	{
+	// 		if (element)
+	// 		{
+	// 			cout << element->source << " " << element->dest << " " << element->hop << " " << element->delay << " " << element->nexthop << endl;
+	// 			oss << element->source << " " << element->dest << " " << element->hop << " " << element->delay << " " << element->nexthop << "\n";
+	// 		}
+	// 		else
+	// 		{
+	// 			cout << "0 " << "0 " << "0 " << "0 " << "0 " << endl;
+	// 			oss << "0 0 0 0 0\n";
+	// 		}
+	// 	}
+	// 	oss << "\n";
+	// 	cout << endl;
+	// }
+	// /****************发送数据给上位机***************/
+	// std::string data = oss.str();
+	// extern MacDaatr daatr_str;
+	// sockaddr_in recever; // 接收端地址
+	// // 获取mac_daatr_low_freq_socket_fid的值，用于后续的发送操作
+	// int sock_fd = daatr_str.mac_daatr_low_freq_socket_fid;
+	// int send_num = 0;
+	// daatr_str.initializeNodeIP(recever, 20, 8102);
+	// // 尝试发送数据到指定接收者，sendto函数用于向特定地址发送数据
+	// send_num = sendto(sock_fd, data.c_str(), data.size(), 0, (struct sockaddr *)&recever, sizeof(recever));
+	// printf("send_num  %d\n", send_num);
+	/****************发送数据给上位机***************/
+>>>>>>> Stashed changes
 }
 
 // 同一源节点的路由项按照其目的节点地址大小进行升序排列

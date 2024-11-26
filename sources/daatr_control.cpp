@@ -1,5 +1,5 @@
-#include "highFreqToolFunc.h"
 #include "macdaatr.h"
+#include "highFreqToolFunc.h"
 #include "main.h"
 #include "timer.h"
 using namespace std;
@@ -13,10 +13,12 @@ extern bool end_simulation;
 
 // 总控线程主函数
 // 每 100 us 调用一次这个函数 就可以实现时间的流动
-void macDaatrControlThread(int signum, siginfo_t *info, void *context) {
+void macDaatrControlThread(int signum, siginfo_t *info, void *context)
+{
 
     // 线程结束标志(以什么样的条件终止线程)
-    if (end_simulation) {
+    if (end_simulation)
+    {
         over_count++;
         return;
     }
@@ -24,10 +26,12 @@ void macDaatrControlThread(int signum, siginfo_t *info, void *context) {
     daatr_str.time += TIME_PRECISION;         // 经过500us
     double time_ms = daatr_str.time / 1000.0; // 得到ms单位时间
 
-    if (time_ms == SIMULATION_TIME * 1000) end_simulation = true; // 在本轮发送完后结束仿真
+    if (time_ms == SIMULATION_TIME * 1000)
+        end_simulation = true; // 在本轮发送完后结束仿真
 
     // 判断当前节点所处阶段
-    if (daatr_str.state_now == Mac_Initialization && time_ms == END_LINK_BUILD_TIME) { // 结束建链，进入执行阶段
+    if (daatr_str.state_now == Mac_Initialization && time_ms == END_LINK_BUILD_TIME)
+    { // 结束建链，进入执行阶段
         daatr_str.state_now = Mac_Execution;
         cout << endl;
         cout << endl;
@@ -42,7 +46,8 @@ void macDaatrControlThread(int signum, siginfo_t *info, void *context) {
     if (daatr_str.clock_trigger % (int)HIGH_FREQ_CHANNEL_TRIGGER_LEN == 0) // 25
     {
         // 业务信道线程触发 (节点间的收发线程)
-        if (end_simulation == true) cout << "Node send end_simulation" << endl;
+        if (end_simulation == true)
+            cout << "Node send end_simulation" << endl;
 
         daatr_str.highThread_condition_variable.notify_one();                   // 唤醒阻塞在发送线程 highFreqSendThread() 的 wait()
         daatr_str.networkToMacBufferReadThread_condition_variable.notify_one(); // 唤醒缓存区读函数
@@ -60,32 +65,38 @@ void macDaatrControlThread(int signum, siginfo_t *info, void *context) {
     }
     eventTimerUpdate();
     // 线程结束标志(以什么样的条件终止线程)
-    if (end_simulation) {
+    if (end_simulation)
+    {
         sleep(1);
         daatr_str.macDaatrSocketHighFreq_Send((uint8_t *)send, 13, daatr_str.nodeId);
-        if (daatr_str.nodeId == 1) {
+        if (daatr_str.nodeId == 1)
+        {
             char *send = "仿真结束";
             daatr_str.macDaatrSocketLowFreq_Send((uint8_t *)send, 13);
         }
     }
 }
 
-void MacDaatr::networkToMacBufferReadThread() {
+void MacDaatr::networkToMacBufferReadThread()
+{
 
     extern ringBuffer RoutingTomac_Buffer;
     uint8_t rBuffer_mac[MAX_DATA_LEN];
     extern bool end_simulation;
     unique_lock<mutex> nTmBufferReadlock(nTmBufferReadmutex);
 
-    while (1) {
+    while (1)
+    {
         networkToMacBufferReadThread_condition_variable.wait(nTmBufferReadlock);
 
-        while (RoutingTomac_Buffer.recvFrmNum != 0) {
+        while (RoutingTomac_Buffer.recvFrmNum != 0)
+        {
             RoutingTomac_Buffer.ringBuffer_get(rBuffer_mac);
             networkToMacBufferHandle(rBuffer_mac); // 处理接收到的序列（包括读取业务种类，业务长度，然后做对应处理）
         }
 
-        if (end_simulation) {
+        if (end_simulation)
+        {
             sleep(1);
             printf("Node %2d networkToMacBufferReadThread is Over\n", nodeId);
             break;

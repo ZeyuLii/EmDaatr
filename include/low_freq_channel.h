@@ -1,7 +1,6 @@
 #ifndef __LOW_FREQ_CHANNEL_H
 #define __LOW_FREQ_CHANNEL_H
 
-#include <macdaatr.h>
 // std::mutex lowthreadmutex;
 // std::condition_variable lowthreadcondition_variable;
 
