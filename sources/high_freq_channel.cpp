@@ -310,6 +310,8 @@ void MacDaatr::highFreqSendThread() {
                     // writeInfo("本次发送合包");
                     printTime_ms();
 #endif
+                    // cout << "节点 " << nodeId << " 向节点 " << dest_node << " 本次发送合包 " << multi << " 个 ";
+                    // printTime_ms();
                     mac_header->packetLength = 25; // 设定PDU包头的初始长度
                     mac_header->destAddr = dest_node;
                     mac_header->srcAddr = nodeId;
@@ -536,7 +538,6 @@ void MacDaatr::highFreqSendThread() {
                     memcpy(temp_buf, frame_ptr, len);
                     macDaatrSocketHighFreq_Send(temp_buf, len, dest_node); // 此处的的dest_node为待发送时隙表节点
 
-                    // cout << mana_node << "  " << dest_node << "  " << nodeId << endl;
 #ifdef DEBUG_ADJUST
                     cout << "[调整阶段 " << currentSlotId << "T] Node " << nodeId << " 向网管节点发送跳频图案ACK  ";
                     printTime_ms();

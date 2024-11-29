@@ -3,8 +3,7 @@
 
 using namespace std;
 
-struct LstmStates
-{
+struct LstmStates {
     double *I_G;    // 输入门
     double *F_G;    // 遗忘门
     double *O_G;    // 输出门
@@ -17,8 +16,7 @@ struct LstmStates
     double *PreH;   // 上一时刻的隐层输出值
 };
 
-struct Lstm
-{
+struct Lstm {
     int inNodeNum;       // 输入单元个数（特征数）
     int hideNodeNum;     // 隐藏单元个数
     int outNodeNum;      // 输出单元个数（结果维度）

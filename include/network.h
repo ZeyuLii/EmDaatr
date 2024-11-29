@@ -3,6 +3,7 @@
 #include "common_struct.h"
 #include <list>
 #include <signal.h>
+#define CONTROL_SELF_PROPULSION_THRESHOLD 0.7
 
 /*
 *
@@ -274,6 +275,16 @@ struct SatebasedUpd_Factor {
     }
 };
 
+// 新增  广播自身可成为控制
+struct ControlSelfProp_Broadcast {
+    unsigned int nodeId;
+    bool IsAllowedBecomeControl;
+    ControlSelfProp_Broadcast() {
+        this->nodeId = 0;
+        this->IsAllowedBecomeControl = false;
+    }
+};
+
 // 新加身份通知改为广播 && 身份通知合并
 // 身份配置模块的数据结构（存储的临时变量，以及没有通知全网的身份）
 struct IdentityData {
@@ -311,6 +322,21 @@ struct IdentityData {
     // 新增 记录路由表全体成员
     vector<NodeAddress> *netNodes;
 
+    //*************************************************//
+    // 当群内其他节点连续m轮未收到周期性身份广播时认为群内网管节点和备用网管节点同时损坏
+    // 1.从节点第一次收到身份信息广播开始，1s为周期探测,时钟到期NotReceivedNum+1判断是否大于m后重新探测
+    // 2.若收到广播信息，将NotReceivedNum置0
+    //*************************************************//
+    // 24.2.23新增 统计未收到周期性身份广播轮次
+    unsigned int NotReceivedNum;
+    bool IsReceivedIdentity_first;                 // 判断是否是第一次身份
+    unsigned int intragroupcontrolNodeId_SelfProp; // 记录自推的控制节点id，只存储id最小的
+    float control_selfProp_threshold;
+    bool is_selfProp_ing; // 标志是否正在进行控制节点自推
+
+    // 240319新增 网络构建过程关键身份节点是否损毁
+    bool isReceivedIdentity; // 标志是否收到过周期性身份广播包
+
     // 初始化函数
     IdentityData() {
         groupID_Temp = 0;
@@ -329,6 +355,11 @@ struct IdentityData {
         nodeNumInGroup = NODENUMINGROUP;
         If_calculated = false;
         netNodes = nullptr;
+        NotReceivedNum = 0;
+        IsReceivedIdentity_first = true;
+        control_selfProp_threshold = CONTROL_SELF_PROPULSION_THRESHOLD;
+        is_selfProp_ing = false;
+        isReceivedIdentity = false;
     }
     //********************意外退出了，百度说查析构，暂加一个析构函数********
     ~IdentityData() { cout << "IdentityData 析构函数调用 " << endl; }
@@ -410,6 +441,38 @@ void HandleNodeOffline();
 
 // 身份信息定时下发
 void HandleIdentityBroadcastTiming();
+
+// 处理周期性身份更新时钟到时，超时则在未收到Num那里＋1
+void HandleIdentityUpdateClockTiming();
+
+// 控制节点自推举
+void IntraGroupControlSelfPropelled();
+
+// 计算节点连接度
+float ComputeNodeDegree(NodeCondition *NodePtr, list<NodeCondition *> *ptr);
+
+// 计算节点可靠度，节点到其他节点距离倒数之和的均值
+float ComputeNodeReliability(NodeCondition *NodePtr, list<NodeCondition *> *ptr);
+
+// 计算总控制节点自推因子
+//  权值可调整，目前没有普通节点并没有从链路层拿到位置，负载值也未填值，因此权值置0
+float Compute_CNSPF(float node_Degree, float node_Reliability, float node_Payload);
+
+// 将控制自推广播包转成八位数组形式
+vector<uint8_t> *TransPacketToVec_ControlSelfProp(char *MsgToSendPtr);
+
+// 将八位数组格式转回控制节点自推包
+char *TransVecToPacket_ControlSelfProp(vector<uint8_t> *vect);
+
+// 处理控制信息自推广播包
+//  将自身存储的可作为控制节点的id与新收到的比较，存储节点id较小的作为下一轮新控制
+void HandleControlSelfPropBroadcast(msgFromControl *controlMsgPtr);
+
+// 处理控制信息自推广播包结果
+void HandleControlSelfPropResult();
+
+// 自判定建网过程是否有关键节点损毁，若有，触发相应处理
+void DetermineDamagedInBuildNet();
 
 // 关于节点身份上报
 // int Stats_ProGetDataManager ();

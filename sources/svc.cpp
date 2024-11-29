@@ -37,7 +37,7 @@ extern ringBuffer RoutingTomac_Buffer;
 
 #define FLIGHTSTATUSFILE "./config/011.txt"
 #define TEXTNODENUM 3
-int lengthdata = 300; // 发送格式化消息数据长度300byte
+int lengthdata = 4000; // 发送格式化消息数据长度300byte
 
 using namespace std;
 
@@ -142,18 +142,7 @@ void *SvcToAll(void *arg) {
         unsigned int fullpacketSize = sizeof(FlightStatus);
         char *msgToSendPtr = (char *)malloc(fullpacketSize);
         FlightStatus *nodePosPtr = (FlightStatus *)msgToSendPtr;
-        int currentlint;
-        if (mmanet->nodeAddr == 1) {
-            currentlint = currentime + mmanet->nodeAddr;
-        }
-        if (mmanet->nodeAddr == 2) {
-            currentlint = currentime + mmanet->nodeAddr + 19;
-        }
-        if (mmanet->nodeAddr == 3) {
-            currentlint = currentime + mmanet->nodeAddr + 38;
-        } else {
-            currentlint = currentime + mmanet->nodeAddr + 57;
-        }
+        int currentlint = currentime + mmanet->nodeAddr * 13;
         // int currentlint = currentime * TEXTNODENUM + mmanet->nodeAddr;
         // int currentlint = mmanet->nodeAddr;
         readFlightStatusFile(nodePosPtr, FLIGHTSTATUSFILE, currentlint);
@@ -166,13 +155,13 @@ void *SvcToAll(void *arg) {
         // cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
 
         // 格式化消息
-        if (currentime == 10) // 第11秒发送格式化消息
+        if (currentime == 15) // 第11秒发送格式化消息
         {
             uint8_t buffer_svc1[MAX_DATA_LEN];
             svcToMac *svc1 = new svcToMac();
             if (mmanet->nodeAddr == 1) {
-                svc1->dest = 0b0000100001; // 目的地址
-                svc1->src = 0b0011100111;  // 源地址
+                svc1->dest = 0b0001100001; // 目的地址->3
+                svc1->src = 0b0000100001;  // 源地址
                 svc1->priority = 3;
                 svc1->reTrans = 0;
                 svc1->spare = 0;
@@ -182,10 +171,10 @@ void *SvcToAll(void *arg) {
                 svc1->msgType = 7;
                 svc1->submsgType = 10;
             } else if (mmanet->nodeAddr == 2) {
-                svc1->dest = 0b0000100010; // 目的地址
-                svc1->src = 0b0011100111;  // 源地址
+                svc1->dest = 0b0000100000; // 目的地址->1
+                svc1->src = 0b0001000001;  // 源地址
                 svc1->priority = 3;
-                svc1->reTrans = 1;
+                svc1->reTrans = 0;
                 svc1->spare = 0;
                 svc1->packetLength = 0;
                 svc1->transEnable = 1;
@@ -193,10 +182,32 @@ void *SvcToAll(void *arg) {
                 svc1->msgType = 7;
                 svc1->submsgType = 10;
             } else if (mmanet->nodeAddr == 3) {
-                svc1->dest = 0b0000100011; // 目的地址
-                svc1->src = 0b0011100111;  // 源地址
+                svc1->dest = 0b0000100001; // 目的地址->1
+                svc1->src = 0b0001100001;  // 源地址
                 svc1->priority = 3;
-                svc1->reTrans = 1;
+                svc1->reTrans = 0;
+                svc1->spare = 0;
+                svc1->packetLength = 0;
+                svc1->transEnable = 1;
+                svc1->fragmentNum = 3;
+                svc1->msgType = 7;
+                svc1->submsgType = 10;
+            } else if (mmanet->nodeAddr == 4) {
+                svc1->dest = 0b0010100001; // 目的地址-》5
+                svc1->src = 0b0010000001;  // 源地址
+                svc1->priority = 3;
+                svc1->reTrans = 0;
+                svc1->spare = 0;
+                svc1->packetLength = 0;
+                svc1->transEnable = 1;
+                svc1->fragmentNum = 3;
+                svc1->msgType = 7;
+                svc1->submsgType = 10;
+            } else if (mmanet->nodeAddr == 5) {
+                svc1->dest = 0b0010000001; // 目的地址-》4
+                svc1->src = 0b0010100001;  // 源地址
+                svc1->priority = 3;
+                svc1->reTrans = 0;
                 svc1->spare = 0;
                 svc1->packetLength = 0;
                 svc1->transEnable = 1;
@@ -205,16 +216,18 @@ void *SvcToAll(void *arg) {
                 svc1->submsgType = 10;
             }
             // 分配内存给svc1->data，长度为lengthdata
-            svc1->data = vector<uint8_t>();
-            for (size_t i = 0; i < lengthdata; ++i) {
-                svc1->data.push_back(0xAD);
-            }
+            // svc1->data = vector<uint8_t>();
+            // for (size_t i = 0; i < lengthdata; ++i)
+            // {
+            //     svc1->data.push_back(0xAD);
+            // }
             // vector<uint8_t> *repeat = PackMsgSvc(svc1, lengthdata);
             // PackRingBuffer(buffer_svc1, repeat, 0x08);
 
-            // 调试信息
-            //  cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! svc1->data.size() " << svc1->data.size() << " <repeat->size() " <<
-            //  repeat->size() << endl; svcToRouting_buffer.ringBuffer_put(buffer_svc1, sizeof(buffer_svc1)); for (int i = 0; i < 8; i++)
+            // // 调试信息
+            // cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! svc1->data.size() " << svc1->data.size() << " <repeat->size() " <<
+            // repeat->size() << endl; svcToRouting_buffer.ringBuffer_put(buffer_svc1, sizeof(buffer_svc1));
+            //  for (int i = 0; i < 8; i++)
             //  {
             //      bitset<8> binary(buffer_svc1[3 + i]); // 创建一个8位的bitset，并用buffer_svc1[3+i]初始化
             //      cout << " " << binary.to_string();    // 输出二进制字符串表示
@@ -226,7 +239,7 @@ void *SvcToAll(void *arg) {
             //      cout << " " << (int)buffer_svc1[3 + i];
             //  }
             //  cout << "已显示发送端" << endl;
-            //  cout << "%%%%%%%%%%%%%%%%%%%%%已发送格式化消息给路由层" << endl;
+            // cout << "%%%%%%%%%%%%%%%%%%%%%已发送格式化消息给路由层" << endl;
         }
 
         if (currentime == 4) // 第10秒发送底层传输需求
@@ -250,7 +263,7 @@ void *SvcToAll(void *arg) {
             } else if (mmanet->nodeAddr == 2) {
 
                 task_Msg->begin_node = 2;
-                task_Msg->end_node = 3;
+                task_Msg->end_node = 4;
                 task_Msg->type = 3;
                 task_Msg->priority = 1;
                 task_Msg->size = 1024;
@@ -278,6 +291,20 @@ void *SvcToAll(void *arg) {
                 // task_Msg->frequency = 1;
             } else if (mmanet->nodeAddr == 4) {
                 task_Msg->begin_node = 4;
+                task_Msg->end_node = 5;
+                task_Msg->type = 3;
+                task_Msg->priority = 1;
+                task_Msg->size = 1024;
+                task_Msg->QOS = 10;
+                // task_Msg->begin_time[0] = 10;
+                // task_Msg->begin_time[1] = 20;
+                // task_Msg->begin_time[2] = 30;
+                // task_Msg->end_time[0] = 40;
+                // task_Msg->end_time[1] = 50;
+                // task_Msg->end_time[2] = 60;
+                // task_Msg->frequency = 1;
+            } else if (mmanet->nodeAddr == 5) {
+                task_Msg->begin_node = 5;
                 task_Msg->end_node = 3;
                 task_Msg->type = 3;
                 task_Msg->priority = 1;

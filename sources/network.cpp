@@ -21,6 +21,7 @@ using namespace std;
 
 // 新加，测试
 extern MMANETData *mmanet;
+extern MacDaatr daatr_str;
 
 #define LINK_MAX_IN_MSGFROMCONTROL 3
 
@@ -261,6 +262,12 @@ void timer_callbackUser2(int signum, siginfo_t *si, void *uc) {
     } else if (*timerNum == 11) {
         // 待处理毁伤的时钟到期，从待处理毁伤列表中删除
         CheckDamagedNodeClock((DamagedNode *)(timerMsg + sizeof(int)));
+    } else if (*timerNum == 12) {
+        // 检查是否收到周期性身份更新时钟
+        HandleIdentityUpdateClockTiming();
+    } else if (*timerNum == 13) {
+        // 控制节点处理自推结果
+        HandleControlSelfPropResult();
     } else {
         cout << "定时器类型错误" << endl;
     }
@@ -650,8 +657,8 @@ void PrintLinkAssList(list<LinkAssignment *> *linkListPtr) {
     if (linkListPtr) {
         list<LinkAssignment *>::iterator i;
         for (i = linkListPtr->begin(); i != linkListPtr->end(); i++) {
-            /*// printf("Link begin: %u, end: %u, size: %f, beginTime: %uh %um %us\n",
-            (*i)->begin_node, (*i)->end_node, (*i)->size, (*i)->begin_time[0], (*i)->begin_time[1], (*i)->begin_time[2]);*/
+            // printf("Link begin: %u, end: %u, size: %f, beginTime: %uh %um %us\n",
+            //        (*i)->begin_node, (*i)->end_node, (*i)->size, (*i)->begin_time[0], (*i)->begin_time[1], (*i)->begin_time[2]);
             PrintLinkAssignment((*i));
         }
     }
@@ -928,6 +935,10 @@ void HandleControlMsgFromRoute(const vector<uint8_t> &control_MsgPtr) {
             // 控制节点&控制备份 处理其他节点汇总过来的毁伤信息
             cout << "控制节点&控制备份 处理其他节点汇总过来的毁伤信息" << endl;
             ControlNodeDealWithDamage(controlPtr);
+        } else if (eventType == 3) {
+            // 控制节点自推举广播包
+            cout << "普通节点 处理控制节点自推举广播包" << endl;
+            HandleControlSelfPropBroadcast(controlPtr);
         }
     }
 }
@@ -1063,20 +1074,22 @@ void HandleReceivedTopology(const vector<uint8_t> &TopologyMsgPtr) {
     if (topologyPtr->size() != 0) {
         // 先清掉旧表
         CleanNetViewTopology(&(netViewPtr->netViewList));
+        // cout << "清掉旧表网络视图 : " << endl;
         for (i = topologyPtr->begin(); i != topologyPtr->end(); i++) {
             // 遍历节点列表
             NodeCondition *newNode = new NodeCondition((*i)->nodeAddr);
             // 其他变量待补充
-
+            // cout << "nodeAddr " << (*i)->nodeAddr << "  neighborList : ";
             for (j = (*i)->localNeighList.begin(); j != (*i)->localNeighList.end(); j++) {
                 // 遍历i节点的邻居节点
                 LinkQuality *newLink = new LinkQuality((*j)->nodeAddr);
                 // newLink->linkDelay = (*j)->Delay;
                 // 除了delay，其他指标待补充
+                // cout << " " << (*j)->nodeAddr;
                 newNode->neighborList.push_back(newLink);
             }
-
-            // 插完所有邻居，按id排一下序
+            // cout << endl;
+            //  插完所有邻居，按id排一下序
             if (newNode->neighborList.size() > 1) {
                 newNode->neighborList.sort(sortNeighborByNodeId);
             }
@@ -1088,6 +1101,7 @@ void HandleReceivedTopology(const vector<uint8_t> &TopologyMsgPtr) {
         // 插完所有节点，按id排一下序
         netViewPtr->netViewList.sort(sortByNodeId);
         // 打印一下
+        // cout << "网络视图 : " << endl;
         // PrintNodeListAndNeiborWithId(&(netViewPtr->netViewList));
     } else {
         cout << "路由模块发送的高速拓扑表为空,节点高速不在网！ " << endl;
@@ -1147,20 +1161,21 @@ void PrintNodeListAndNeiborWithId(list<NodeCondition *> *nodeListPtr) {
     if (nodeListPtr) {
         list<NodeCondition *>::iterator i;
         for (i = nodeListPtr->begin(); i != nodeListPtr->end(); i++) {
-            // printf("NodeId: %u, PosX: %.2f, PosY: %.2f  PosZ: %.2f", (*i)->nodeId, (*i)->thisPos.positionX, (*i)->thisPos.positionY,
-            //        (*i)->thisPos.positionZ);
-            // cout << "  nodeResponse: " << (*i)->nodeType << endl;
+            printf("NodeId: %u, PosX: %.2f, PosY: %.2f  PosZ: %.2f", (*i)->nodeId, (*i)->thisPos.positionX, (*i)->thisPos.positionY,
+                   (*i)->thisPos.positionZ);
+            cout << "  nodeResponse: " << (*i)->nodeType << endl;
+            cout << "neighborList.size " << (*i)->neighborList.size() << endl;
             if ((*i)->neighborList.size() != 0) {
-                // printf("Neighbor: ");
+                printf("Neighbor: ");
                 list<LinkQuality *> neighborPtrList = (*i)->neighborList;
                 list<LinkQuality *>::iterator neighborPtr;
                 for (neighborPtr = neighborPtrList.begin(); neighborPtr != neighborPtrList.end(); neighborPtr++) {
-                    // printf(" %u (%.4f),  ", (*neighborPtr)->nodeId, (float)(*i)->nodeId / ((*i)->nodeId + (*neighborPtr)->nodeId));
+                    printf(" %u (%.4f),  ", (*neighborPtr)->nodeId, (float)(*i)->nodeId / ((*i)->nodeId + (*neighborPtr)->nodeId));
                 }
             }
-            // printf("\n");
+            printf("\n");
         }
-        // printf("Net View Finished! \n");
+        printf("Net View Finished! \n");
     } else {
         cout << "网络视图为空 !" << endl;
     }
@@ -1195,22 +1210,8 @@ void HandleReceivedNetPos(const vector<uint8_t> &NetPosMsgPtr) {
     // 给自己的网络视图里读取
     if (netViewPtr->netViewList.size() != 0) {
         ReadNetPos();
-        // cout << "ReadNetPos!!!" << endl;
+        cout << "ReadNetPos!!!" << endl;
         cout << "本节点身份为： " << nodeNotificationPtr->nodeResponsibility << endl;
-        /****************发送数据给上位机***************/
-        std::ostringstream oss;
-        oss << "本节点身份为： " << nodeNotificationPtr->nodeResponsibility << "\n";
-        extern MacDaatr daatr_str;
-        std::string data = oss.str();
-        sockaddr_in recever; // 接收端地址
-        // 获取mac_daatr_low_freq_socket_fid的值，用于后续的发送操作
-        int sock_fd = daatr_str.mac_daatr_low_freq_socket_fid;
-        int send_num = 0;
-        daatr_str.initializeNodeIP(recever, 20, 8102);
-        // 尝试发送数据到指定接收者，sendto函数用于向特定地址发送数据
-        send_num = sendto(sock_fd, data.c_str(), data.size(), 0, (struct sockaddr *)&recever, sizeof(recever));
-        // printf("send_num  %d\n", send_num);
-        /****************发送数据给上位机***************/
         // 进行节点身份正常更新，只在控制节点上进行
         if (nodeNotificationPtr->nodeResponsibility == INTRAGROUPCONTROL || nodeNotificationPtr->nodeResponsibility == MASTERCONTROL) {
             // SpacebasedUpdate();
@@ -1487,45 +1488,76 @@ void HandleNodeOffline() {
 }
 
 // 全网身份更新函数
+// void IntraGroupUpdate()
+// {
+//     cout << " 全网身份更新函数中 ,1为可以广播: " << IdentityPtr->IsBroadcast << endl;
+//     if (IdentityPtr->IsBroadcast)
+//     {
+//         cout << "开始计算身份!" << endl;
+//         // 统计触发身份更新开始的时间 clocktype delay_IdentityUpdate
+//         // IdentityPtr->Identity_Trigger = getCurrentTime() / 1000; // 换算成毫秒
+//         running_cnt += 1;
+//         cout << "当前是第" << running_cnt << "次身份计算" << endl;
+//         IdentityPtr->netViewList = netViewPtr->netViewList;
+//         // cout << "netViewPtr->netViewList 中的节点数量为：" << netViewPtr->nodeNum << endl;
+//         // list<NodeCondition *>::iterator myitr1;
+//         // NodeCondition *tmp1;
+//         // for (myitr1 = (&(netViewPtr->netViewList))->begin(); myitr1 != (&(netViewPtr->netViewList))->end(); ++myitr1)
+//         // {
+//         //     tmp1 = *myitr1;
+//         //     cout << "节点 " << tmp1->nodeId << " X " << tmp1->thisPos.positionX << " Y " << tmp1->thisPos.positionY << " Z " <<
+//         tmp1->thisPos.positionZ << endl;
+//         // }
+//         //****************************新增根据网络视图确认群内节点数目***********
+//         IdentityPtr->nodeNumInGroup = IdentityPtr->netViewList.size();
+//         // cout << "根据网络视图确认群内节点数目为： " << IdentityPtr->nodeNumInGroup << endl;
+//         // list<NodeCondition *>::iterator myitr;
+//         // NodeCondition *tmp;
+//         // for (myitr = (&(IdentityPtr->netViewList))->begin(); myitr != (&(IdentityPtr->netViewList))->end(); ++myitr)
+//         // {
+//         //     tmp = *myitr;
+//         //     cout << "节点 " << tmp->nodeId << " X " << tmp->thisPos.positionX << " Y " << tmp->thisPos.positionY << " Z " <<
+//         tmp->thisPos.positionZ << endl;
+//         // }
+//         //***********************************************************************
+
+//         //******************************计算新的身份*****************************
+//         if (IdentityPtr->nodeId == nodeNotificationPtr->intragroupcontrolNodeId)
+//         {
+//             IntraGroupControlUpdate(&(IdentityPtr->netViewList));
+
+//             // cout << "群内控制节点为  " << IdentityPtr->intragroupcontrol_Temp << endl;
+//             // cout << "群内备份控制为  " << IdentityPtr->reserveintracontrol_Temp << endl;
+//             // 完成计算身份
+//             IdentityPtr->If_calculated = true;
+//         }
+//     }
+// }
+
+// 全网身份更新函数
 void IntraGroupUpdate() {
-    cout << " 全网身份更新函数中 ,是否广播成功" << IdentityPtr->IsBroadcast << endl;
-    if (IdentityPtr->IsBroadcast) {
+    cout << " 全网身份更新函数中 ,1为可以广播: " << (IdentityPtr->IsBroadcast || IdentityPtr->is_selfProp_ing) << endl;
+    if (IdentityPtr->IsBroadcast || IdentityPtr->is_selfProp_ing) {
         cout << "开始计算身份!" << endl;
         // 统计触发身份更新开始的时间 clocktype delay_IdentityUpdate
-        IdentityPtr->Identity_Trigger = getCurrentTime() / 1000; // 换算成毫秒
+        IdentityPtr->Identity_Trigger = getTime() / 1000; // 换算成毫秒
         running_cnt += 1;
         cout << "当前是第" << running_cnt << "次身份计算" << endl;
         IdentityPtr->netViewList = netViewPtr->netViewList;
-        // cout << "netViewPtr->netViewList 中的节点数量为：" << netViewPtr->nodeNum << endl;
-        // list<NodeCondition *>::iterator myitr1;
-        // NodeCondition *tmp1;
-        // for (myitr1 = (&(netViewPtr->netViewList))->begin(); myitr1 != (&(netViewPtr->netViewList))->end(); ++myitr1)
-        // {
-        //     tmp1 = *myitr1;
-        //     cout << "节点 " << tmp1->nodeId << " X " << tmp1->thisPos.positionX << " Y " << tmp1->thisPos.positionY << " Z " <<
-        //     tmp1->thisPos.positionZ << endl;
-        // }
+
         //****************************新增根据网络视图确认群内节点数目***********
         IdentityPtr->nodeNumInGroup = IdentityPtr->netViewList.size();
-        // cout << "根据网络视图确认群内节点数目为： " << IdentityPtr->nodeNumInGroup << endl;
-        // list<NodeCondition *>::iterator myitr;
-        // NodeCondition *tmp;
-        // for (myitr = (&(IdentityPtr->netViewList))->begin(); myitr != (&(IdentityPtr->netViewList))->end(); ++myitr)
-        // {
-        //     tmp = *myitr;
-        //     cout << "节点 " << tmp->nodeId << " X " << tmp->thisPos.positionX << " Y " << tmp->thisPos.positionY << " Z " << tmp->thisPos.positionZ
-        //     << endl;
-        // }
         //***********************************************************************
 
         //******************************计算新的身份*****************************
         if (IdentityPtr->nodeId == nodeNotificationPtr->intragroupcontrolNodeId) {
             IntraGroupControlUpdate(&(IdentityPtr->netViewList));
 
-            // cout << "群内控制节点为  " << IdentityPtr->intragroupcontrol_Temp << endl;
-            // cout << "群内备份控制为  " << IdentityPtr->reserveintracontrol_Temp << endl;
+            cout << "群内控制节点为  " << IdentityPtr->intragroupcontrol_Temp << endl;
+            cout << "群内备份控制为  " << IdentityPtr->reserveintracontrol_Temp << endl;
             // 完成计算身份
             IdentityPtr->If_calculated = true;
+            if (IdentityPtr->is_selfProp_ing) IdentityPtr->is_selfProp_ing = false;
         }
     }
 }
@@ -1542,8 +1574,10 @@ void IntraGroupControlUpdate(list<NodeCondition *> *ptr) {
     unsigned int pastControl_ID;
     unsigned int pastreserveControl_ID;
     pastControl_ID = nodeNotificationPtr->intragroupcontrolNodeId;
-    // 3节点测试条件下，现在没有备用控制节点 显示ID为0
+    // cout << " pastControl_ID is: " << pastControl_ID << endl;
+    //  3节点测试条件下，现在没有备用控制节点 显示ID为0
     pastreserveControl_ID = nodeNotificationPtr->reserveintracontrolNodeId;
+    // cout << " pastreserveControl_ID is: " << pastreserveControl_ID << endl;
     //*********************************************************************
 
     NodeCondition *tmp;
@@ -1619,9 +1653,8 @@ void IntraGroupControlUpdate(list<NodeCondition *> *ptr) {
             UpdateFactor Ufpast_control = *in_iter;
             pastControl_distance = Ufpast_control.nodeDistance;
             deviation = (pastControl_distance - mindistance) / pastControl_distance;
-            cout << "~~~~~~~~~~~~deviation " << deviation << endl;
-            if (deviation < 0.4 && connectivity_p >= connectivity_1) {
-                // cout << Ufpast_control.nodeId <<endl;
+            if (deviation < 1 && connectivity_p >= connectivity_1) {
+                // cout << "Ufpast_control.nodeId " << Ufpast_control.nodeId << endl;
                 // cout << "原控制节点仍满足，保持原控制节点" << endl;
                 IdentityPtr->intragroupcontrol_Temp = Ufpast_control.nodeId; // 原控制节点仍满足，保持原控制节点
             } else {
@@ -1635,6 +1668,7 @@ void IntraGroupControlUpdate(list<NodeCondition *> *ptr) {
     if (!(IdentityPtr->intragroupcontrol_Temp > 0 && IdentityPtr->intragroupcontrol_Temp < (NODENUMINGROUP + 1))) // 新增保护
     {
         IdentityPtr->intragroupcontrol_Temp = UfTmp.nodeId;
+        // cout << "新增保护IdentityPtr->intragroupcontrol_Temp " << IdentityPtr->intragroupcontrol_Temp << endl;
     }
     //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1673,11 +1707,13 @@ void IntraGroupControlUpdate(list<NodeCondition *> *ptr) {
             UpdateFactor Ufpast_rescontrol = *in_iter;
             past_resControl_distance = Ufpast_rescontrol.nodeDistance;
             deviation = (past_resControl_distance - mindistance_2) / past_resControl_distance;
-            if (deviation < 0.4 && connectivity_pr >= connectivity_2 &&
-                IdentityPtr->intragroupcontrol_Temp != IdentityPtr->reserveintracontrol_Temp) {
-                // cout << "原备份仍满足，保留 " << endl;
+            if (deviation < 1 && connectivity_pr >= connectivity_2 && IdentityPtr->intragroupcontrol_Temp != IdentityPtr->reserveintracontrol_Temp &&
+                IdentityPtr->reserveintracontrol_Temp != 0) {
+                cout << "Ufpast_rescontrol.nodeId" << Ufpast_rescontrol.nodeId << endl;
+                cout << "原备份仍满足，保留 " << endl;
                 IdentityPtr->reserveintracontrol_Temp = Ufpast_rescontrol.nodeId; // 原备份仍满足，保留
             } else {
+                cout << "原备份不满足，更新新的备份 " << endl;
                 IdentityPtr->reserveintracontrol_Temp = UfTmp.nodeId; // 原备份不满足，更新新的备份
             }
             break;
@@ -1686,7 +1722,9 @@ void IntraGroupControlUpdate(list<NodeCondition *> *ptr) {
 
     // 保护机制-----对于未选出身份的情况
     if (!(IdentityPtr->reserveintracontrol_Temp > 0 && IdentityPtr->reserveintracontrol_Temp < (NODENUMINGROUP + 1))) {
+        // cout << "保护机制-----对于未选出身份的情况" << endl;
         IdentityPtr->reserveintracontrol_Temp = UfTmp.nodeId;
+        // cout << "IdentityPtr->reserveintracontrol_Temp " << IdentityPtr->reserveintracontrol_Temp << endl;
     }
     //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1769,7 +1807,7 @@ bool sortByNodePriorityFactor(UpdateFactor node1, UpdateFactor node2) {
 
 // 定时下发身份广播包的函数
 void HandleIdentityBroadcastTiming() {
-    // cout << "触发定时下发身份广播包的函数 " << endl;
+    cout << "触发定时下发身份广播包的函数 " << endl;
     if (nodeNotificationPtr->nodeResponsibility == INTRAGROUPCONTROL ||
         nodeNotificationPtr->nodeResponsibility == MASTERCONTROL) { // 是总控制或群内控制
         if (IdentityPtr->If_calculated) {
@@ -1827,11 +1865,11 @@ void HandleIdentityBroadcastTiming() {
             PackRingBuffer(wBufferToRouting, v1_controlmsg, 0x1E); // 0x1E管控开销消息
             netToRouting_buffer.ringBuffer_put(wBufferToRouting, sizeof(wBufferToRouting));
 
-            // cout << "控制节点下发身份广播包完毕!" << endl;
-            // cout << "打印验证" << endl;
-            // cout << "广播包groupID: " << nodeBroadcastPtr->groupID << endl;
-            // cout << "广播包intragroupcontrolNodeId: " << nodeBroadcastPtr->intragroupcontrolNodeId << endl;
-            // cout << "广播包reserverdintracontrolNodeId: " << nodeBroadcastPtr->reserveintracontrolNodeId << endl;
+            cout << "控制节点下发身份广播包完毕!" << endl;
+            cout << "打印验证" << endl;
+            cout << "广播包groupID: " << nodeBroadcastPtr->groupID << endl;
+            cout << "广播包intragroupcontrolNodeId: " << nodeBroadcastPtr->intragroupcontrolNodeId << endl;
+            cout << "广播包reserverdintracontrolNodeId: " << nodeBroadcastPtr->reserveintracontrolNodeId << endl;
             // printf("Receive msg Finished! \n");
 
             free(msgToSendPtr); // 实际数据内容已msgToSend_data经写入vector数组，释放掉申请的内存
@@ -1898,11 +1936,10 @@ void TurnUnsignedToUint(unsigned int member, vector<uint8_t> *buffer) {
 
 // 处理链路层传来的身份配置广播状态（只有控制节点会收到）
 void ControlNodeDealWithIdentityStatus(const vector<uint8_t> &IdentityStatusMsgPtr) {
-    // cout << "身份包已经开始广播，稍后更新身份 0x18" << endl;
+    cout << "身份包已经开始广播，稍后更新身份 0x18" << endl;
     IdentityStatus *identityStatus_Msg = (IdentityStatus *)&IdentityStatusMsgPtr[0];
     // cout << "广播成功? " << identityStatus_Msg->isBroadcast << " 本轮待广播序列号相同? " << (int)(identityStatus_Msg->seq ==
-    // IdentityPtr->SerialNum)
-    //      << endl;
+    // IdentityPtr->SerialNum) << endl;
     if (identityStatus_Msg->isBroadcast && identityStatus_Msg->seq == IdentityPtr->SerialNum) // 广播成功 且 传回序列号是否与本轮待广播序列号相同
     {
         // 等待一段时间通知链路层和路由
@@ -1944,6 +1981,26 @@ void ReceiveAMsgFromOtherNodes(char *msgPtr) {
     //************************************************************************//
 
     NodeBroadcast *contentPtr;
+    //*********************新增 网管、备用网管同时损毁****************************//
+    // 判断是否是第一次收到身份，若是，开始记时
+    if (IdentityPtr->IsReceivedIdentity_first) {
+        IdentityPtr->IsReceivedIdentity_first = false;
+        IdentityPtr->control_selfProp_threshold = CONTROL_SELF_PROPULSION_THRESHOLD; // 初始化控制节点自推阈值
+        IdentityPtr->NotReceivedNum = 0;
+        // 开始1s周期计时
+        // 为了防止两个太靠近，先12后8,第一个慢一点,1.2s
+        cout << "是否是第一次收到身份，若是，开始记时 " << endl;
+        SetTimerUser2(1, 200, 12, NULL, 0);
+    }
+    // 收到了广播
+    IdentityPtr->NotReceivedNum = 0; // 将未收到周期性广播次数记为0
+    //*********************************************************************//
+    // 240319 关于建网过程关键节点是否发生损毁自判定
+    if (IdentityPtr->isReceivedIdentity == false) {
+        IdentityPtr->isReceivedIdentity = true;
+    }
+    //**********************************************************************//
+    writeInfo("节点处理收到的身份广播包 ,IdentityPtr->NotReceivedNum is: %d", IdentityPtr->NotReceivedNum);
     char *payloadStart;
     bool flag = false;
     cout << " 节点身份为 : " << nodeNotificationPtr->nodeResponsibility << endl;
@@ -1951,14 +2008,15 @@ void ReceiveAMsgFromOtherNodes(char *msgPtr) {
     {
         // 控制节点收到的是自身打包的NodeBroadcast
         contentPtr = (NodeBroadcast *)msgPtr;
-        cout << "contentPtr: " << contentPtr << endl;
+        // cout << "contentPtr: " << contentPtr << endl;
         cout << " 控制节点开始更新自身身份表 !" << endl;
         // 控制节点开始更新身份表，身份更新完成，记录身份更新完成的时间
-        IdentityPtr->delay_IdentityUpdate = getCurrentTime() / 1000 - IdentityPtr->Identity_Trigger;
+        // IdentityPtr->delay_IdentityUpdate = getCurrentTime() / 1000 - IdentityPtr->Identity_Trigger;
+        IdentityPtr->delay_IdentityUpdate = getTime() / 1000 - IdentityPtr->Identity_Trigger;
         if (IdentityPtr->Is_IdentityUpdate) // 如果群内关键节点身份发生变化 即身份更新了，则触发上报身份更新时间及群内新的身份
         {
             // 上报身份更新完成时间
-            cout << "身份更新时间为 " << IdentityPtr->delay_IdentityUpdate << "ms!" << endl;
+            // cout << "身份更新时间为 " << IdentityPtr->delay_IdentityUpdate << "ms!" << endl;
 
             // 上报状态信息 1网络分布式管控 1单子网 5指标类型为身份更新时间
             // 240531改 改为针对不同的身份类型上报身份更新时间
@@ -2014,29 +2072,12 @@ void ReceiveAMsgFromOtherNodes(char *msgPtr) {
     nodeNotificationPtr->reservesatellitebasedgatewayNodeId = contentPtr->reservesatellitebasedgatewayNodeId; // 备用星基
 
     // 打印验证
-    std::ostringstream oss;
     cout << "groupID: " << nodeNotificationPtr->groupID << endl;
     cout << "nodeIIndex: " << nodeNotificationPtr->nodeIIndex << endl;
     cout << "nodeResponsibility: " << nodeNotificationPtr->nodeResponsibility << endl;
     cout << "intragroupcontrolNodeId: " << nodeNotificationPtr->intragroupcontrolNodeId << endl;
     cout << "reserveintracontrolNodeId: " << nodeNotificationPtr->reserveintracontrolNodeId << endl;
     cout << endl;
-    oss << "groupID: " << nodeNotificationPtr->groupID << "\n";
-    oss << "nodeIIndex: " << nodeNotificationPtr->nodeIIndex << "\n";
-    oss << "nodeResponsibility: " << nodeNotificationPtr->nodeResponsibility << "\n";
-    oss << "intragroupcontrolNodeId: " << nodeNotificationPtr->intragroupcontrolNodeId << "\n";
-    oss << "reserveintracontrolNodeId: " << nodeNotificationPtr->reserveintracontrolNodeId << "\n";
-    std::string data = oss.str();
-    extern MacDaatr daatr_str;
-    sockaddr_in recever; // 接收端地址
-    // 获取mac_daatr_low_freq_socket_fid的值，用于后续的发送操作
-    int sock_fd = daatr_str.mac_daatr_low_freq_socket_fid;
-    int send_num = 0;
-    daatr_str.initializeNodeIP(recever, 20, 8102);
-    // 尝试发送数据到指定接收者，sendto函数用于向特定地址发送数据
-    send_num = sendto(sock_fd, data.c_str(), data.size(), 0, (struct sockaddr *)&recever, sizeof(recever));
-    // printf("send_num  %d\n", send_num);
-
     // printf("Receive msg Finished! \n");
 
     if (flag == true) {
@@ -2225,7 +2266,7 @@ void ReceiveDamagedNodesmsg(const vector<uint8_t> &DamagedNodeMsgPtr) {
         cout << endl;
         free(damagedAllNodesPtr); // 由于传值 释放damagedAllNodesPtr
     } else {
-        // cout << "node has no damagedNodes" << endl;
+        cout << "node has no damagedNodes" << endl;
     }
 
     // 释放路由模块发送的毁伤表, （会不会导致数据丢失）
@@ -2417,7 +2458,7 @@ void HandleDamageMsg(NodeAddress damaged_node) {
             nodeNotificationPtr->nodeResponsibility = INTRAGROUPCONTROL; // 改自身身份是控制
             IdentityPtr->intragroupcontrol_Temp = IdentityPtr->nodeId;   // 改自己为控制
             IdentityPtr->reserveintracontrol_Temp = 0;                   // 原备份改为0
-            IdentityPtr->Identity_Trigger = getCurrentTime() / 1000;     // 微秒换算成毫秒
+            IdentityPtr->Identity_Trigger = getTime() / 1000;            // 微秒换算成毫秒
         }
     } else if (IdentityPtr->nodeId == nodeNotificationPtr->reservemastercontrolNodeId) // 备份总控
     {
@@ -2425,7 +2466,7 @@ void HandleDamageMsg(NodeAddress damaged_node) {
             nodeNotificationPtr->nodeResponsibility = MASTERCONTROL; // 改自身身份是总控制
             IdentityPtr->mastercontrol_Temp = IdentityPtr->nodeId;   // 改自己为总控制
             IdentityPtr->reservemastercontrol_Temp = 0;              // 原备份改为0
-            IdentityPtr->Identity_Trigger = getCurrentTime() / 1000; // 微秒换算成毫秒
+            IdentityPtr->Identity_Trigger = getTime() / 1000;        // 微秒换算成毫秒
         }
     }
 
@@ -2538,6 +2579,297 @@ void HandleDamageMsg(NodeAddress damaged_node) {
         netToRouting_buffer.ringBuffer_put(wBufferToRouting, sizeof(wBufferToRouting));
 
         free(msgToSendPtr); // 实际数据内容已msgToSend_data经写入vector数组，释放掉申请的内存
+    }
+}
+
+// 处理周期性身份更新时钟到时，超时则在未收到Num那里＋1
+void HandleIdentityUpdateClockTiming() {
+
+    if (daatr_str.isValid == true) // 节点没有掉网才加一
+        IdentityPtr->NotReceivedNum = IdentityPtr->NotReceivedNum + 1;
+    writeInfo("处理周期性身份更新时钟 ,IdentityPtr->NotReceivedNum is: %d", IdentityPtr->NotReceivedNum);
+    if (IdentityPtr->NotReceivedNum > 3) // 判断是否连续三个周期没收到
+    {
+        clocktype node_time = getTime() / 1000;
+        cout << "节点" << IdentityPtr->nodeId << " 感知到控制、备用控制同时损毁，进入自推举" << endl;
+        IdentityPtr->intragroupcontrol_Temp = 0;
+        IdentityPtr->reserveintracontrol_Temp = 0;
+
+        cout << "当前时间为 " << node_time << " ms " << endl;
+        // 身份为普通的节点开始控制节点自推举
+        if (nodeNotificationPtr->nodeResponsibility == NODENORMAL) {
+            // 更新控制节点自推ing标志位
+            IdentityPtr->is_selfProp_ing = true;
+            // 进入控制节点自推举
+            cout << "进入控制节点自推举IntraGroupControlSelfPropelled" << endl;
+            writeInfo("进入控制节点自推举IntraGroupControlSelfPropelled ");
+            IntraGroupControlSelfPropelled();
+            ////向网络状态视图模块申请网络状态视图
+            // Message *newMsg = MESSAGE_Alloc(node,NETWORK_LAYER,NETWORK_PROTOCOL_NETVIEW, MSG_NETWORK_NETVIEW_ReceiveNetviewRequest);
+            // MESSAGE_Send(node, newMsg, 0);
+        }
+        // 设置查看自推结果定时器
+        // clocktype current_time = getCurrentTime() / 1000;
+        // clocktype delay = (2000 * MILLI_SECOND / 1000000 - ((node->getNodeTime() / 1000000) % 1000)) * MILLI_SECOND;//在整秒查看 推选出的节点
+        // Identity_SetTimer(node, NULL, 0, MSG_NETWORK_IDENTITYUPDATEANDMAINTENANCE_HandleControlSelfPropResult, 500 * MILLI_SECOND);
+        SetTimerUser2(1, 0, 13, NULL, 0);
+        cout << "设置定时器13,为1s" << endl;
+    } else {
+        // 设置下一个时钟
+        // Identity_SetTimer(node, NULL, 0, MSG_NETWORK_IDENTITYUPDATEANDMAINTENANCE_HandleIdentityUpdateClockTiming, 1 * SECOND);
+        SetTimerUser2(1, 0, 12, NULL, 0);
+    }
+}
+
+// 控制节点自推举
+void IntraGroupControlSelfPropelled() {
+    // DataManager *dataManagerPtr = (DataManager *)node->networkData.networkVar->DataManager;
+    DataManager *dataManagerPtr = new DataManager;
+    // 身份为普通的节点参与控制节点自推
+    if (nodeNotificationPtr->nodeResponsibility = NODENORMAL) {
+        cout << "身份为普通 " << endl;
+        // IdentityPtr->intragroupcontrolNodeId_SelfProp = 0;
+        //  PrintNodeListAndNeiborWithId(&(netViewPtr->netViewList));
+        //  cout << 123 << endl;
+        //  PrintNodeListAndNeiborWithId(&(IdentityPtr->netViewList));
+        //  //取出存储的网络状态视图
+        //  从网络状态视图中找到本节点
+        NodeCondition *findNode = GetANodeConditionById(&(netViewPtr->netViewList), IdentityPtr->nodeId);
+        float node_Degree = 0.0;      // 节点连接度
+        float node_Reliability = 0.0; // 节点可靠度
+        float node_Payload = 0.0;     // 节点平均负载
+        float CNSPF = 0.0;
+        // 计算节点连接度
+        node_Degree = ComputeNodeDegree(findNode, &(netViewPtr->netViewList));
+        // 计算节点可靠度
+        node_Reliability = ComputeNodeReliability(findNode, &(netViewPtr->netViewList));
+        // 计算节点平均负载
+        node_Payload = nodePayLoadAll(findNode, &(netViewPtr->netViewList));
+        // 计算加权因子
+        CNSPF = Compute_CNSPF(node_Degree, node_Reliability, node_Payload);
+        // 判断自身是否满足阈值条件
+        if (CNSPF > 0 && CNSPF <= 1) {
+            if (CNSPF > IdentityPtr->control_selfProp_threshold) // 满足阈值条件
+            {
+                cout << "广播自身可成为控制节点" << endl;
+                // 广播自身可成为控制节点
+                //  发广播包函数
+                ControlSelfProp_Broadcast *selfPropPtr = (ControlSelfProp_Broadcast *)malloc(sizeof(ControlSelfProp_Broadcast));
+                selfPropPtr->nodeId = mmanet->nodeAddr;
+                selfPropPtr->IsAllowedBecomeControl = true;
+                // 添加分流头
+                unsigned int fullpacketSize = sizeof(msgID) + sizeof(MessageDiversionHeader) + sizeof(ControlSelfProp_Broadcast);
+                char *msgToSendPtr = (char *)malloc(fullpacketSize);
+                // 对消息标识赋值 业务信道加消息标识
+                msgID *msgIdPtr = (msgID *)msgToSendPtr;
+                msgIdPtr->msgid = 28; // 北航填28
+                msgIdPtr->msgsub = 3; // 消息子标识，标志身份配置模块
+                // 首先对分流头进行赋值
+                MessageDiversionHeader *diversionPtr = (MessageDiversionHeader *)(msgToSendPtr + sizeof(msgID));
+                diversionPtr->moduleName = 1;
+                diversionPtr->eventType = 3;
+                // 之后对负载进行赋值
+                memcpy(msgToSendPtr + sizeof(msgID) + sizeof(MessageDiversionHeader), selfPropPtr, sizeof(ControlSelfProp_Broadcast));
+                vector<uint8_t> *msg_tempPtr = TransPacketToVec_ControlSelfProp(msgToSendPtr); // 应该将传的结构体改为八位数组形式
+                // 封装msgFromControl包
+                msgFromControl controlmsg;
+                controlmsg.data = (char *)msg_tempPtr;
+                controlmsg.packetLength = 8 + msg_tempPtr->size() + 2; // 包长度
+                controlmsg.srcAddr = IdentityPtr->nodeId;              // 源地址为本节点
+                controlmsg.destAddr = 0x3FF;
+                controlmsg.priority = 0;    // 网管消息优先级为0
+                controlmsg.backup = 0;      // 备用字段为0
+                controlmsg.msgType = 1;     // 网管消息走网管信道
+                controlmsg.repeat = 0;      // 非重传包
+                controlmsg.fragmentNum = 0; // 无效值
+                controlmsg.fragmentSeq = 0; // 分片序号，无效值
+                // 序列号待补充
+
+                // 记录序列号
+                IdentityPtr->SerialNum = controlmsg.seq;
+                vector<uint8_t> *v1_controlmsg = PackMsgFromControl(&controlmsg); // msgFromControl整体转为八位数组
+
+                // 此处应发给路由模块
+                uint8_t wBufferToRouting[MAX_DATA_LEN];
+                PackRingBuffer(wBufferToRouting, v1_controlmsg, 0x1E); //?????
+                cout << "自推荐已发送" << endl;
+                netToRouting_buffer.ringBuffer_put(wBufferToRouting, sizeof(wBufferToRouting));
+                free(msgToSendPtr); // 实际数据内容已msgToSend_data经写入vector数组，释放掉申请的内存
+
+                // 记录下自身id可作为控制节点
+                IdentityPtr->intragroupcontrolNodeId_SelfProp = IdentityPtr->nodeId;
+                // 置位广播包是否成功的标志位，开始广播
+                IdentityPtr->IsBroadcast = false;
+                clocktype node_time = getTime() / 1000;
+                // 计算统计变量 计算网管模块cost 发送端统计 包大小+链路层包头网管信道17
+                dataManagerPtr->Manager_cost = dataManagerPtr->Manager_cost + v1_controlmsg->size() + 17;
+                cout << "节点 " << IdentityPtr->nodeId << "广播自推消息的开销为 " << v1_controlmsg->size() + 17 << "目前的总开销为 "
+                     << dataManagerPtr->Manager_cost << endl;
+                cout << "当前时间为 " << node_time << " ms " << endl;
+                cout << "记录下自身id可作为控制节点 " << IdentityPtr->intragroupcontrolNodeId_SelfProp << endl;
+
+                delete v1_controlmsg;
+            } else {
+                IdentityPtr->intragroupcontrolNodeId_SelfProp = 0;
+                cout << "自身不满足阈值条件, CNSPF " << CNSPF << endl;
+            }
+        } else {
+            cout << "控制节点计算因子计算错误 ！" << endl;
+        }
+        cout << "IntraGroupControlSelfPropelled Done" << endl;
+    }
+}
+
+// 计算节点连接度
+float ComputeNodeDegree(NodeCondition *NodePtr, list<NodeCondition *> *ptr) {
+    float node_Degree = 0.0;
+    int n = ptr->size();
+    int n_dege = NodePtr->neighborList.size();
+    node_Degree = (float)n_dege / (float)(n - 1);
+    return node_Degree;
+}
+
+// 计算节点可靠度，节点到其他节点距离倒数之和的均值
+float ComputeNodeReliability(NodeCondition *NodePtr, list<NodeCondition *> *ptr) {
+    float distance_reciprocal = 0.0; // 统计距离倒数之和
+    float node_Reliability = 0.0;
+    list<NodeCondition *>::iterator myitr;
+    NodeCondition *tmp;
+    for (myitr = ptr->begin(); myitr != ptr->end(); ++myitr) {
+        tmp = *myitr;
+        if (tmp->nodeId == NodePtr->nodeId) {
+            continue;
+        } else {
+            distance_reciprocal = distance_reciprocal + 1.0 / ((float)sqrt(pow(tmp->thisPos.positionX - NodePtr->thisPos.positionX, 2) +
+                                                                           pow(tmp->thisPos.positionY - NodePtr->thisPos.positionY, 2) +
+                                                                           pow(tmp->thisPos.positionZ - NodePtr->thisPos.positionZ, 2)));
+        }
+    }
+    node_Reliability = distance_reciprocal / ((float)(ptr->size() - 1));
+    return node_Reliability;
+}
+
+// 计算总控制节点自推因子
+//  权值可调整，目前没有普通节点并没有从链路层拿到位置，负载值也未填值，因此权值置0
+float Compute_CNSPF(float node_Degree, float node_Reliability, float node_Payload) {
+    return 1.0 * node_Degree + 0 * node_Reliability + 0 * node_Payload;
+}
+
+// 将控制自推广播包转成八位数组形式
+vector<uint8_t> *TransPacketToVec_ControlSelfProp(char *MsgToSendPtr) {
+    vector<uint8_t> *buffer = new vector<uint8_t>;
+    // 封消息标识
+    msgID *msgIdPtr = (msgID *)MsgToSendPtr;
+    buffer->push_back((msgIdPtr->msgid << 3) | (msgIdPtr->msgsub));
+    MessageDiversionHeader *HeaderPtr = (MessageDiversionHeader *)(MsgToSendPtr + sizeof(msgID));
+    ControlSelfProp_Broadcast *NotifyPtr = (ControlSelfProp_Broadcast *)(MsgToSendPtr + sizeof(msgID) + sizeof(MessageDiversionHeader));
+    buffer->push_back((HeaderPtr->moduleName >> 8) & 0xFF);
+    buffer->push_back((HeaderPtr->moduleName) & 0xFF);
+    buffer->push_back((HeaderPtr->eventType >> 8) & 0xFF);
+    buffer->push_back((HeaderPtr->eventType) & 0xFF);
+    TurnUnsignedToUint(NotifyPtr->nodeId, buffer);
+    buffer->push_back(NotifyPtr->IsAllowedBecomeControl);
+    return buffer;
+}
+
+// 将八位数组格式转回控制节点自推包
+char *TransVecToPacket_ControlSelfProp(vector<uint8_t> *vect) {
+    unsigned int fullpacketSize = sizeof(msgID) + sizeof(MessageDiversionHeader) + sizeof(ControlSelfProp_Broadcast);
+    char *msgToSendPtr = (char *)malloc(fullpacketSize);
+    // 解出msgID
+    msgID *msgIdPtr = (msgID *)msgToSendPtr;
+    msgIdPtr->msgid = ((*vect)[0] >> 3) & 0x1F; // 取消息标识
+    msgIdPtr->msgsub = ((*vect)[0] & 0x07);     // 取消息子标识
+    MessageDiversionHeader *HeaderPtr = (MessageDiversionHeader *)(msgToSendPtr + sizeof(msgID));
+    ControlSelfProp_Broadcast *NotifyPtr = (ControlSelfProp_Broadcast *)(msgToSendPtr + sizeof(msgID) + sizeof(MessageDiversionHeader));
+    HeaderPtr->moduleName = (unsigned short)(((*vect)[1] << 8) | (*vect)[2]);
+    HeaderPtr->eventType = (unsigned short)(((*vect)[3] << 8) | (*vect)[4]);
+    NotifyPtr->nodeId = TurnUintToUnsigned(vect, 5);
+    NotifyPtr->IsAllowedBecomeControl = (bool)(*vect)[9];
+    return msgToSendPtr;
+}
+
+// 处理控制信息自推广播包
+//  将自身存储的可作为控制节点的id与新收到的比较，存储节点id较小的作为下一轮新控制
+void HandleControlSelfPropBroadcast(msgFromControl *controlMsgPtr) {
+
+    vector<uint8_t> *vec1 = (vector<uint8_t> *)controlMsgPtr->data;
+    char *payloadStart = TransVecToPacket_ControlSelfProp(vec1);
+    // 释放掉数组的内存
+    // 广播包释放内存是咋释放啊？
+    // MEM_free((vector<uint8_t> *)controlMsgPtr->data);
+    // free((vector<uint8_t> *)controlMsgPtr->data);//？？？
+    free(vec1); // ？？？？
+    ControlSelfProp_Broadcast *contentPtr = (ControlSelfProp_Broadcast *)(payloadStart + sizeof(msgID) + sizeof(MessageDiversionHeader));
+    if (IdentityPtr->intragroupcontrolNodeId_SelfProp == 0) // 之前没收到过自推包且自己没有参与自推
+    {
+        cout << "之前没收到过自推包且自己没有参与自推IdentityPtr->intragroupcontrolNodeId_SelfProp == 0" << endl;
+        IdentityPtr->intragroupcontrolNodeId_SelfProp = contentPtr->nodeId; // 记录下自推节点id
+    } else {
+        cout << "contentPtr->nodeId  " << contentPtr->nodeId << endl;
+        // 比较id大小，存储节点id较小的作为下一轮新控制
+        if (contentPtr->nodeId < IdentityPtr->intragroupcontrolNodeId_SelfProp) {
+            IdentityPtr->intragroupcontrolNodeId_SelfProp = contentPtr->nodeId;
+        }
+    }
+}
+
+// 处理控制信息自推广播包
+// 将自身存储的可作为控制节点的id与新收到的比较，存储节点id较小的作为下一轮新控制
+void HandleControlSelfPropResult() {
+    cout << "定时器13触发 " << endl;
+
+    // 查看本轮是否推选出新控制
+    if (IdentityPtr->intragroupcontrolNodeId_SelfProp != 0) {
+        cout << "节点" << IdentityPtr->nodeId << "认为推选出的新控制为： " << IdentityPtr->intragroupcontrolNodeId_SelfProp << endl;
+        clocktype node_time = getTime() / 1000;
+        cout << "当前时间为 " << node_time << " ms " << endl;
+        //  查看自己是不是推选出的新控制
+        if (IdentityPtr->nodeId == IdentityPtr->intragroupcontrolNodeId_SelfProp) {
+            cout << "自己是推选出的新控制 " << endl;
+            // 若是，将自身身份改为控制节点
+            nodeNotificationPtr->nodeResponsibility = INTRAGROUPCONTROL; // 改自身身份是控制
+            nodeNotificationPtr->intragroupcontrolNodeId = IdentityPtr->nodeId;
+            IdentityPtr->intragroupcontrol_Temp = IdentityPtr->nodeId; // 改自己为控制
+                                                                       // 将自身是控制的消息告知其他模块
+            InformIdentityToOtherModules();
+        } else {
+            cout << "自己不是推选出的新控制 " << endl;
+            // 若不是，将自身认知的控制节点改为新节点
+            nodeNotificationPtr->intragroupcontrolNodeId = IdentityPtr->intragroupcontrolNodeId_SelfProp;
+        }
+        // 初始化是否收到记录周期性身份的定时器
+        IdentityPtr->IsReceivedIdentity_first = true;
+        // 清空 索要的网络状态视图
+        // CleanNetViewTopology(&(IdentityPtr->netViewList));
+    } else {
+        cout << "IdentityPtr->intragroupcontrolNodeId_SelfProp: " << IdentityPtr->intragroupcontrolNodeId_SelfProp
+             << "  降低阈值，重新推举,进入 IntraGroupControlSelfPropelled " << endl;
+        // 降低阈值，重新推举
+        IdentityPtr->control_selfProp_threshold = IdentityPtr->control_selfProp_threshold / 2.0;
+        // 重新进入控制节点自推举
+
+        IntraGroupControlSelfPropelled();
+        cout << "重新设置查看自推结果定时器13 ,700ms " << endl; // 500ms有时候收不到
+        SetTimerUser2(1, 0, 13, NULL, 0);
+    }
+}
+
+// 自判定建网过程是否有关键节点损毁，若有，触发相应处理
+void DetermineDamagedInBuildNet() {
+    if (nodeNotificationPtr->nodeResponsibility == RESERVEINTRAGROUPCONTROL && IdentityPtr->isReceivedIdentity == false) {
+        // 如果是备用控制，且尚未收到第一轮周期性身份广播
+        // 触发控制节点损毁处理机制
+        HandleDamageMsg(nodeNotificationPtr->intragroupcontrolNodeId);
+    }
+    if (nodeNotificationPtr->nodeResponsibility == NODENORMAL && IdentityPtr->isReceivedIdentity == false) {
+        // 如果是普通节点，且尚未收到第一轮周期性身份广播
+        // 触发控制节点自推举
+        IdentityPtr->is_selfProp_ing = true; // 更新控制节点自推ing标志位
+        IntraGroupControlSelfPropelled();    // 进入控制节点自推举
+        // 设置查看自推结果定时器
+        // Identity_SetTimer(node, NULL, 0, MSG_NETWORK_IDENTITYUPDATEANDMAINTENANCE_HandleControlSelfPropResult, 1000 * MILLI_SECOND);
+        SetTimerUser2(1, 0, 13, NULL, 0);
     }
 }
 

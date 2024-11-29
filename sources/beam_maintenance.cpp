@@ -1,20 +1,18 @@
 /********************************************波束维护模块************************************************************* */
 #include "beam_maintenance.h"
 #include <cmath>
-void MacDaatr::printAngInfo()
-{
+void MacDaatr::printAngInfo() {
     cout << "节点 " << nodeId << "的邻接表" << endl;
     cout << "邻居节点ID    天线编号      俯仰角（单位：度）     方位角（单位：度）" << endl;
-    for (int i = 1; i <= subnet_node_num; i++)
-    {
-        if (subnet_other_node_ang_flag[i])
-        {
-            cout << "     " << i << "    " << subnet_other_node_ang[i].index << "    " << subnet_other_node_ang[i].el << "      " << subnet_other_node_ang[i].az << endl;
+    for (int i = 1; i <= subnet_node_num; i++) {
+        if (subnet_other_node_ang_flag[i]) {
+            cout << "     " << i << "    " << subnet_other_node_ang[i].index << "    " << subnet_other_node_ang[i].el << "      "
+                 << subnet_other_node_ang[i].az << endl;
         }
     }
 }
-static A_ang Coordinate_System_Transaction(float lat_1, float lng_1, float h_1, float pitch_1, float roll_1, int index, float yaw_1, float lat_2, float lng_2, float h_2)
-{
+static A_ang Coordinate_System_Transaction(float lat_1, float lng_1, float h_1, float pitch_1, float roll_1, int index, float yaw_1, float lat_2,
+                                           float lng_2, float h_2) {
     lat_1 = PI * lat_1 / 180.0;
     lng_1 = PI * lng_1 / 180.0;
     pitch_1 = PI * pitch_1 / 180.0;
@@ -35,16 +33,17 @@ static A_ang Coordinate_System_Transaction(float lat_1, float lng_1, float h_1, 
     dz = -sin(lng_1) * Pdx + cos(lng_1) * Pdy;
     float dx1 = 0, dy1 = 0, dz1 = 0; // DT坐标系下的相对位置
     dx1 = cos(yaw_1) * cos(pitch_1) * dx + sin(pitch_1) * dy - sin(yaw_1) * cos(pitch_1) * dz;
-    dy1 = (sin(yaw_1) * sin(roll_1) - cos(yaw_1) * sin(pitch_1) * cos(roll_1)) * dx + cos(pitch_1) * cos(roll_1) * dy + (cos(yaw_1) * sin(roll_1) + sin(yaw_1) * sin(pitch_1) * cos(roll_1)) * dz;
-    dz1 = (sin(yaw_1) * cos(roll_1) + cos(yaw_1) * sin(pitch_1) * sin(roll_1)) * dx - cos(pitch_1) * sin(roll_1) * dy + (cos(yaw_1) * cos(roll_1) - sin(yaw_1) * sin(pitch_1) * sin(roll_1)) * dz;
+    dy1 = (sin(yaw_1) * sin(roll_1) - cos(yaw_1) * sin(pitch_1) * cos(roll_1)) * dx + cos(pitch_1) * cos(roll_1) * dy +
+          (cos(yaw_1) * sin(roll_1) + sin(yaw_1) * sin(pitch_1) * cos(roll_1)) * dz;
+    dz1 = (sin(yaw_1) * cos(roll_1) + cos(yaw_1) * sin(pitch_1) * sin(roll_1)) * dx - cos(pitch_1) * sin(roll_1) * dy +
+          (cos(yaw_1) * cos(roll_1) - sin(yaw_1) * sin(pitch_1) * sin(roll_1)) * dz;
     float dr = 0; // 节点距离
     dr = sqrt(pow(dx, 2) + pow(dy, 2) + pow(dz, 2));
     float ang_x = 0, ang_z = 0; // ang_x为侧面三个天线板的坐标系旋转角度,
     // ang_z为前后两个天线板的坐标系旋转角度
     float dxs = 0, dys = 0, dzs = 0; // 天线系下指向
     // 选择天线板, 并计算该天线系下指向
-    switch (index)
-    {
+    switch (index) {
     case 1:
         ang_x = PI / 3.0;
         dxs = dx1;
@@ -88,8 +87,7 @@ static A_ang Coordinate_System_Transaction(float lat_1, float lng_1, float h_1, 
 }
 
 // 返回俯仰角 方位角 等天线指向信息
-A_ang Get_Angle_Info(MacPacket_Daatr *macpacket_daatr, MacDaatr *macdata_daatr)
-{
+A_ang Get_Angle_Info(MacPacket_Daatr *macpacket_daatr, MacDaatr *macdata_daatr) {
 
     float lat_1 = macdata_daatr->local_node_position_info.positionX;
     float lng_1 = macdata_daatr->local_node_position_info.positionY;
@@ -110,43 +108,33 @@ A_ang Get_Angle_Info(MacPacket_Daatr *macpacket_daatr, MacDaatr *macdata_daatr)
     float flag[5] = {0}; // 俯仰角和方位角绝对值之和
     // 是否在波束范围内的判断条件: (1)位于天线板上方(dys>0);
     // (2)波束指向向量与天线坐标系的y轴正向的夹角b_ang小于等于60°
-    if (a_ang[0].dys > 0 && a_ang[0].b_ang <= PI / 3.0)
-    {
+    if (a_ang[0].dys > 0 && a_ang[0].b_ang <= PI / 3.0) {
         flag[0] = fabs(a_ang[0].el) + fabs(a_ang[0].az);
     }
-    if (a_ang[1].dys > 0 && a_ang[1].b_ang <= PI / 3.0)
-    {
+    if (a_ang[1].dys > 0 && a_ang[1].b_ang <= PI / 3.0) {
         flag[1] = fabs(a_ang[1].el) + fabs(a_ang[1].az);
     }
-    if (a_ang[2].dys > 0 && a_ang[2].b_ang <= PI / 3.0)
-    {
+    if (a_ang[2].dys > 0 && a_ang[2].b_ang <= PI / 3.0) {
         flag[2] = fabs(a_ang[2].el) + fabs(a_ang[2].az);
     }
-    if (a_ang[3].dys > 0 && a_ang[3].b_ang <= PI / 3.0)
-    {
+    if (a_ang[3].dys > 0 && a_ang[3].b_ang <= PI / 3.0) {
         flag[3] = fabs(a_ang[3].el) + fabs(a_ang[3].az);
     }
-    if (a_ang[4].dys > 0 && a_ang[4].b_ang <= PI / 3.0)
-    {
+    if (a_ang[4].dys > 0 && a_ang[4].b_ang <= PI / 3.0) {
         flag[4] = fabs(a_ang[4].el) + fabs(a_ang[4].az);
     }
     float min = 0;
     int min_index = 0;
-    for (int i = 0; i < 5; i++)
-    {
-        if (flag[i] != 0)
-        {
+    for (int i = 0; i < 5; i++) {
+        if (flag[i] != 0) {
             min = flag[i];
             min_index = i;
             break;
         }
     }
-    for (int j = 0; j < 5; j++)
-    {
-        if (flag[j] != 0)
-        {
-            if (flag[j] < min)
-            {
+    for (int j = 0; j < 5; j++) {
+        if (flag[j] != 0) {
+            if (flag[j] < min) {
                 min = flag[j];
                 min_index = j;
             }
@@ -166,23 +154,20 @@ A_ang Get_Angle_Info(MacPacket_Daatr *macpacket_daatr, MacDaatr *macdata_daatr)
 
 /* ------ 波束维护模块 ------ */
 // 完成从 short int 到 -pi/2, pi/2 的转换
-static float Angle_Transaction_short_to_pi(short int ang)
-{
+static float Angle_Transaction_short_to_pi(short int ang) {
     ang = ((ang + 32768.0) / 65536.0) * 180.0 - 90.0;
     return ang;
 }
 
 // 完成从 -pi/2, pi/2 到  short int 的转换
 // 量化精度可能会出现问题?
-static short int Angle_Transaction_pi_to_short(float ang)
-{
+static short int Angle_Transaction_pi_to_short(float ang) {
     ang = ((ang + 90.0) / 180.0) * 65536.0 - 32768.0;
     return (short int)ang;
 }
 
 // 返回任意两节点间距离(单位: km)
-double calculateLinkDistance(float lat_1, float lng_1, float h_1, float lat_2, float lng_2, float h_2)
-{
+double calculateLinkDistance(float lat_1, float lng_1, float h_1, float lat_2, float lng_2, float h_2) {
     lat_1 = PI * lat_1 / 180.0;
     lng_1 = PI * lng_1 / 180.0;
     lat_2 = PI * lat_2 / 180.0;
@@ -206,22 +191,16 @@ double calculateLinkDistance(float lat_1, float lng_1, float h_1, float lat_2, f
 
 // 根据网管信道数据包更新子网内各节点的位置信息
 // 并将其更新业务信道队列的 distance
-void UpdatePosition(MacPacket_Daatr *macpacket_daatr, MacDaatr *macdata_daatr)
-{
+void UpdatePosition(MacPacket_Daatr *macpacket_daatr, MacDaatr *macdata_daatr) {
     // cout << "!!!!!!!!!!!!!UpdatePosition!!!!!!!!!!!" << endl;
-    for (int i = 0; i < SUBNET_NODE_NUMBER_MAX - 1; i++)
-    { // 存储子网其他节点位置信息
+    for (int i = 0; i < SUBNET_NODE_NUMBER_MAX - 1; i++) { // 存储子网其他节点位置信息
         // 0代表此处未填写位置信息
-        if (macdata_daatr->subnet_other_node_position[i].nodeId == 0)
-        {
+        if (macdata_daatr->subnet_other_node_position[i].nodeId == 0) {
             // 添加新的节点信息
             macdata_daatr->subnet_other_node_position[i] = macpacket_daatr->node_position;
             break;
-        }
-        else
-        {
-            if (macdata_daatr->subnet_other_node_position[i].nodeId == macpacket_daatr->node_position.nodeId)
-            {
+        } else {
+            if (macdata_daatr->subnet_other_node_position[i].nodeId == macpacket_daatr->node_position.nodeId) {
                 // 更新子网节点位置信息
                 macdata_daatr->subnet_other_node_position[i] = macpacket_daatr->node_position;
                 break;
@@ -232,15 +211,17 @@ void UpdatePosition(MacPacket_Daatr *macpacket_daatr, MacDaatr *macdata_daatr)
     int node_temp = macpacket_daatr->node_position.nodeId;
     // cout << "[UpdatePos] Received " << node_temp << endl;
     macdata_daatr->if_receive_mana_flight_frame[node_temp - 1] = true;
+    // cout << "if_receive_mana_flight_frame" << endl;
+    // for (int i = 0; i < 20; i++)
+    //     cout << "  " << macdata_daatr->if_receive_mana_flight_frame[i];
+    // macdata_daatr->businessQueue[node_temp - 1].distance =
+    //     calculateLinkDistance(macdata_daatr->local_node_position_info.positionX,
+    //                           macdata_daatr->local_node_position_info.positionY,
+    //                           macdata_daatr->local_node_position_info.positionZ,
+    //                           macpacket_daatr->node_position.positionX,
+    //                           macpacket_daatr->node_position.positionY,
+    //                           macpacket_daatr->node_position.positionZ);
 
-    macdata_daatr->businessQueue[node_temp - 1].distance =
-        calculateLinkDistance(macdata_daatr->local_node_position_info.positionX,
-                              macdata_daatr->local_node_position_info.positionY,
-                              macdata_daatr->local_node_position_info.positionZ,
-                              macpacket_daatr->node_position.positionX,
-                              macpacket_daatr->node_position.positionY,
-                              macpacket_daatr->node_position.positionZ);
-
-    // macdata_daatr->businessQueue[node_temp - 1].distance = 1;
+    macdata_daatr->businessQueue[node_temp - 1].distance = 1;
     //  cout << "Node " << node_temp << " distance: " << macdata_daatr->businessQueue[node_temp - 1].distance << " km " << endl;
 }

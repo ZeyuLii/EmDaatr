@@ -26,70 +26,48 @@ using namespace std;
 *
 */
 
-MacDaatr_struct_converter::MacDaatr_struct_converter()
-{
+MacDaatr_struct_converter::MacDaatr_struct_converter() {
     bit_sequence_ptr_ = NULL;
     Daatr_struct_ptr_ = NULL;
     type_ = 0;
 }
 
-MacDaatr_struct_converter::MacDaatr_struct_converter(unsigned char type)
-{ // temp对应结构体类型
+MacDaatr_struct_converter::MacDaatr_struct_converter(unsigned char type) { // temp对应结构体类型
     bit_sequence_ptr_ = NULL;
     Daatr_struct_ptr_ = NULL;
     type_ = type;
 }
 
-MacDaatr_struct_converter::~MacDaatr_struct_converter()
-{ // 析构函数
-    if (bit_sequence_ptr_ != NULL)
-    { // 若比特序列开辟了数组内存, 需释放
+MacDaatr_struct_converter::~MacDaatr_struct_converter() { // 析构函数
+    if (bit_sequence_ptr_ != NULL) {                      // 若比特序列开辟了数组内存, 需释放
         delete[] bit_sequence_ptr_;
     }
-    if (Daatr_struct_ptr_ != NULL)
-    { // 若结构体指针开辟了内存空间, 则需要释放
+    if (Daatr_struct_ptr_ != NULL) { // 若结构体指针开辟了内存空间, 则需要释放
         delete Daatr_struct_ptr_;
     }
 }
 
 // 返回结构体类型
-char MacDaatr_struct_converter::get_type()
-{
-    return type_;
-}
+char MacDaatr_struct_converter::get_type() { return type_; }
 
 // 返回长度
-uint32_t MacDaatr_struct_converter::get_length()
-{
-    return length_;
-}
+uint32_t MacDaatr_struct_converter::get_length() { return length_; }
 
 // 返回此比特序列长度(从PDU包头得到)type: 0 PDU1包  1 PDU2
-int MacDaatr_struct_converter::get_PDU1_sequence_length(uint8_t *bit_seq)
-{
-    return ((bit_seq[1] << 8) | (bit_seq[2]));
-}
+int MacDaatr_struct_converter::get_PDU1_sequence_length(uint8_t *bit_seq) { return ((bit_seq[1] << 8) | (bit_seq[2])); }
 
 // 返回结构体指针
-uint8_t *MacDaatr_struct_converter::get_struct()
-{
-    return Daatr_struct_ptr_;
-}
+uint8_t *MacDaatr_struct_converter::get_struct() { return Daatr_struct_ptr_; }
 
 // 返回比特序列指针
-uint8_t *MacDaatr_struct_converter::get_sequence()
-{
-    return bit_sequence_ptr_;
-}
+uint8_t *MacDaatr_struct_converter::get_sequence() { return bit_sequence_ptr_; }
 
 // 设置结构体类型
 // 0: 不做任何转换; 1: PDU1; 2: PDU2; 3: 飞行状态信息; 4: 网管节点通告消息
-bool MacDaatr_struct_converter::set_type(unsigned char temp)
-{
+bool MacDaatr_struct_converter::set_type(unsigned char temp) {
     bool flag = true;
     type_ = temp;
-    switch (type_)
-    {
+    switch (type_) {
     case 0:
         length_ = 0;
         break;
@@ -128,16 +106,14 @@ bool MacDaatr_struct_converter::set_type(unsigned char temp)
 }
 
 // 设置比特序列长度
-bool MacDaatr_struct_converter::set_length(int length)
-{
+bool MacDaatr_struct_converter::set_length(int length) {
     bool flag = true;
     length_ = length;
     return flag;
 }
 
 // 返回PDU2包头类型数据包长度
-int MacDaatr_struct_converter::get_PDU2_sequence_length(uint8_t *pkt)
-{
+int MacDaatr_struct_converter::get_PDU2_sequence_length(uint8_t *pkt) {
     int length = 0;
     length |= (pkt[0] & 0x7f);
     length <<= 8;
@@ -149,20 +125,15 @@ int MacDaatr_struct_converter::get_PDU2_sequence_length(uint8_t *pkt)
 
 // 设置类中结构体指针
 // 若返回值为fasle, 则表示当前temp为0, 需先设置temp值
-bool MacDaatr_struct_converter::set_struct(uint8_t *daatr_struc, unsigned char type = 0)
-{
+bool MacDaatr_struct_converter::set_struct(uint8_t *daatr_struc, unsigned char type = 0) {
     bool flag = false;
-    set_type(type); // 设置了长度信息
-    if (type_ == 0)
-    { // 若类型为0, 则不做任何处理
+    set_type(type);   // 设置了长度信息
+    if (type_ == 0) { // 若类型为0, 则不做任何处理
         return flag;
     }
-    switch (type_)
-    {
-    case 1:
-    { // PDU1
-        if (Daatr_struct_ptr_ != NULL)
-        {
+    switch (type_) {
+    case 1: { // PDU1
+        if (Daatr_struct_ptr_ != NULL) {
             delete Daatr_struct_ptr_;
             Daatr_struct_ptr_ = NULL;
         }
@@ -172,10 +143,8 @@ bool MacDaatr_struct_converter::set_struct(uint8_t *daatr_struc, unsigned char t
         Daatr_struct_ptr_ = (uint8_t *)pdu1_ptr_temp;
         break;
     }
-    case 2:
-    { // PDU2
-        if (Daatr_struct_ptr_ != NULL)
-        {
+    case 2: { // PDU2
+        if (Daatr_struct_ptr_ != NULL) {
             delete Daatr_struct_ptr_;
             Daatr_struct_ptr_ = NULL;
         }
@@ -185,10 +154,8 @@ bool MacDaatr_struct_converter::set_struct(uint8_t *daatr_struc, unsigned char t
         Daatr_struct_ptr_ = (uint8_t *)pdu2_ptr_temp;
         break;
     }
-    case 3:
-    { // 飞行状态信息
-        if (Daatr_struct_ptr_ != NULL)
-        {
+    case 3: { // 飞行状态信息
+        if (Daatr_struct_ptr_ != NULL) {
             delete Daatr_struct_ptr_;
             Daatr_struct_ptr_ = NULL;
         }
@@ -198,10 +165,8 @@ bool MacDaatr_struct_converter::set_struct(uint8_t *daatr_struc, unsigned char t
         Daatr_struct_ptr_ = (uint8_t *)flight_ptr_temp;
         break;
     }
-    case 4:
-    { // 网管节点通告消息
-        if (Daatr_struct_ptr_ != NULL)
-        {
+    case 4: { // 网管节点通告消息
+        if (Daatr_struct_ptr_ != NULL) {
             delete Daatr_struct_ptr_;
             Daatr_struct_ptr_ = NULL;
         }
@@ -211,10 +176,8 @@ bool MacDaatr_struct_converter::set_struct(uint8_t *daatr_struc, unsigned char t
         Daatr_struct_ptr_ = (uint8_t *)ptr_temp;
         break;
     }
-    case 5:
-    { // 频谱感知结果
-        if (Daatr_struct_ptr_ != NULL)
-        {
+    case 5: { // 频谱感知结果
+        if (Daatr_struct_ptr_ != NULL) {
             delete Daatr_struct_ptr_;
             Daatr_struct_ptr_ = NULL;
         }
@@ -224,10 +187,8 @@ bool MacDaatr_struct_converter::set_struct(uint8_t *daatr_struc, unsigned char t
         Daatr_struct_ptr_ = (uint8_t *)ptr_temp;
         break;
     }
-    case 6:
-    { // 建链请求结果
-        if (Daatr_struct_ptr_ != NULL)
-        {
+    case 6: { // 建链请求结果
+        if (Daatr_struct_ptr_ != NULL) {
             delete Daatr_struct_ptr_;
             Daatr_struct_ptr_ = NULL;
         }
@@ -237,10 +198,8 @@ bool MacDaatr_struct_converter::set_struct(uint8_t *daatr_struc, unsigned char t
         Daatr_struct_ptr_ = (uint8_t *)ptr_temp;
         break;
     }
-    case 7:
-    { // 时隙表
-        if (Daatr_struct_ptr_ != NULL)
-        {
+    case 7: { // 时隙表
+        if (Daatr_struct_ptr_ != NULL) {
             delete Daatr_struct_ptr_;
             Daatr_struct_ptr_ = NULL;
         }
@@ -250,10 +209,8 @@ bool MacDaatr_struct_converter::set_struct(uint8_t *daatr_struc, unsigned char t
         Daatr_struct_ptr_ = (uint8_t *)ptr_temp;
         break;
     }
-    case 8:
-    { // 网管信道数据包类型
-        if (Daatr_struct_ptr_ != NULL)
-        {
+    case 8: { // 网管信道数据包类型
+        if (Daatr_struct_ptr_ != NULL) {
             delete Daatr_struct_ptr_;
             Daatr_struct_ptr_ = NULL;
         }
@@ -263,10 +220,8 @@ bool MacDaatr_struct_converter::set_struct(uint8_t *daatr_struc, unsigned char t
         Daatr_struct_ptr_ = (uint8_t *)ptr_temp;
         break;
     }
-    case 9:
-    { // 网管节点接入请求回复（32byte）
-        if (Daatr_struct_ptr_ != NULL)
-        {
+    case 9: { // 网管节点接入请求回复（32byte）
+        if (Daatr_struct_ptr_ != NULL) {
             delete Daatr_struct_ptr_;
             Daatr_struct_ptr_ = NULL;
         }
@@ -276,10 +231,8 @@ bool MacDaatr_struct_converter::set_struct(uint8_t *daatr_struc, unsigned char t
         Daatr_struct_ptr_ = (uint8_t *)ptr_temp;
         break;
     }
-    case 10:
-    { // 跳频
-        if (Daatr_struct_ptr_ != NULL)
-        {
+    case 10: { // 跳频
+        if (Daatr_struct_ptr_ != NULL) {
             delete Daatr_struct_ptr_;
             Daatr_struct_ptr_ = NULL;
         }
@@ -295,179 +248,143 @@ bool MacDaatr_struct_converter::set_struct(uint8_t *daatr_struc, unsigned char t
 }
 
 // 设置类中比特序列指针
-bool MacDaatr_struct_converter::set_bit_sequence(uint8_t *bit_sequence, unsigned char type = 0)
-{
+bool MacDaatr_struct_converter::set_bit_sequence(uint8_t *bit_sequence, unsigned char type = 0) {
     bool flag = false;
     type_ = type;
     int i = 0;
     int number = 0;
-    if (type_ == 0)
-    { // 若类型为0, 则不做任何处理
+    if (type_ == 0) { // 若类型为0, 则不做任何处理
         return flag;
     }
-    switch (type_)
-    {
-    case 1:
-    { // PDU1
-        if (bit_sequence_ptr_ != NULL)
-        { // 如果比特序列指针不为NULL, 则删除原数组内存空间
+    switch (type_) {
+    case 1: {                            // PDU1
+        if (bit_sequence_ptr_ != NULL) { // 如果比特序列指针不为NULL, 则删除原数组内存空间
             delete[] bit_sequence_ptr_;
             bit_sequence_ptr_ = NULL;
         }
         number = 25; // 25为PDU1大小(不考虑内存对齐)
         bit_sequence_ptr_ = new uint8_t[number];
-        for (i = 0; i < number; i++)
-        {
+        for (i = 0; i < number; i++) {
             bit_sequence_ptr_[i] = bit_sequence[i];
         }
         break;
     }
-    case 2:
-    { // PDU2
-        if (bit_sequence_ptr_ != NULL)
-        { // 如果比特序列指针不为NULL, 则删除原数组内存空间
+    case 2: {                            // PDU2
+        if (bit_sequence_ptr_ != NULL) { // 如果比特序列指针不为NULL, 则删除原数组内存空间
             delete[] bit_sequence_ptr_;
             bit_sequence_ptr_ = NULL;
         }
         number = 17; // 17为PDU2大小(不考虑内存对齐)
         bit_sequence_ptr_ = new uint8_t[number];
-        for (i = 0; i < number; i++)
-        {
+        for (i = 0; i < number; i++) {
             bit_sequence_ptr_[i] = bit_sequence[i];
         }
         break;
     }
-    case 3:
-    { // 飞行状态信息
-        if (bit_sequence_ptr_ != NULL)
-        { // 如果比特序列指针不为NULL, 则删除原数组内存空间
+    case 3: {                            // 飞行状态信息
+        if (bit_sequence_ptr_ != NULL) { // 如果比特序列指针不为NULL, 则删除原数组内存空间
             delete[] bit_sequence_ptr_;
             bit_sequence_ptr_ = NULL;
         }
         number = 24; // 50为FlightStatus结构体大小(不考虑内存对齐),24为实际传输大小, 部分飞行状态信息因物理限制
         bit_sequence_ptr_ = new uint8_t[number];
-        for (i = 0; i < number; i++)
-        {
+        for (i = 0; i < number; i++) {
             bit_sequence_ptr_[i] = bit_sequence[i];
         }
         break;
     }
-    case 4:
-    { // 网管节点通告消息(预留8bits)
-        if (bit_sequence_ptr_ != NULL)
-        { // 如果比特序列指针不为NULL, 则删除原数组内存空间
+    case 4: {                            // 网管节点通告消息(预留8bits)
+        if (bit_sequence_ptr_ != NULL) { // 如果比特序列指针不为NULL, 则删除原数组内存空间
             delete[] bit_sequence_ptr_;
             bit_sequence_ptr_ = NULL;
         }
         number = 1;
         bit_sequence_ptr_ = new uint8_t[number]; // 1为网管节点通告消息大小
-        for (i = 0; i < number; i++)
-        {
+        for (i = 0; i < number; i++) {
             bit_sequence_ptr_[i] = bit_sequence[i];
         }
         break;
     }
-    case 5:
-    { // 频谱感知结果(共501bits)
-        if (bit_sequence_ptr_ != NULL)
-        { // 如果比特序列指针不为NULL, 则删除原数组内存空间
+    case 5: {                            // 频谱感知结果(共501bits)
+        if (bit_sequence_ptr_ != NULL) { // 如果比特序列指针不为NULL, 则删除原数组内存空间
             delete[] bit_sequence_ptr_;
             bit_sequence_ptr_ = NULL;
         }
         number = 63;
         bit_sequence_ptr_ = new uint8_t[number];
-        for (i = 0; i < number; i++)
-        {
+        for (i = 0; i < number; i++) {
             bit_sequence_ptr_[i] = bit_sequence[i];
         }
         break;
     }
-    case 6:
-    { // 建链请求
-        if (bit_sequence_ptr_ != NULL)
-        { // 如果比特序列指针不为NULL, 则删除原数组内存空间
+    case 6: {                            // 建链请求
+        if (bit_sequence_ptr_ != NULL) { // 如果比特序列指针不为NULL, 则删除原数组内存空间
             delete[] bit_sequence_ptr_;
             bit_sequence_ptr_ = NULL;
         }
         number = 2;
         bit_sequence_ptr_ = new uint8_t[number];
-        for (i = 0; i < number; i++)
-        {
+        for (i = 0; i < number; i++) {
             bit_sequence_ptr_[i] = bit_sequence[i];
         }
         break;
     }
-    case 7:
-    { // 时隙表
-        if (bit_sequence_ptr_ != NULL)
-        { // 如果比特序列指针不为NULL, 则删除原数组内存空间
+    case 7: {                            // 时隙表
+        if (bit_sequence_ptr_ != NULL) { // 如果比特序列指针不为NULL, 则删除原数组内存空间
             delete[] bit_sequence_ptr_;
             bit_sequence_ptr_ = NULL;
         }
         number = 550;
         bit_sequence_ptr_ = new uint8_t[number];
-        for (i = 0; i < number; i++)
-        {
+        for (i = 0; i < number; i++) {
             bit_sequence_ptr_[i] = bit_sequence[i];
         }
         break;
     }
-    case 8:
-    { // 网管数据包类型（预留8bits）
-        if (bit_sequence_ptr_ != NULL)
-        { // 如果比特序列指针不为NULL, 则删除原数组内存空间
+    case 8: {                            // 网管数据包类型（预留8bits）
+        if (bit_sequence_ptr_ != NULL) { // 如果比特序列指针不为NULL, 则删除原数组内存空间
             delete[] bit_sequence_ptr_;
             bit_sequence_ptr_ = NULL;
         }
         number = 1;
         bit_sequence_ptr_ = new uint8_t[number]; // 1为网管节点通告消息大小
-        for (i = 0; i < number; i++)
-        {
+        for (i = 0; i < number; i++) {
             bit_sequence_ptr_[i] = bit_sequence[i];
         }
         break;
     }
-    case 9:
-    { // 网管节点接入请求回复（32byte）
-        if (bit_sequence_ptr_ != NULL)
-        { // 如果比特序列指针不为NULL, 则删除原数组内存空间
+    case 9: {                            // 网管节点接入请求回复（32byte）
+        if (bit_sequence_ptr_ != NULL) { // 如果比特序列指针不为NULL, 则删除原数组内存空间
             delete[] bit_sequence_ptr_;
             bit_sequence_ptr_ = NULL;
         }
         number = 32;
         bit_sequence_ptr_ = new uint8_t[number]; // 1为网管节点通告消息大小
-        for (i = 0; i < number; i++)
-        {
+        for (i = 0; i < number; i++) {
             bit_sequence_ptr_[i] = bit_sequence[i];
         }
         break;
     }
-    case 10:
-    { // 时隙表
-        if (bit_sequence_ptr_ != NULL)
-        { // 如果比特序列指针不为NULL, 则删除原数组内存空间
+    case 10: {                           // 时隙表
+        if (bit_sequence_ptr_ != NULL) { // 如果比特序列指针不为NULL, 则删除原数组内存空间
             delete[] bit_sequence_ptr_;
             bit_sequence_ptr_ = NULL;
         }
         number = 563;
         bit_sequence_ptr_ = new uint8_t[number];
-        for (i = 0; i < number; i++)
-        {
+        for (i = 0; i < number; i++) {
             bit_sequence_ptr_[i] = bit_sequence[i];
         }
         break;
     }
-    case 255:
-    {
-        if (bit_sequence_ptr_ != NULL)
-        { // 如果比特序列指针不为NULL, 则删除原数组内存空间
+    case 255: {
+        if (bit_sequence_ptr_ != NULL) { // 如果比特序列指针不为NULL, 则删除原数组内存空间
             delete[] bit_sequence_ptr_;
             bit_sequence_ptr_ = NULL;
         }
         number = length_;
         bit_sequence_ptr_ = new uint8_t[number];
-        for (i = 0; i < number; i++)
-        {
+        for (i = 0; i < number; i++) {
             bit_sequence_ptr_[i] = bit_sequence[i];
         }
         break;
@@ -478,8 +395,7 @@ bool MacDaatr_struct_converter::set_bit_sequence(uint8_t *bit_sequence, unsigned
 }
 
 // PDU1->0/1序列
-bool MacDaatr_struct_converter::daatr_PDU1_to_0_1()
-{
+bool MacDaatr_struct_converter::daatr_PDU1_to_0_1() {
     int i = 0;
     int number = 25;
     int flag = false;
@@ -487,8 +403,7 @@ bool MacDaatr_struct_converter::daatr_PDU1_to_0_1()
     {
         return flag;
     }
-    if (bit_sequence_ptr_ != NULL)
-    { // 若指针不为空, 则释放原空间
+    if (bit_sequence_ptr_ != NULL) { // 若指针不为空, 则释放原空间
         delete[] bit_sequence_ptr_;
         bit_sequence_ptr_ = NULL;
     }
@@ -534,8 +449,7 @@ bool MacDaatr_struct_converter::daatr_PDU1_to_0_1()
 }
 
 // PDU2->0/1序列
-bool MacDaatr_struct_converter::daatr_PDU2_to_0_1()
-{
+bool MacDaatr_struct_converter::daatr_PDU2_to_0_1() {
     int i = 0;
     int number = 17;
     int flag = false;
@@ -543,8 +457,7 @@ bool MacDaatr_struct_converter::daatr_PDU2_to_0_1()
     {
         return flag;
     }
-    if (bit_sequence_ptr_ != NULL)
-    { // 若指针不为空, 则释放原空间
+    if (bit_sequence_ptr_ != NULL) { // 若指针不为空, 则释放原空间
         delete[] bit_sequence_ptr_;
         bit_sequence_ptr_ = NULL;
     }
@@ -554,7 +467,9 @@ bool MacDaatr_struct_converter::daatr_PDU2_to_0_1()
     packet[1] = (pdu2_ptr_temp->packetLength >> 1) & 0xff;
     packet[2] = ((pdu2_ptr_temp->packetLength << 7) | (pdu2_ptr_temp->srcAddr >> 3)) & 0xff;
     packet[3] = ((pdu2_ptr_temp->srcAddr << 5) | (pdu2_ptr_temp->destAddr >> 5)) & 0xff;
-    packet[4] = ((pdu2_ptr_temp->destAddr << 3) | (pdu2_ptr_temp->slice_head_identification << 2) | (pdu2_ptr_temp->fragment_tail_identification << 1) | (pdu2_ptr_temp->backup)) & 0xff;
+    packet[4] = ((pdu2_ptr_temp->destAddr << 3) | (pdu2_ptr_temp->slice_head_identification << 2) |
+                 (pdu2_ptr_temp->fragment_tail_identification << 1) | (pdu2_ptr_temp->backup)) &
+                0xff;
     packet[5] = (pdu2_ptr_temp->mac_headerChecksum) & 0xff;
     packet[6] = (pdu2_ptr_temp->mac_pSynch >> 56) & 0xff;
     packet[7] = (pdu2_ptr_temp->mac_pSynch >> 48) & 0xff;
@@ -578,17 +493,14 @@ bool MacDaatr_struct_converter::daatr_PDU2_to_0_1()
 }
 
 // 0/1比特序列->结构体PDU1
-bool MacDaatr_struct_converter::daatr_0_1_to_PDU1()
-{
+bool MacDaatr_struct_converter::daatr_0_1_to_PDU1() {
     uint64_t temp_vari = 0;
     bool flag = false;
     int num = 0;
-    if (bit_sequence_ptr_ == NULL || type_ != 1)
-    {
+    if (bit_sequence_ptr_ == NULL || type_ != 1) {
         return flag;
     }
-    if (Daatr_struct_ptr_ != NULL)
-    { // 若结构体指针不为空, 则释放
+    if (Daatr_struct_ptr_ != NULL) { // 若结构体指针不为空, 则释放
         delete Daatr_struct_ptr_;
         Daatr_struct_ptr_ = NULL;
     }
@@ -636,8 +548,7 @@ bool MacDaatr_struct_converter::daatr_0_1_to_PDU1()
     struct_ptr_temp->mac_headerChecksum |= temp_vari;
     temp_vari = 0;
     num = 14;
-    for (int i = 0; i < 7; i++)
-    {
+    for (int i = 0; i < 7; i++) {
         temp_vari |= bit_sequence_ptr_[num + i];
         temp_vari = temp_vari << 8;
     }
@@ -670,17 +581,14 @@ bool MacDaatr_struct_converter::daatr_0_1_to_PDU1()
 }
 
 // 0/1比特序列->结构体PDU2
-bool MacDaatr_struct_converter::daatr_0_1_to_PDU2()
-{
+bool MacDaatr_struct_converter::daatr_0_1_to_PDU2() {
     uint64_t temp_vari = 0;
     bool flag = false;
     int num = 0;
-    if (bit_sequence_ptr_ == NULL || type_ != 2)
-    {
+    if (bit_sequence_ptr_ == NULL || type_ != 2) {
         return flag;
     }
-    if (Daatr_struct_ptr_ != NULL)
-    { // 若结构体指针不为空, 则释放
+    if (Daatr_struct_ptr_ != NULL) { // 若结构体指针不为空, 则释放
         delete Daatr_struct_ptr_;
         Daatr_struct_ptr_ = NULL;
     }
@@ -711,8 +619,7 @@ bool MacDaatr_struct_converter::daatr_0_1_to_PDU2()
     struct_ptr_temp->mac_headerChecksum |= bit_sequence_ptr_[5];
     num = 6;
     temp_vari = 0;
-    for (int i = 0; i < 7; i++)
-    {
+    for (int i = 0; i < 7; i++) {
         temp_vari |= bit_sequence_ptr_[num + i];
         temp_vari <<= 8;
     }
@@ -744,24 +651,19 @@ bool MacDaatr_struct_converter::daatr_0_1_to_PDU2()
 }
 
 // 将使用vector盛放的01序列, 转换为converter格式, 为其bit_seq字段赋值
-bool MacDaatr_struct_converter::daatr_MFCvector_to_0_1(vector<uint8_t> *MFC_vector_temp,
-                                                       int packetlength)
-{
+bool MacDaatr_struct_converter::daatr_MFCvector_to_0_1(vector<uint8_t> *MFC_vector_temp, int packetlength) {
     int flag = false;
 
-    if (bit_sequence_ptr_ != NULL)
-    { // 若指针不为空, 则释放原空间
+    if (bit_sequence_ptr_ != NULL) { // 若指针不为空, 则释放原空间
         delete[] bit_sequence_ptr_;
         bit_sequence_ptr_ = NULL;
     }
 
-    if (packetlength != (*MFC_vector_temp).size())
-        cout << "MFC sequence doesn't match given length" << (*MFC_vector_temp).size();
+    if (packetlength != (*MFC_vector_temp).size()) cout << "MFC sequence doesn't match given length" << (*MFC_vector_temp).size();
 
     length_ = packetlength;
     uint8_t *packet = new uint8_t[length_];
-    for (int i = 0; i < length_; i++)
-    {
+    for (int i = 0; i < length_; i++) {
         packet[i] = (*MFC_vector_temp)[i];
     }
     bit_sequence_ptr_ = packet;
@@ -769,12 +671,10 @@ bool MacDaatr_struct_converter::daatr_MFCvector_to_0_1(vector<uint8_t> *MFC_vect
     return flag;
 }
 
-vector<uint8_t> *MacDaatr_struct_converter::daatr_0_1_to_MFCvector()
-{
+vector<uint8_t> *MacDaatr_struct_converter::daatr_0_1_to_MFCvector() {
     // uint8_t *packet = new uint8_t[packetlength];
     vector<uint8_t> *buffer = new vector<uint8_t>;
-    for (int i = 0; i < length_; i++)
-    {
+    for (int i = 0; i < length_; i++) {
         buffer->push_back(bit_sequence_ptr_[i]);
     }
 
@@ -783,35 +683,30 @@ vector<uint8_t> *MacDaatr_struct_converter::daatr_0_1_to_MFCvector()
 
 // 传入的是一个converter类型的01序列, 其组成格式为 若干通过重载 "+" 相连的MFC集合
 // 此函数将从 多个MFC的01序列 中拆出来第一个MFC所属的01序列 并返回(通过MFC的pktlength字段)
-vector<uint8_t> *MacDaatr_struct_converter::Get_Single_MFC()
-{
+vector<uint8_t> *MacDaatr_struct_converter::Get_Single_MFC() {
     int i;
     int MFC_packetlength = (bit_sequence_ptr_[1] << 8) | bit_sequence_ptr_[2];
     // cout << "MFC_packetlength: " << MFC_packetlength << endl;
     vector<uint8_t> *MFC_vector = new vector<uint8_t>;
-    for (i = 0; i < MFC_packetlength; i++)
-    {
+    for (i = 0; i < MFC_packetlength; i++) {
         MFC_vector->push_back(bit_sequence_ptr_[i]);
     }
     // 更新长度
     length_ -= MFC_packetlength;
 
     // 将 bitseq 前移 mfclength
-    for (i = 0; i < length_; i++)
-    {
+    for (i = 0; i < length_; i++) {
         bit_sequence_ptr_[i] = bit_sequence_ptr_[i + MFC_packetlength];
     }
     // 将前移后空出来的位置赋零
-    for (i = 0; i < MFC_packetlength; i++)
-    {
+    for (i = 0; i < MFC_packetlength; i++) {
         bit_sequence_ptr_[length_ + i] = 0;
     }
     return MFC_vector;
 }
 
 // 飞行状态信息转化为0/1序列
-bool MacDaatr_struct_converter::daatr_flight_to_0_1()
-{
+bool MacDaatr_struct_converter::daatr_flight_to_0_1() {
     int i = 0;
     int number = 24;
     int flag = false;
@@ -821,8 +716,7 @@ bool MacDaatr_struct_converter::daatr_flight_to_0_1()
     {
         return flag;
     }
-    if (bit_sequence_ptr_ != NULL)
-    { // 若指针不为空, 则释放原空间
+    if (bit_sequence_ptr_ != NULL) { // 若指针不为空, 则释放原空间
         delete[] bit_sequence_ptr_;
         bit_sequence_ptr_ = NULL;
     }
@@ -875,25 +769,21 @@ bool MacDaatr_struct_converter::daatr_flight_to_0_1()
 }
 
 // 0/1序列转化为飞行状态信息
-bool MacDaatr_struct_converter::daatr_0_1_to_flight()
-{
+bool MacDaatr_struct_converter::daatr_0_1_to_flight() {
     uint32_t temp_vari = 0;
     bool flag = false;
     int num = 0;
     int i = 0;
-    if (bit_sequence_ptr_ == NULL || type_ != 3)
-    {
+    if (bit_sequence_ptr_ == NULL || type_ != 3) {
         return flag;
     }
-    if (Daatr_struct_ptr_ != NULL)
-    { // 若结构体指针不为空, 则释放
+    if (Daatr_struct_ptr_ != NULL) { // 若结构体指针不为空, 则释放
         delete Daatr_struct_ptr_;
         Daatr_struct_ptr_ = NULL;
     }
     FlightStatus *struct_ptr_temp = new FlightStatus;
     memset(struct_ptr_temp, 0, sizeof(FlightStatus));
-    for (i = 0; i < 3; i++)
-    {
+    for (i = 0; i < 3; i++) {
         temp_vari |= bit_sequence_ptr_[num];
         temp_vari <<= 8;
         num++;
@@ -902,8 +792,7 @@ bool MacDaatr_struct_converter::daatr_0_1_to_flight()
     struct_ptr_temp->positionX = *(float *)&temp_vari;
     temp_vari = 0;
     num++;
-    for (i = 0; i < 3; i++)
-    {
+    for (i = 0; i < 3; i++) {
         temp_vari |= bit_sequence_ptr_[num];
         temp_vari <<= 8;
         num++;
@@ -912,8 +801,7 @@ bool MacDaatr_struct_converter::daatr_0_1_to_flight()
     struct_ptr_temp->positionY = *(float *)&temp_vari;
     temp_vari = 0;
     num++;
-    for (i = 0; i < 3; i++)
-    {
+    for (i = 0; i < 3; i++) {
         temp_vari |= bit_sequence_ptr_[num];
         temp_vari <<= 8;
         num++;
@@ -922,8 +810,7 @@ bool MacDaatr_struct_converter::daatr_0_1_to_flight()
     struct_ptr_temp->positionZ = *(float *)&temp_vari;
     temp_vari = 0;
     num++;
-    for (i = 0; i < 3; i++)
-    {
+    for (i = 0; i < 3; i++) {
         temp_vari |= bit_sequence_ptr_[num];
         temp_vari <<= 8;
         num++;
@@ -932,8 +819,7 @@ bool MacDaatr_struct_converter::daatr_0_1_to_flight()
     struct_ptr_temp->pitchAngle = *(float *)&temp_vari;
     temp_vari = 0;
     num++;
-    for (i = 0; i < 3; i++)
-    {
+    for (i = 0; i < 3; i++) {
         temp_vari |= bit_sequence_ptr_[num];
         temp_vari <<= 8;
         num++;
@@ -942,8 +828,7 @@ bool MacDaatr_struct_converter::daatr_0_1_to_flight()
     struct_ptr_temp->yawAngle = *(float *)&temp_vari;
     temp_vari = 0;
     num++;
-    for (i = 0; i < 3; i++)
-    {
+    for (i = 0; i < 3; i++) {
         temp_vari |= bit_sequence_ptr_[num];
         temp_vari <<= 8;
         num++;
@@ -964,8 +849,7 @@ bool MacDaatr_struct_converter::daatr_0_1_to_flight()
 }
 
 // 网管节点通告消息转化为0/1序列
-bool MacDaatr_struct_converter::daatr_mana_info_to_0_1()
-{
+bool MacDaatr_struct_converter::daatr_mana_info_to_0_1() {
     int i = 0;
     int number = 1;
     int flag = false;
@@ -973,8 +857,7 @@ bool MacDaatr_struct_converter::daatr_mana_info_to_0_1()
     {
         return flag;
     }
-    if (bit_sequence_ptr_ != NULL)
-    { // 若指针不为空, 则释放原空间
+    if (bit_sequence_ptr_ != NULL) { // 若指针不为空, 则释放原空间
         delete[] bit_sequence_ptr_;
         bit_sequence_ptr_ = NULL;
     }
@@ -992,18 +875,15 @@ bool MacDaatr_struct_converter::daatr_mana_info_to_0_1()
 }
 
 // 0/1序列转化网管节点通告消息
-bool MacDaatr_struct_converter::daatr_0_1_to_mana_info()
-{
+bool MacDaatr_struct_converter::daatr_0_1_to_mana_info() {
     uint32_t temp_vari = 0;
     bool flag = false;
     int num = 0;
     int i = 0;
-    if (bit_sequence_ptr_ == NULL || type_ != 4)
-    {
+    if (bit_sequence_ptr_ == NULL || type_ != 4) {
         return flag;
     }
-    if (Daatr_struct_ptr_ != NULL)
-    { // 若结构体指针不为空, 则释放
+    if (Daatr_struct_ptr_ != NULL) { // 若结构体指针不为空, 则释放
         delete Daatr_struct_ptr_;
         Daatr_struct_ptr_ = NULL;
     }
@@ -1019,8 +899,7 @@ bool MacDaatr_struct_converter::daatr_0_1_to_mana_info()
 }
 
 // 频谱感知结果转化为0/1序列
-bool MacDaatr_struct_converter::daatr_freq_sense_to_0_1()
-{
+bool MacDaatr_struct_converter::daatr_freq_sense_to_0_1() {
     int i = 0;
     int j = 0;
     int number = 63;
@@ -1030,18 +909,15 @@ bool MacDaatr_struct_converter::daatr_freq_sense_to_0_1()
     {
         return flag;
     }
-    if (bit_sequence_ptr_ != NULL)
-    { // 若指针不为空, 则释放原空间
+    if (bit_sequence_ptr_ != NULL) { // 若指针不为空, 则释放原空间
         delete[] bit_sequence_ptr_;
         bit_sequence_ptr_ = NULL;
     }
     spectrum_sensing_struct *mana_info_ptr_temp = (spectrum_sensing_struct *)Daatr_struct_ptr_;
     uint8_t *packet = new uint8_t[number]; // 生成新空间
     uint8_t temp = 0;
-    for (i = 0; i < number - 1; i++)
-    {
-        for (j = 0; j < 7; j++)
-        {
+    for (i = 0; i < number - 1; i++) {
+        for (j = 0; j < 7; j++) {
             temp |= (mana_info_ptr_temp->spectrum_sensing[num] & 0xff);
             temp <<= 1;
             num++;
@@ -1051,11 +927,9 @@ bool MacDaatr_struct_converter::daatr_freq_sense_to_0_1()
         packet[i] = temp;
         temp = 0;
     }
-    while (num < TOTAL_FREQ_POINT)
-    {
+    while (num < TOTAL_FREQ_POINT) {
         temp |= (mana_info_ptr_temp->spectrum_sensing[num] & 0xff);
-        if (num != TOTAL_FREQ_POINT - 1)
-        {
+        if (num != TOTAL_FREQ_POINT - 1) {
             temp <<= 1;
         }
         num++;
@@ -1067,36 +941,29 @@ bool MacDaatr_struct_converter::daatr_freq_sense_to_0_1()
 }
 
 // 0/1序列转化为频谱感知结果
-bool MacDaatr_struct_converter::daatr_0_1_to_freq_sense()
-{
+bool MacDaatr_struct_converter::daatr_0_1_to_freq_sense() {
     bool flag = false;
     int num = 63;
     int number = 0;
     int i = 0;
     int j = 0;
-    if (bit_sequence_ptr_ == NULL || type_ != 5)
-    {
+    if (bit_sequence_ptr_ == NULL || type_ != 5) {
         return flag;
     }
-    if (Daatr_struct_ptr_ != NULL)
-    { // 若结构体指针不为空, 则释放
+    if (Daatr_struct_ptr_ != NULL) { // 若结构体指针不为空, 则释放
         delete Daatr_struct_ptr_;
         Daatr_struct_ptr_ = NULL;
     }
     spectrum_sensing_struct *struct_ptr_temp = new spectrum_sensing_struct;
     memset(struct_ptr_temp->spectrum_sensing, 0, sizeof(unsigned int) * TOTAL_FREQ_POINT);
-    for (i = 0; i < num - 1; i++)
-    {
-        for (j = 7; j >= 0; j--)
-        {
+    for (i = 0; i < num - 1; i++) {
+        for (j = 7; j >= 0; j--) {
             struct_ptr_temp->spectrum_sensing[number] |= ((bit_sequence_ptr_[i] >> j) & 0x01);
             number++;
         }
     }
-    while (number < TOTAL_FREQ_POINT)
-    {
-        for (j = 4; j >= 0; j--)
-        {
+    while (number < TOTAL_FREQ_POINT) {
+        for (j = 4; j >= 0; j--) {
             struct_ptr_temp->spectrum_sensing[number] |= ((bit_sequence_ptr_[i] >> j) & 0x01);
         }
         number++;
@@ -1107,8 +974,7 @@ bool MacDaatr_struct_converter::daatr_0_1_to_freq_sense()
 }
 
 // 建链请求转化为0/1序列
-bool MacDaatr_struct_converter::daatr_build_req_to_0_1()
-{
+bool MacDaatr_struct_converter::daatr_build_req_to_0_1() {
     int i = 0;
     int j = 0;
     int number = 2;
@@ -1118,8 +984,7 @@ bool MacDaatr_struct_converter::daatr_build_req_to_0_1()
     {
         return flag;
     }
-    if (bit_sequence_ptr_ != NULL)
-    { // 若指针不为空, 则释放原空间
+    if (bit_sequence_ptr_ != NULL) { // 若指针不为空, 则释放原空间
         delete[] bit_sequence_ptr_;
         bit_sequence_ptr_ = NULL;
     }
@@ -1139,19 +1004,16 @@ bool MacDaatr_struct_converter::daatr_build_req_to_0_1()
 }
 
 // 0/1序列转化为建链请求
-bool MacDaatr_struct_converter::daatr_0_1_to_build_req()
-{
+bool MacDaatr_struct_converter::daatr_0_1_to_build_req() {
     bool flag = false;
     int num = 2;
     int number = 0;
     int i = 0;
     int j = 0;
-    if (bit_sequence_ptr_ == NULL || type_ != 6)
-    {
+    if (bit_sequence_ptr_ == NULL || type_ != 6) {
         return flag;
     }
-    if (Daatr_struct_ptr_ != NULL)
-    { // 若结构体指针不为空, 则释放
+    if (Daatr_struct_ptr_ != NULL) { // 若结构体指针不为空, 则释放
         delete Daatr_struct_ptr_;
         Daatr_struct_ptr_ = NULL;
     }
@@ -1171,8 +1033,7 @@ bool MacDaatr_struct_converter::daatr_0_1_to_build_req()
 }
 
 // 网管信道数据类型转换为0/1序列
-bool MacDaatr_struct_converter::daatr_mana_packet_type_to_0_1()
-{
+bool MacDaatr_struct_converter::daatr_mana_packet_type_to_0_1() {
     int i = 0;
     int number = 1;
     int flag = false;
@@ -1180,8 +1041,7 @@ bool MacDaatr_struct_converter::daatr_mana_packet_type_to_0_1()
     {
         return flag;
     }
-    if (bit_sequence_ptr_ != NULL)
-    { // 若指针不为空, 则释放原空间
+    if (bit_sequence_ptr_ != NULL) { // 若指针不为空, 则释放原空间
         delete[] bit_sequence_ptr_;
         bit_sequence_ptr_ = NULL;
     }
@@ -1199,18 +1059,15 @@ bool MacDaatr_struct_converter::daatr_mana_packet_type_to_0_1()
 }
 
 // 0/1序列转换为网管信道数据类型
-bool MacDaatr_struct_converter::daatr_0_1_to_mana_packet_type()
-{
+bool MacDaatr_struct_converter::daatr_0_1_to_mana_packet_type() {
     uint32_t temp_vari = 0;
     bool flag = false;
     int num = 0;
     int i = 0;
-    if (bit_sequence_ptr_ == NULL || type_ != 8)
-    {
+    if (bit_sequence_ptr_ == NULL || type_ != 8) {
         return flag;
     }
-    if (Daatr_struct_ptr_ != NULL)
-    { // 若结构体指针不为空, 则释放
+    if (Daatr_struct_ptr_ != NULL) { // 若结构体指针不为空, 则释放
         delete Daatr_struct_ptr_;
         Daatr_struct_ptr_ = NULL;
     }
@@ -1225,20 +1082,17 @@ bool MacDaatr_struct_converter::daatr_0_1_to_mana_packet_type()
     return flag;
 }
 
-bool MacDaatr_struct_converter::daatr_slottable_to_0_1()
-{
+bool MacDaatr_struct_converter::daatr_slottable_to_0_1() {
     int i = 0;
     int j = 0;
     int k = 0;
     int number = 550;
     int flag = false;
-    if (Daatr_struct_ptr_ == NULL || type_ != 7)
-    {
+    if (Daatr_struct_ptr_ == NULL || type_ != 7) {
         return flag;
     }
 
-    if (bit_sequence_ptr_ != NULL)
-    { // 若指针不为空, 则释放原空间
+    if (bit_sequence_ptr_ != NULL) { // 若指针不为空, 则释放原空间
         delete[] bit_sequence_ptr_;
         bit_sequence_ptr_ = NULL;
     }
@@ -1246,8 +1100,7 @@ bool MacDaatr_struct_converter::daatr_slottable_to_0_1()
     highFreqSlottable *slottable_temp = (highFreqSlottable *)Daatr_struct_ptr_;
     uint8_t *packet = new uint8_t[number]; // 生成新空间
 
-    for (i = 0; i < 50; i++)
-    {
+    for (i = 0; i < 50; i++) {
         packet[11 * i + 0] = slottable_temp->slot_traffic_execution_new[8 * i + 0].state << 7 |
                              (slottable_temp->slot_traffic_execution_new[8 * i + 0].send_or_recv_node & 0x3f8) >> 3; // 高7, 右移3
 
@@ -1289,19 +1142,16 @@ bool MacDaatr_struct_converter::daatr_slottable_to_0_1()
     return flag;
 }
 
-bool MacDaatr_struct_converter::daatr_0_1_to_slottable()
-{
+bool MacDaatr_struct_converter::daatr_0_1_to_slottable() {
     bool flag = false;
     int num = 550;
     int number = 0;
     int i = 0;
     int j = 0;
-    if (bit_sequence_ptr_ == NULL || type_ != 7)
-    {
+    if (bit_sequence_ptr_ == NULL || type_ != 7) {
         return flag;
     }
-    if (Daatr_struct_ptr_ != NULL)
-    { // 若结构体指针不为空, 则释放
+    if (Daatr_struct_ptr_ != NULL) { // 若结构体指针不为空, 则释放
         delete Daatr_struct_ptr_;
         Daatr_struct_ptr_ = NULL;
     }
@@ -1309,35 +1159,41 @@ bool MacDaatr_struct_converter::daatr_0_1_to_slottable()
     highFreqSlottable *slottable_temp = new highFreqSlottable;
     memset(slottable_temp, 0, sizeof(highFreqSlottable));
 
-    for (i = 0; i < 50; i++)
-    {
+    for (i = 0; i < 50; i++) {
         // for (j = 0; j < 50; j++)
         // {
-        slottable_temp->slot_traffic_execution_new[8 * i + 0].state = (bit_sequence_ptr_[11 * i + 0] & 0x80) >> 7;                                                           // 高 1
-        slottable_temp->slot_traffic_execution_new[8 * i + 0].send_or_recv_node = (bit_sequence_ptr_[11 * i + 0] & 0x7f) << 3 | (bit_sequence_ptr_[11 * i + 1] & 0xe0) >> 5; // 低7, 左移3  高3, 右移5
+        slottable_temp->slot_traffic_execution_new[8 * i + 0].state = (bit_sequence_ptr_[11 * i + 0] & 0x80) >> 7; // 高 1
+        slottable_temp->slot_traffic_execution_new[8 * i + 0].send_or_recv_node =
+            (bit_sequence_ptr_[11 * i + 0] & 0x7f) << 3 | (bit_sequence_ptr_[11 * i + 1] & 0xe0) >> 5; // 低7, 左移3  高3, 右移5
 
         slottable_temp->slot_traffic_execution_new[8 * i + 1].state = (bit_sequence_ptr_[11 * i + 1] & 0x10) >> 4;
-        slottable_temp->slot_traffic_execution_new[8 * i + 1].send_or_recv_node = (bit_sequence_ptr_[11 * i + 1] & 0x0f) << 6 | (bit_sequence_ptr_[11 * i + 2] & 0xfc) >> 2; // 低4, 左移6  高6, 右移2
+        slottable_temp->slot_traffic_execution_new[8 * i + 1].send_or_recv_node =
+            (bit_sequence_ptr_[11 * i + 1] & 0x0f) << 6 | (bit_sequence_ptr_[11 * i + 2] & 0xfc) >> 2; // 低4, 左移6  高6, 右移2
 
         slottable_temp->slot_traffic_execution_new[8 * i + 2].state = (bit_sequence_ptr_[11 * i + 2] & 0x02) >> 1;
-        slottable_temp->slot_traffic_execution_new[8 * i + 2].send_or_recv_node = (bit_sequence_ptr_[11 * i + 2] & 0x01) << 9 |
-                                                                                  (bit_sequence_ptr_[11 * i + 3] & 0xff) << 1 |
-                                                                                  (bit_sequence_ptr_[11 * i + 4] & 0x80) >> 7; // 低1左移9, 中8左移1, 高1右移7
+        slottable_temp->slot_traffic_execution_new[8 * i + 2].send_or_recv_node =
+            (bit_sequence_ptr_[11 * i + 2] & 0x01) << 9 | (bit_sequence_ptr_[11 * i + 3] & 0xff) << 1 |
+            (bit_sequence_ptr_[11 * i + 4] & 0x80) >> 7; // 低1左移9, 中8左移1, 高1右移7
 
         slottable_temp->slot_traffic_execution_new[8 * i + 3].state = (bit_sequence_ptr_[11 * i + 4] & 0x40) >> 6;
-        slottable_temp->slot_traffic_execution_new[8 * i + 3].send_or_recv_node = (bit_sequence_ptr_[11 * i + 4] & 0x3f) << 4 | (bit_sequence_ptr_[11 * i + 5] & 0xf0) >> 4; // 低6左移4, 高4右移4
+        slottable_temp->slot_traffic_execution_new[8 * i + 3].send_or_recv_node =
+            (bit_sequence_ptr_[11 * i + 4] & 0x3f) << 4 | (bit_sequence_ptr_[11 * i + 5] & 0xf0) >> 4; // 低6左移4, 高4右移4
 
-        slottable_temp->slot_traffic_execution_new[8 * i + 4].state = (bit_sequence_ptr_[11 * i + 5] & 0x08) >> 3;                                                           // 低4
-        slottable_temp->slot_traffic_execution_new[8 * i + 4].send_or_recv_node = (bit_sequence_ptr_[11 * i + 5] & 0x07) << 7 | (bit_sequence_ptr_[11 * i + 6] & 0xfe) >> 1; // 低3左移7, 高7右移1
+        slottable_temp->slot_traffic_execution_new[8 * i + 4].state = (bit_sequence_ptr_[11 * i + 5] & 0x08) >> 3; // 低4
+        slottable_temp->slot_traffic_execution_new[8 * i + 4].send_or_recv_node =
+            (bit_sequence_ptr_[11 * i + 5] & 0x07) << 7 | (bit_sequence_ptr_[11 * i + 6] & 0xfe) >> 1; // 低3左移7, 高7右移1
 
-        slottable_temp->slot_traffic_execution_new[8 * i + 5].state = (bit_sequence_ptr_[11 * i + 6] & 0x01);                                                         // 低1
-        slottable_temp->slot_traffic_execution_new[8 * i + 5].send_or_recv_node = (bit_sequence_ptr_[11 * i + 7]) << 2 | (bit_sequence_ptr_[11 * i + 8] & 0xc0) >> 6; // 高8左移2, 高2右移6
+        slottable_temp->slot_traffic_execution_new[8 * i + 5].state = (bit_sequence_ptr_[11 * i + 6] & 0x01); // 低1
+        slottable_temp->slot_traffic_execution_new[8 * i + 5].send_or_recv_node =
+            (bit_sequence_ptr_[11 * i + 7]) << 2 | (bit_sequence_ptr_[11 * i + 8] & 0xc0) >> 6; // 高8左移2, 高2右移6
 
-        slottable_temp->slot_traffic_execution_new[8 * i + 6].state = (bit_sequence_ptr_[11 * i + 8] & 0x20) >> 5;                                                           // 高3
-        slottable_temp->slot_traffic_execution_new[8 * i + 6].send_or_recv_node = (bit_sequence_ptr_[11 * i + 8] & 0x1f) << 5 | (bit_sequence_ptr_[11 * i + 9] & 0xf8) >> 3; // 低5左移5, 高5右移3
+        slottable_temp->slot_traffic_execution_new[8 * i + 6].state = (bit_sequence_ptr_[11 * i + 8] & 0x20) >> 5; // 高3
+        slottable_temp->slot_traffic_execution_new[8 * i + 6].send_or_recv_node =
+            (bit_sequence_ptr_[11 * i + 8] & 0x1f) << 5 | (bit_sequence_ptr_[11 * i + 9] & 0xf8) >> 3; // 低5左移5, 高5右移3
 
-        slottable_temp->slot_traffic_execution_new[8 * i + 7].state = (bit_sequence_ptr_[11 * i + 9] & 0x04) >> 2;                                                       // 低3
-        slottable_temp->slot_traffic_execution_new[8 * i + 7].send_or_recv_node = (bit_sequence_ptr_[11 * i + 9] & 0x03) << 8 | (bit_sequence_ptr_[11 * i + 10] & 0xff); // 低2左移8, 高8
+        slottable_temp->slot_traffic_execution_new[8 * i + 7].state = (bit_sequence_ptr_[11 * i + 9] & 0x04) >> 2; // 低3
+        slottable_temp->slot_traffic_execution_new[8 * i + 7].send_or_recv_node =
+            (bit_sequence_ptr_[11 * i + 9] & 0x03) << 8 | (bit_sequence_ptr_[11 * i + 10] & 0xff); // 低2左移8, 高8
         // }
     }
 
@@ -1347,8 +1203,7 @@ bool MacDaatr_struct_converter::daatr_0_1_to_slottable()
 }
 
 // 网管节点接入请求回复转换为0/1
-bool MacDaatr_struct_converter::daatr_access_reply_to_0_1()
-{
+bool MacDaatr_struct_converter::daatr_access_reply_to_0_1() {
     int i = 0;
     int number = 32;
     int flag = false;
@@ -1356,15 +1211,13 @@ bool MacDaatr_struct_converter::daatr_access_reply_to_0_1()
     {
         return flag;
     }
-    if (bit_sequence_ptr_ != NULL)
-    { // 若指针不为空, 则释放原空间
+    if (bit_sequence_ptr_ != NULL) { // 若指针不为空, 则释放原空间
         delete[] bit_sequence_ptr_;
         bit_sequence_ptr_ = NULL;
     }
     mana_access_reply *mana_type_ptr_temp = (mana_access_reply *)Daatr_struct_ptr_;
     uint8_t *packet = new uint8_t[number]; // 生成新空间
-    for (i = 0; i < number; i++)
-    {
+    for (i = 0; i < number; i++) {
         packet[i] = 0;
     }
     packet[0] = ((mana_type_ptr_temp->mana_node_hopping[0] >> 1) & 0xff);
@@ -1466,18 +1319,15 @@ bool MacDaatr_struct_converter::daatr_access_reply_to_0_1()
 }
 
 // 0/1序列转换为网管节点接入请求
-bool MacDaatr_struct_converter::daatr_0_1_to_access_reply()
-{
+bool MacDaatr_struct_converter::daatr_0_1_to_access_reply() {
     uint16_t temp_vari = 0;
     bool flag = false;
     int num = 0;
     int i = 0;
-    if (bit_sequence_ptr_ == NULL || type_ != 9)
-    {
+    if (bit_sequence_ptr_ == NULL || type_ != 9) {
         return flag;
     }
-    if (Daatr_struct_ptr_ != NULL)
-    { // 若结构体指针不为空, 则释放
+    if (Daatr_struct_ptr_ != NULL) { // 若结构体指针不为空, 则释放
         delete Daatr_struct_ptr_;
         Daatr_struct_ptr_ = NULL;
     }
@@ -1606,10 +1456,8 @@ bool MacDaatr_struct_converter::daatr_0_1_to_access_reply()
     temp_vari >>= 1;
     struct_ptr_temp->slot_location[4] = temp_vari;
 
-    for (i = 0; i < 5; i++)
-    {
-        if (struct_ptr_temp->slot_location[i] == 60)
-        {
+    for (i = 0; i < 5; i++) {
+        if (struct_ptr_temp->slot_location[i] == 60) {
             break;
         }
     }
@@ -1620,8 +1468,7 @@ bool MacDaatr_struct_converter::daatr_0_1_to_access_reply()
 }
 
 // 全网跳频图案转换成0/1
-bool MacDaatr_struct_converter::daatr_subnet_frequency_parttern_to_0_1()
-{
+bool MacDaatr_struct_converter::daatr_subnet_frequency_parttern_to_0_1() {
     int i = 0, j = 0, k = 0;
     int number = 563;
     int flag = false;
@@ -1629,29 +1476,24 @@ bool MacDaatr_struct_converter::daatr_subnet_frequency_parttern_to_0_1()
     {
         return flag;
     }
-    if (bit_sequence_ptr_ != NULL)
-    { // 若指针不为空, 则释放原空间
+    if (bit_sequence_ptr_ != NULL) { // 若指针不为空, 则释放原空间
         delete[] bit_sequence_ptr_;
         bit_sequence_ptr_ = NULL;
     }
     subnet_frequency_parttern *mana_type_ptr_temp = (subnet_frequency_parttern *)Daatr_struct_ptr_;
     uint8_t *packet = new uint8_t[number]; // 生成新空间
-    for (i = 0; i < SUBNET_NODE_NUMBER_MAX; i++)
-    {
-        for (j = 0; j < FREQUENCY_COUNT; j++)
-        {
+    for (i = 0; i < SUBNET_NODE_NUMBER_MAX; i++) {
+        for (j = 0; j < FREQUENCY_COUNT; j++) {
             mana_type_ptr_temp->mana_node_hopping[k] = mana_type_ptr_temp->subnet_node_hopping[i][j];
             k++;
         }
     }
-    for (i = 0; i < number; i++)
-    {
+    for (i = 0; i < number; i++) {
         packet[i] = 0;
     }
     j = 0;
     k = 0;
-    for (i = 0; i < 62; i++)
-    {
+    for (i = 0; i < 62; i++) {
         packet[0 + j] = ((mana_type_ptr_temp->mana_node_hopping[0 + k] >> 1) & 0xff);
         packet[1 + j] = ((mana_type_ptr_temp->mana_node_hopping[0 + k] & 0x01) & 0xff);
         packet[1 + j] <<= 7;
@@ -1701,25 +1543,21 @@ bool MacDaatr_struct_converter::daatr_subnet_frequency_parttern_to_0_1()
 }
 
 // 0/1序列转换成全网跳频图案
-bool MacDaatr_struct_converter::daatr_0_1_to_subnet_frequency_parttern()
-{
+bool MacDaatr_struct_converter::daatr_0_1_to_subnet_frequency_parttern() {
     uint16_t temp_vari = 0;
     bool flag = false;
     int num = 0;
     int i = 0, j = 0, k = 0;
-    if (bit_sequence_ptr_ == NULL || type_ != 10)
-    {
+    if (bit_sequence_ptr_ == NULL || type_ != 10) {
         return flag;
     }
-    if (Daatr_struct_ptr_ != NULL)
-    { // 若结构体指针不为空, 则释放
+    if (Daatr_struct_ptr_ != NULL) { // 若结构体指针不为空, 则释放
         delete Daatr_struct_ptr_;
         Daatr_struct_ptr_ = NULL;
     }
     subnet_frequency_parttern *struct_ptr_temp = new subnet_frequency_parttern;
     memset(struct_ptr_temp, 0, sizeof(subnet_frequency_parttern));
-    for (i = 0; i < 62; i++)
-    {
+    for (i = 0; i < 62; i++) {
         temp_vari = bit_sequence_ptr_[0 + k];
         temp_vari <<= 1;
         temp_vari |= bit_sequence_ptr_[1 + k] >> 7;
@@ -1771,8 +1609,7 @@ bool MacDaatr_struct_converter::daatr_0_1_to_subnet_frequency_parttern()
     temp_vari <<= 4;
     temp_vari |= bit_sequence_ptr_[562] >> 4;
     struct_ptr_temp->mana_node_hopping[499] = temp_vari;
-    for (i = 0; i < 500; i++)
-    {
+    for (i = 0; i < 500; i++) {
         struct_ptr_temp->subnet_node_hopping[i / 25][i % 25] = struct_ptr_temp->mana_node_hopping[i];
     }
     Daatr_struct_ptr_ = (uint8_t *)struct_ptr_temp;
@@ -1780,36 +1617,28 @@ bool MacDaatr_struct_converter::daatr_0_1_to_subnet_frequency_parttern()
     return flag;
 }
 
-void MacDaatr_struct_converter::daatr_print_result()
-{
+void MacDaatr_struct_converter::daatr_print_result() {
     int number;
     int i;
-    if (bit_sequence_ptr_ == NULL && Daatr_struct_ptr_ == NULL)
-    {
+    if (bit_sequence_ptr_ == NULL && Daatr_struct_ptr_ == NULL) {
         cout << "无输出数据!" << endl;
         return;
     }
-    switch (type_)
-    {
-    case 0:
-    {
+    switch (type_) {
+    case 0: {
         cout << "类型为0, 不输出" << endl;
         return;
     }
-    case 1:
-    {
+    case 1: {
         number = 25;
-        if (bit_sequence_ptr_ != NULL)
-        {
+        if (bit_sequence_ptr_ != NULL) {
             cout << "PDU1比特序列16进制表示: " << endl;
-            for (i = 0; i < number; i++)
-            {
+            for (i = 0; i < number; i++) {
                 cout << hex << (short)bit_sequence_ptr_[i] << " ";
             }
             cout << dec << endl;
         }
-        if (Daatr_struct_ptr_ != NULL)
-        {
+        if (Daatr_struct_ptr_ != NULL) {
             MacHeader *struct_ptr_temp = (MacHeader *)Daatr_struct_ptr_;
             cout << "PDU1结构体展示: " << endl;
             cout << "PDUtype: " << struct_ptr_temp->PDUtype << endl;
@@ -1826,20 +1655,16 @@ void MacDaatr_struct_converter::daatr_print_result()
         }
         break;
     }
-    case 2:
-    {
+    case 2: {
         number = 17;
-        if (bit_sequence_ptr_ != NULL)
-        {
+        if (bit_sequence_ptr_ != NULL) {
             cout << "PDU2比特序列16进制表示: " << endl;
-            for (i = 0; i < number; i++)
-            {
+            for (i = 0; i < number; i++) {
                 cout << hex << (short)bit_sequence_ptr_[i] << " ";
             }
             cout << dec << endl;
         }
-        if (Daatr_struct_ptr_ != NULL)
-        {
+        if (Daatr_struct_ptr_ != NULL) {
             MacHeader2 *struct_ptr_temp = (MacHeader2 *)Daatr_struct_ptr_;
             cout << "PDU2结构体展示: " << endl;
             cout << "PDUtype: " << struct_ptr_temp->PDUtype << endl;
@@ -1855,20 +1680,16 @@ void MacDaatr_struct_converter::daatr_print_result()
         }
         break;
     }
-    case 3:
-    {
+    case 3: {
         number = 24;
-        if (bit_sequence_ptr_ != NULL)
-        {
+        if (bit_sequence_ptr_ != NULL) {
             cout << "飞行状态信息比特序列16进制表示: " << endl;
-            for (i = 0; i < number; i++)
-            {
+            for (i = 0; i < number; i++) {
                 cout << hex << (short)bit_sequence_ptr_[i] << " ";
             }
             cout << dec << endl;
         }
-        if (Daatr_struct_ptr_ != NULL)
-        {
+        if (Daatr_struct_ptr_ != NULL) {
             FlightStatus *struct_ptr_temp = (FlightStatus *)Daatr_struct_ptr_;
             cout << "飞行状态信息结构体展示: " << endl;
             cout << "positionX: " << struct_ptr_temp->positionX << endl;
@@ -1880,64 +1701,51 @@ void MacDaatr_struct_converter::daatr_print_result()
         }
         break;
     }
-    case 4:
-    {
+    case 4: {
         number = 1;
-        if (bit_sequence_ptr_ != NULL)
-        {
+        if (bit_sequence_ptr_ != NULL) {
             cout << "网管节点通告消息比特序列16进制表示: " << endl;
-            for (i = 0; i < number; i++)
-            {
+            for (i = 0; i < number; i++) {
                 cout << hex << (short)bit_sequence_ptr_[i] << " ";
             }
             cout << dec << endl;
         }
-        if (Daatr_struct_ptr_ != NULL)
-        {
+        if (Daatr_struct_ptr_ != NULL) {
             if_need_change_state *struct_ptr_temp = (if_need_change_state *)Daatr_struct_ptr_;
             cout << "网管节点通告消息结构体展示: " << endl;
             cout << "state: " << struct_ptr_temp->state << endl;
         }
         break;
     }
-    case 5:
-    {
+    case 5: {
         number = 63;
-        if (bit_sequence_ptr_ != NULL)
-        {
+        if (bit_sequence_ptr_ != NULL) {
             cout << "频谱感知结果比特序列16进制表示: " << endl;
-            for (i = 0; i < number; i++)
-            {
+            for (i = 0; i < number; i++) {
                 cout << hex << (short)bit_sequence_ptr_[i] << " ";
             }
             cout << dec << endl;
         }
-        if (Daatr_struct_ptr_ != NULL)
-        {
+        if (Daatr_struct_ptr_ != NULL) {
             spectrum_sensing_struct *struct_ptr_temp = (spectrum_sensing_struct *)Daatr_struct_ptr_;
             cout << "频谱感知结果结构体展示: " << endl;
-            for (i = 0; i < TOTAL_FREQ_POINT; i++)
-            {
+            for (i = 0; i < TOTAL_FREQ_POINT; i++) {
                 cout << struct_ptr_temp->spectrum_sensing[i] << " ";
             }
             cout << endl;
         }
         break;
     }
-    case 6:
-    {
+    case 6: {
         number = 2;
-        if (bit_sequence_ptr_ != NULL)
-        {
+        if (bit_sequence_ptr_ != NULL) {
             cout << "建链请求比特序列16进制表示: " << endl;
-            for (i = 0; i < number; i++)
-            {
+            for (i = 0; i < number; i++) {
                 cout << hex << (short)bit_sequence_ptr_[i] << " ";
             }
             cout << dec << endl;
         }
-        if (Daatr_struct_ptr_ != NULL)
-        {
+        if (Daatr_struct_ptr_ != NULL) {
             BuildLink_Request *struct_ptr_temp = (BuildLink_Request *)Daatr_struct_ptr_;
             cout << "建链请求结构体展示: " << endl;
             cout << "nodeID: " << struct_ptr_temp->nodeID << endl;
@@ -1946,20 +1754,16 @@ void MacDaatr_struct_converter::daatr_print_result()
         }
         break;
     }
-    case 8:
-    {
+    case 8: {
         number = 1;
-        if (bit_sequence_ptr_ != NULL)
-        {
+        if (bit_sequence_ptr_ != NULL) {
             cout << "网管信道数据包类型16进制表示：" << endl;
-            for (i = 0; i < number; i++)
-            {
+            for (i = 0; i < number; i++) {
                 cout << hex << (short)bit_sequence_ptr_[i] << " ";
             }
             cout << dec << endl;
         }
-        if (Daatr_struct_ptr_ != NULL)
-        {
+        if (Daatr_struct_ptr_ != NULL) {
             Low_Freq_Packet_Type *struct_ptr_temp = (Low_Freq_Packet_Type *)Daatr_struct_ptr_;
             cout << "网管信道数据包类型结构体展示：" << endl;
             cout << "Type: " << struct_ptr_temp->type << endl;
@@ -1968,31 +1772,25 @@ void MacDaatr_struct_converter::daatr_print_result()
         break;
     }
 
-    case 9:
-    {
+    case 9: {
         number = 32;
-        if (bit_sequence_ptr_ != NULL)
-        {
+        if (bit_sequence_ptr_ != NULL) {
             cout << "网管节点接入请求回复16进制表示：" << endl;
-            for (i = 0; i < number; i++)
-            {
+            for (i = 0; i < number; i++) {
                 cout << hex << (short)bit_sequence_ptr_[i] << " ";
             }
             cout << dec << endl;
         }
-        if (Daatr_struct_ptr_ != NULL)
-        {
+        if (Daatr_struct_ptr_ != NULL) {
             mana_access_reply *struct_ptr_temp = (mana_access_reply *)Daatr_struct_ptr_;
             cout << "网管节点接入请求回复结构体展示：" << endl;
             cout << "mana_node_hopping: ";
-            for (i = 0; i < FREQUENCY_COUNT; i++)
-            {
+            for (i = 0; i < FREQUENCY_COUNT; i++) {
                 cout << struct_ptr_temp->mana_node_hopping[i] << " ";
             }
             cout << endl;
             cout << "slot_location: ";
-            for (i = 0; i < 5; i++)
-            {
+            for (i = 0; i < 5; i++) {
                 cout << (int)struct_ptr_temp->slot_location[i] << " ";
             }
             cout << endl;
@@ -2002,28 +1800,22 @@ void MacDaatr_struct_converter::daatr_print_result()
         break;
     }
 
-    case 10:
-    {
+    case 10: {
         number = 563;
         int j = 0;
-        if (bit_sequence_ptr_ != NULL)
-        {
+        if (bit_sequence_ptr_ != NULL) {
             cout << "子网跳频图案16进制表示：" << endl;
-            for (i = 0; i < number; i++)
-            {
+            for (i = 0; i < number; i++) {
                 cout << hex << (short)bit_sequence_ptr_[i] << " ";
             }
             cout << dec << endl;
         }
-        if (Daatr_struct_ptr_ != NULL)
-        {
+        if (Daatr_struct_ptr_ != NULL) {
             subnet_frequency_parttern *struct_ptr_temp = (subnet_frequency_parttern *)Daatr_struct_ptr_;
             cout << "子网跳频图案结构体展示：" << endl;
-            for (i = 0; i < SUBNET_NODE_NUMBER_MAX; i++)
-            {
+            for (i = 0; i < SUBNET_NODE_NUMBER_MAX; i++) {
                 cout << "Node ID " << i << "  ";
-                for (j = 0; j < FREQUENCY_COUNT; j++)
-                {
+                for (j = 0; j < FREQUENCY_COUNT; j++) {
                     cout << struct_ptr_temp->subnet_node_hopping[i][j] << " ";
                 }
                 cout << endl;
@@ -2032,13 +1824,10 @@ void MacDaatr_struct_converter::daatr_print_result()
         break;
     }
 
-    case 255:
-    {
-        if (bit_sequence_ptr_ != NULL)
-        {
+    case 255: {
+        if (bit_sequence_ptr_ != NULL) {
             cout << "帧比特序列16进制表示: " << endl;
-            for (i = 0; i < length_; i++)
-            {
+            for (i = 0; i < length_; i++) {
                 cout << hex << (short)bit_sequence_ptr_[i] << " ";
             }
             cout << dec << endl;
@@ -2051,15 +1840,12 @@ void MacDaatr_struct_converter::daatr_print_result()
 // 根据发送速率填满0/1序列
 // speed单位：kbps
 // 传输数据量以byte为最小单位
-bool MacDaatr_struct_converter::daatr_add_0_to_full(double speed)
-{
+bool MacDaatr_struct_converter::daatr_add_0_to_full(double speed) {
     bool flag = false;
-    if (bit_sequence_ptr_ == NULL)
-    {
+    if (bit_sequence_ptr_ == NULL) {
         return flag;
     }
-    if (Daatr_struct_ptr_ != NULL)
-    {
+    if (Daatr_struct_ptr_ != NULL) {
         delete Daatr_struct_ptr_;
         Daatr_struct_ptr_ = NULL;
     }
@@ -2068,8 +1854,7 @@ bool MacDaatr_struct_converter::daatr_add_0_to_full(double speed)
     double byte_trans_1 = bits_trans / 8; // 传输数据量：byte
     int byte_trans = ceil(byte_trans_1);  // 传输数据量：byte(向上取整)
     uint8_t *frame_full = new uint8_t[byte_trans];
-    if (byte_trans < length_)
-    { // 如果待补零序列的长度大于可发送数据量, 拒绝补零
+    if (byte_trans < length_) { // 如果待补零序列的长度大于可发送数据量, 拒绝补零
         return flag;
     }
     memset(frame_full, 0, sizeof(uint8_t) * byte_trans);
@@ -2083,27 +1868,23 @@ bool MacDaatr_struct_converter::daatr_add_0_to_full(double speed)
 }
 
 // 和包成帧
-MacDaatr_struct_converter &MacDaatr_struct_converter::operator+(const MacDaatr_struct_converter &packet1)
-{
-    if (type_ == 0 || packet1.type_ == 0 || bit_sequence_ptr_ == NULL || packet1.bit_sequence_ptr_ == NULL)
-    { // 若两个类其中一个类型为0或者两个类中有比特序列指针为空, 则返回
+MacDaatr_struct_converter &MacDaatr_struct_converter::operator+(const MacDaatr_struct_converter &packet1) {
+    if (type_ == 0 || packet1.type_ == 0 || bit_sequence_ptr_ == NULL ||
+        packet1.bit_sequence_ptr_ == NULL) { // 若两个类其中一个类型为0或者两个类中有比特序列指针为空, 则返回
         return *this;
     }
     int i = 0;
     int frame_size = length_ + packet1.length_;
     uint8_t *temp_ptr = new uint8_t[frame_size];
-    for (i = 0; i < length_; i++)
-    { // 将加号前比特序列从帧比特序列起始放入
+    for (i = 0; i < length_; i++) { // 将加号前比特序列从帧比特序列起始放入
         temp_ptr[i] = bit_sequence_ptr_[i];
     }
-    for (i; i < frame_size; i++)
-    { // 紧跟着放入加号后的比特序列
+    for (i; i < frame_size; i++) { // 紧跟着放入加号后的比特序列
         temp_ptr[i] = packet1.bit_sequence_ptr_[i - length_];
     }
     delete[] bit_sequence_ptr_;
     bit_sequence_ptr_ = temp_ptr;
-    if (Daatr_struct_ptr_ != NULL)
-    {
+    if (Daatr_struct_ptr_ != NULL) {
         delete Daatr_struct_ptr_;
         Daatr_struct_ptr_ = NULL;
     }
@@ -2113,169 +1894,141 @@ MacDaatr_struct_converter &MacDaatr_struct_converter::operator+(const MacDaatr_s
 }
 
 // 拆包
-MacDaatr_struct_converter &MacDaatr_struct_converter::operator-(const MacDaatr_struct_converter &packet1)
-{
-    if (type_ == 0 || packet1.type_ != 255 || packet1.bit_sequence_ptr_ == NULL)
-    { // 若两个类其中一个类型不为255或者两个类中有比特序列指针为空, 则返回
+MacDaatr_struct_converter &MacDaatr_struct_converter::operator-(const MacDaatr_struct_converter &packet1) {
+    if (type_ == 0 || packet1.type_ != 255 ||
+        packet1.bit_sequence_ptr_ == NULL) { // 若两个类其中一个类型不为255或者两个类中有比特序列指针为空, 则返回
         return *this;
     }
-    if (bit_sequence_ptr_ != NULL)
-    {
+    if (bit_sequence_ptr_ != NULL) {
         delete[] bit_sequence_ptr_;
         bit_sequence_ptr_ = NULL;
     }
-    if (Daatr_struct_ptr_ != NULL)
-    {
+    if (Daatr_struct_ptr_ != NULL) {
         delete Daatr_struct_ptr_;
         Daatr_struct_ptr_ = NULL;
     }
     int number = 0;
     int i = 0;
-    switch (type_)
-    {
+    switch (type_) {
     case 0:
         return *this;
         break;
-    case 1:
-    { // 想要PDU1
+    case 1: { // 想要PDU1
         number = 25;
         length_ = number;
         bit_sequence_ptr_ = new uint8_t[number];
-        for (i = 0; i < number; i++)
-        {
+        for (i = 0; i < number; i++) {
             bit_sequence_ptr_[i] = packet1.bit_sequence_ptr_[i];
         }
         break;
     }
-    case 2:
-    { // 想要PDU2
+    case 2: { // 想要PDU2
         number = 17;
         length_ = number;
         bit_sequence_ptr_ = new uint8_t[number];
-        for (i = 0; i < number; i++)
-        {
+        for (i = 0; i < number; i++) {
             bit_sequence_ptr_[i] = packet1.bit_sequence_ptr_[i];
         }
         break;
     }
-    case 3:
-    { // 想要飞行状态信息
+    case 3: { // 想要飞行状态信息
         number = 24;
         int number2 = 17 + 1; // PDU2大小
         length_ = number;
         bit_sequence_ptr_ = new uint8_t[number];
-        for (i = 0; i < number; i++)
-        {
+        for (i = 0; i < number; i++) {
             bit_sequence_ptr_[i] = packet1.bit_sequence_ptr_[number2 + i];
         }
         break;
     }
-    case 4:
-    { // 想要网管节点通告消息
+    case 4: { // 想要网管节点通告消息
         number = 1;
         int number2 = 17 + 1; // PDU2大小
         length_ = number;
         bit_sequence_ptr_ = new uint8_t[number];
-        for (i = 0; i < number; i++)
-        {
+        for (i = 0; i < number; i++) {
             bit_sequence_ptr_[i] = packet1.bit_sequence_ptr_[number2 + i];
         }
         break;
     }
-    case 5:
-    { // 想要频谱感知结果
+    case 5: { // 想要频谱感知结果
         number = 63;
         int number2 = 25; // PDU2大小
         length_ = number;
         bit_sequence_ptr_ = new uint8_t[number];
-        for (i = 0; i < number; i++)
-        {
+        for (i = 0; i < number; i++) {
             bit_sequence_ptr_[i] = packet1.bit_sequence_ptr_[number2 + i];
         }
         break;
     }
-    case 6:
-    { // 想要建链请求
+    case 6: { // 想要建链请求
         number = 2;
         int number2 = 25; // PDU2大小
         length_ = number;
         bit_sequence_ptr_ = new uint8_t[number];
-        for (i = 0; i < number; i++)
-        {
+        for (i = 0; i < number; i++) {
             bit_sequence_ptr_[i] = packet1.bit_sequence_ptr_[number2 + i];
         }
         break;
     }
-    case 7:
-    { // 想要时隙表
+    case 7: { // 想要时隙表
         number = 550;
         int number2 = 25; // PDU1大小
         length_ = number;
         bit_sequence_ptr_ = new uint8_t[number];
-        for (i = 0; i < number; i++)
-        {
+        for (i = 0; i < number; i++) {
             bit_sequence_ptr_[i] = packet1.bit_sequence_ptr_[number2 + i];
         }
         break;
     }
-    case 8:
-    { // 想要网管信道消息类型
+    case 8: { // 想要网管信道消息类型
         number = 17;
         int number2 = 1;
         length_ = number2;
         bit_sequence_ptr_ = new uint8_t[number2];
-        for (i = number; i < number + 1; i++)
-        {
+        for (i = number; i < number + 1; i++) {
             bit_sequence_ptr_[0] = packet1.bit_sequence_ptr_[i];
         }
         break;
     }
-    case 9:
-    { // 想要网管节点接入请求
+    case 9: { // 想要网管节点接入请求
         number = 32;
         int number2 = 18;
         length_ = number2;
         bit_sequence_ptr_ = new uint8_t[number];
-        for (i = 0; i < number; i++)
-        {
+        for (i = 0; i < number; i++) {
             bit_sequence_ptr_[i] = packet1.bit_sequence_ptr_[number2 + i];
         }
         break;
     }
-    case 10:
-    { // 想要全网跳频图案
+    case 10: { // 想要全网跳频图案
         number = 563;
         int number2 = 25; // 全网跳频图案大小
         length_ = number;
         bit_sequence_ptr_ = new uint8_t[number];
-        for (i = 0; i < number; i++)
-        {
+        for (i = 0; i < number; i++) {
             bit_sequence_ptr_[i] = packet1.bit_sequence_ptr_[number2 + i];
         }
         break;
     }
-    case 99:
-    {
+    case 99: {
         number = 25;
         int len = packet1.length_;
         length_ = len - number;
         type_ = 255;
         bit_sequence_ptr_ = new uint8_t[len - number];
-        for (i = number; i < len; i++)
-        {
+        for (i = number; i < len; i++) {
             bit_sequence_ptr_[i - number] = packet1.bit_sequence_ptr_[i];
         }
         break;
     }
-    case 100:
-    {
+    case 100: {
         number = 17;
         int len = packet1.length_;
         length_ = len - number;
         type_ = 255;
         bit_sequence_ptr_ = new uint8_t[len - number];
-        for (i = number; i < len; i++)
-        {
+        for (i = number; i < len; i++) {
             bit_sequence_ptr_[i - number] = packet1.bit_sequence_ptr_[i];
         }
         break;
@@ -2285,21 +2038,17 @@ MacDaatr_struct_converter &MacDaatr_struct_converter::operator-(const MacDaatr_s
 }
 
 // 网管信道补零操作（网管信道速率：20kpbs）最高50byte
-bool MacDaatr_struct_converter::daatr_mana_channel_add_0_to_full()
-{
+bool MacDaatr_struct_converter::daatr_mana_channel_add_0_to_full() {
     bool flag = false;
-    if (bit_sequence_ptr_ == NULL)
-    {
+    if (bit_sequence_ptr_ == NULL) {
         return flag;
     }
-    if (Daatr_struct_ptr_ != NULL)
-    {
+    if (Daatr_struct_ptr_ != NULL) {
         delete Daatr_struct_ptr_;
         Daatr_struct_ptr_ = NULL;
     }
-    int sequence_length = 50; // 帧总长(byte)
-    if (sequence_length <= length_)
-    { // 如果待补零序列的长度大于或等于可发送数据量, 拒绝补零
+    int sequence_length = 50;         // 帧总长(byte)
+    if (sequence_length <= length_) { // 如果待补零序列的长度大于或等于可发送数据量, 拒绝补零
         return flag;
     }
     uint8_t *frame_full = new uint8_t[sequence_length];
@@ -2314,22 +2063,18 @@ bool MacDaatr_struct_converter::daatr_mana_channel_add_0_to_full()
 }
 
 // 等号
-MacDaatr_struct_converter &MacDaatr_struct_converter::operator=(const MacDaatr_struct_converter &packet1)
-{
-    if (packet1.bit_sequence_ptr_ == NULL)
-    {
+MacDaatr_struct_converter &MacDaatr_struct_converter::operator=(const MacDaatr_struct_converter &packet1) {
+    if (packet1.bit_sequence_ptr_ == NULL) {
         return *this;
     }
-    if (Daatr_struct_ptr_ != NULL)
-    { // 释放原结构体指针
+    if (Daatr_struct_ptr_ != NULL) { // 释放原结构体指针
         delete Daatr_struct_ptr_;
         Daatr_struct_ptr_ = NULL;
     }
     Daatr_struct_ptr_ = NULL;
     int paket_size = packet1.length_;
     bit_sequence_ptr_ = new uint8_t[paket_size];
-    for (int i = 0; i < paket_size; i++)
-    {
+    for (int i = 0; i < paket_size; i++) {
         bit_sequence_ptr_[i] = packet1.bit_sequence_ptr_[i];
     }
     length_ = paket_size;
@@ -2338,11 +2083,9 @@ MacDaatr_struct_converter &MacDaatr_struct_converter::operator=(const MacDaatr_s
 }
 
 // 结构体转化为0/1序列
-bool MacDaatr_struct_converter::daatr_struct_to_0_1()
-{
+bool MacDaatr_struct_converter::daatr_struct_to_0_1() {
     bool flag = false;
-    switch (type_)
-    {
+    switch (type_) {
     case 0:
         return flag;
         break;
@@ -2381,11 +2124,9 @@ bool MacDaatr_struct_converter::daatr_struct_to_0_1()
 }
 
 // 0/1序列转化为结构体
-bool MacDaatr_struct_converter::daatr_0_1_to_struct()
-{
+bool MacDaatr_struct_converter::daatr_0_1_to_struct() {
     bool flag = false;
-    switch (type_)
-    {
+    switch (type_) {
     case 0:
         return flag;
         break;
@@ -2423,8 +2164,7 @@ bool MacDaatr_struct_converter::daatr_0_1_to_struct()
     return flag;
 }
 
-msgFromControl *convert_01_MFCPtr(vector<uint8_t> *dataPacket)
-{
+msgFromControl *convert_01_MFCPtr(vector<uint8_t> *dataPacket) {
     msgFromControl *temp_msgFromControl = new msgFromControl();
     vector<uint8_t> *cur_data = new vector<uint8_t>;
 
@@ -2440,8 +2180,7 @@ msgFromControl *convert_01_MFCPtr(vector<uint8_t> *dataPacket)
     temp_msgFromControl->fragmentSeq = (*dataPacket)[7] & 0x0F;
 
     unsigned short dataLen = temp_msgFromControl->packetLength - 10;
-    for (size_t i = 1; i <= dataLen; i++)
-    {
+    for (size_t i = 1; i <= dataLen; i++) {
         cur_data->push_back((*dataPacket)[7 + i]);
     }
     temp_msgFromControl->data = (char *)cur_data;
@@ -2450,28 +2189,22 @@ msgFromControl *convert_01_MFCPtr(vector<uint8_t> *dataPacket)
     return temp_msgFromControl;
 }
 
-static uint16_t CRC16_L2(vector<uint8_t> *buffer)
-{
+static uint16_t CRC16_L2(vector<uint8_t> *buffer) {
     uint16_t crc = 0xFFFF; // 初始化计算值
-    for (int i = 0; i < buffer->size(); i++)
-    {
+    for (int i = 0; i < buffer->size(); i++) {
         crc ^= (*buffer)[i];
-        for (int i = 0; i < 8; ++i)
-        {
-            if (crc & 0x0001)
-            {
+        for (int i = 0; i < 8; ++i) {
+            if (crc & 0x0001) {
                 crc >>= 1;
                 crc ^= 0xA001;
-            }
-            else
+            } else
                 crc >>= 1;
         }
     }
     return crc;
 }
 
-vector<uint8_t> *convert_PtrMFC_01(msgFromControl *packet)
-{
+vector<uint8_t> *convert_PtrMFC_01(msgFromControl *packet) {
     // auto sz = 10 + ((vector<uint8_t> *)(packet->data))->size();
     // vector<uint8_t> *buffer = new vector<uint8_t>(sz);
 
@@ -2522,8 +2255,7 @@ vector<uint8_t> *convert_PtrMFC_01(msgFromControl *packet)
     vector<uint8_t> *curData = new vector<uint8_t>;
     curData = (vector<uint8_t> *)(packet->data);
     // 封装报文内容 0728改
-    for (int i = 0; i < curData->size(); i++)
-    {
+    for (int i = 0; i < curData->size(); i++) {
         buffer->push_back((*curData)[i]);
     }
     // 根据前面的字节计算CRC校验码

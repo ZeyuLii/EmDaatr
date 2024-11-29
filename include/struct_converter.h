@@ -1,20 +1,19 @@
 #ifndef __STRUCT_CONVERTER_H__
 #define __STRUCT_CONVERTER_H__
 
-#include <stdint.h>
-#include <stddef.h>
-#include <vector>
 #include "common_struct.h"
+#include <stddef.h>
+#include <stdint.h>
+#include <vector>
 
-class MacDaatr_struct_converter
-{
-private:
+class MacDaatr_struct_converter {
+  private:
     uint8_t *bit_sequence_ptr_;
     uint8_t *Daatr_struct_ptr_;
     unsigned char type_;
     uint32_t length_; // 比特序列长度, 单位: 字节
 
-public:
+  public:
     MacDaatr_struct_converter();                   // 默认构造函数
     MacDaatr_struct_converter(unsigned char type); // 构造函数
     ~MacDaatr_struct_converter();                  // 析构函数

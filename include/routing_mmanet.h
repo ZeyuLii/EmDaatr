@@ -1,14 +1,14 @@
 #ifndef MMANET_H
 #define MMANET_H
 
-#include <vector>
-#include <signal.h>
 #include "common_struct.h"
+#include <signal.h>
+#include <vector>
 using namespace std;
 
-#define MMANET_MFC_DATASIZE 145				// msgFromControl的data字节数
+#define MMANET_MFC_DATASIZE 145             // msgFromControl的data字节数
 #define MMANET_TOUPPERMSG_LIFECYCLE 1000000 // 重组后的格式化消息的生存周期, 单位为微秒
-#define INF 0xffff							// 表示无限大，用于邻接矩阵的初始跳数
+#define INF 0xffff                          // 表示无限大，用于邻接矩阵的初始跳数
 
 typedef unsigned int uint32_t;
 typedef unsigned short uint16_t;
@@ -31,10 +31,9 @@ typedef unsigned char uint8_t;
 ********************************************************************************
 *
 */
-struct NodeTime_lag
-{
-	uint16_t nodeAddr;
-	vector<double> timelag;
+struct NodeTime_lag {
+    uint16_t nodeAddr;
+    vector<double> timelag;
 };
 
 /*
@@ -46,12 +45,11 @@ struct NodeTime_lag
 ********************************************************************************
 *
 */
-struct nodeLocalForwardingTable
-{
-	uint16_t destAddr; // 目的地址
-	uint16_t nextHop;  // 下一跳地址
-	uint16_t hop;	   // 跳数
-	uint16_t delay;	   // 时延
+struct nodeLocalForwardingTable {
+    uint16_t destAddr; // 目的地址
+    uint16_t nextHop;  // 下一跳地址
+    uint16_t hop;      // 跳数
+    uint16_t delay;    // 时延
 };
 
 /*
@@ -63,11 +61,10 @@ struct nodeLocalForwardingTable
 ********************************************************************************
 *
 */
-struct routingTableMessage
-{
-	vector<int> dist; // dist[i]记录节点i到源节点最短路径的长度
-	vector<int> path; // 记录源节点到目的节点的完整路径（不包括源节点）
-	int count;		  // path的长度
+struct routingTableMessage {
+    vector<int> dist; // dist[i]记录节点i到源节点最短路径的长度
+    vector<int> path; // 记录源节点到目的节点的完整路径（不包括源节点）
+    int count;        // path的长度
 };
 
 /*
@@ -79,16 +76,14 @@ struct routingTableMessage
 ********************************************************************************
 *
 */
-struct sn_nodeNetNeighList
-{
-	uint16_t nodeAddr; // 节点地址，表明是谁的地址
-	unsigned int SN;
+struct sn_nodeNetNeighList {
+    uint16_t nodeAddr; // 节点地址，表明是谁的地址
+    unsigned int SN;
 };
 
-struct tst_mapping_table
-{
-	NodeAddress nodeAddr;
-	NodeAddress Node_ID;
+struct tst_mapping_table {
+    NodeAddress nodeAddr;
+    NodeAddress Node_ID;
 };
 
 /*
@@ -100,10 +95,9 @@ struct tst_mapping_table
 ********************************************************************************
 *
 */
-struct formatMessageControl
-{
-	clocktype lastMsgFromControlTimer; // 用于存储接收一条格式化消息的业务数据包的更新时间
-	bool reorganizationCompleted;	   // 用于存储该条格式化消息是否已经重组完成且发送
+struct formatMessageControl {
+    clocktype lastMsgFromControlTimer; // 用于存储接收一条格式化消息的业务数据包的更新时间
+    bool reorganizationCompleted;      // 用于存储该条格式化消息是否已经重组完成且发送
 };
 
 /*
@@ -115,70 +109,69 @@ struct formatMessageControl
 ********************************************************************************
 *
 */
-typedef struct struct_network_mmanet_str
-{
-	// clocktype LastHelloBroadCastTime;//记录上一次Hello包发送时间以确定本次Hello包是否该发送
-	int32_t netDiameter;
-	clocktype nodeTraversalTime;
-	clocktype MMANETRouteTimeout;
-	clocktype LastHelloBroadCastTime; // 记录上一次Hello包发送时间以确定本次Hello包是否该发送
-	// MMANETInterfaceInfo* iface;
+typedef struct struct_network_mmanet_str {
+    // clocktype LastHelloBroadCastTime;//记录上一次Hello包发送时间以确定本次Hello包是否该发送
+    int32_t netDiameter;
+    clocktype nodeTraversalTime;
+    clocktype MMANETRouteTimeout;
+    clocktype LastHelloBroadCastTime; // 记录上一次Hello包发送时间以确定本次Hello包是否该发送
+    // MMANETInterfaceInfo* iface;
 
-	bool ReceiveLocalLinkMsg_Flg; // 用于判断是否开始发送本地链路状态信息
-	bool BC_Process_Init_Flg;	  // 用于判断是否已经开启了广播流程的标志位
-	bool Hello_Init_Flg;		  // 用于判断hello包是否重复
-	bool Hello_Ack_Flg;			  // 用于判断此时是否是hello包探测时期，在实现非同步的时候要用
-	bool time_Flg;				  // 用于判断是否为第一次记录时间
-	bool List_Flg;				  // 用于判读邻接表是否改变
-	bool Msg_Flg;				  // 用于判断接收到的其它邻接表是否改变
-	bool NetConFlag;			  // 用于判断节点网络是否构建成功
-	bool Lstm_Flg;				  // 作为预测开启的开关
-	unsigned int seq_Num;		  // 给业务包分配序列号
-	unsigned int signalOverhead;  // 本节点的信令开销
+    bool ReceiveLocalLinkMsg_Flg; // 用于判断是否开始发送本地链路状态信息
+    bool BC_Process_Init_Flg;     // 用于判断是否已经开启了广播流程的标志位
+    bool Hello_Init_Flg;          // 用于判断hello包是否重复
+    bool Hello_Ack_Flg;           // 用于判断此时是否是hello包探测时期，在实现非同步的时候要用
+    bool time_Flg;                // 用于判断是否为第一次记录时间
+    bool List_Flg;                // 用于判读邻接表是否改变
+    bool Msg_Flg;                 // 用于判断接收到的其它邻接表是否改变
+    bool NetConFlag;              // 用于判断节点网络是否构建成功
+    bool Lstm_Flg;                // 作为预测开启的开关
+    unsigned int seq_Num;         // 给业务包分配序列号
+    unsigned int signalOverhead;  // 本节点的信令开销
 
-	uint16_t nodeIdentity;					 // 存储节点类型(身份)
-	uint16_t nodeAddr;						 // 节点地址
-	uint16_t groupID;						 // 所属群ID
-	uint16_t intragroupcontrolNodeId;		 // 所属群控制节点ID
-	uint16_t reserverdintracontrolNodeId;	 // 所属群备用控制节点ID
-	uint16_t intergroupgatewayNodeId;		 // 所属群间网关节点ID
-	uint16_t resrvedintergroupgatewayNodeId; // 备用网关节点ID
+    uint16_t nodeIdentity;                   // 存储节点类型(身份)
+    uint16_t nodeAddr;                       // 节点地址
+    uint16_t groupID;                        // 所属群ID
+    uint16_t intragroupcontrolNodeId;        // 所属群控制节点ID
+    uint16_t reserverdintracontrolNodeId;    // 所属群备用控制节点ID
+    uint16_t intergroupgatewayNodeId;        // 所属群间网关节点ID
+    uint16_t resrvedintergroupgatewayNodeId; // 备用网关节点ID
 
-	vector<nodeLocalNeighList *> neighborList;		 // 存储本地节点邻居表
-	vector<nodeLocalNeighList *> disu_neighborList;	 // 存储低速本地节点邻居表
-	vector<nodeLocalNeighList *> gaosu_neighborList; // 存储高速本地节点邻居表
-	vector<nodeLocalNeighList *> temp_neighborList;	 // 临时存储本地节点邻居表，用于表项更新
-	vector<nodeNetNeighList *> NetNeighList;		 // 存储高速全网邻居表
-	vector<nodeNetNeighList *> disu_NetNeighList;	 // 存储低速全网邻居表
-	vector<vector<uint16_t>> neighMatrix;			 // 存储邻接矩阵
-	vector<uint16_t> NodeAddrToIndex;				 // 邻接矩阵中下标与节点地址的映射表
+    vector<nodeLocalNeighList *> neighborList;       // 存储本地节点邻居表
+    vector<nodeLocalNeighList *> disu_neighborList;  // 存储低速本地节点邻居表
+    vector<nodeLocalNeighList *> gaosu_neighborList; // 存储高速本地节点邻居表
+    vector<nodeLocalNeighList *> temp_neighborList;  // 临时存储本地节点邻居表，用于表项更新
+    vector<nodeNetNeighList *> NetNeighList;         // 存储高速全网邻居表
+    vector<nodeNetNeighList *> disu_NetNeighList;    // 存储低速全网邻居表
+    vector<vector<uint16_t>> neighMatrix;            // 存储邻接矩阵
+    vector<uint16_t> NodeAddrToIndex;                // 邻接矩阵中下标与节点地址的映射表
 
-	vector<vector<uint16_t>> Layer2_ForwardingTable;	  // 发给层2的转发表
-	vector<nodeLocalForwardingTable *> LFT_Entry;		  // 用于节点存储本地路由表
-	vector<vector<nodeNetForwardingTable *>> NetRT_Entry; // 用于节点存储全网路由表
-	vector<NodeAddress> DamagedNodes;					  // 用于存储毁伤节点表
+    vector<vector<uint16_t>> Layer2_ForwardingTable;      // 发给层2的转发表
+    vector<nodeLocalForwardingTable *> LFT_Entry;         // 用于节点存储本地路由表
+    vector<vector<nodeNetForwardingTable *>> NetRT_Entry; // 用于节点存储全网路由表
+    vector<NodeAddress> DamagedNodes;                     // 用于存储毁伤节点表
 
-	vector<vector<msgFromControl *>> ToNetwork_msgFromControl; // 用于存储链路层发送的业务数据包以便进行重组
-	vector<formatMessageControl> FormatMessageControl;		   // 用于管理重组后的格式化消息的重复发送
-	vector<vector<msgFromControl *>> BC_msgFromControl;		   // 用于存储接收广播数据包(高速的）
-	vector<vector<msgFromControl *>> BC_msgFromControl2;	   // 用于存储接收广播数据包（低速的）
-	vector<msgFromControl *> one_msgFromComtrol;			   // 用于存储接收新的广播数据(高速的）
-	vector<msgFromControl *> one_msgFromComtrol2;			   // 用于存储接收新的广播数据（低速的）
-	vector<nodeLocalNeighList *> cur_neighborList;			   // 用于接收链路层本地链路信息
-	vector<nodeLocalNeighList *> old_neighborList;			   // 用于存储旧的链路层本地链路信息
+    vector<vector<msgFromControl *>> ToNetwork_msgFromControl; // 用于存储链路层发送的业务数据包以便进行重组
+    vector<formatMessageControl> FormatMessageControl;         // 用于管理重组后的格式化消息的重复发送
+    vector<vector<msgFromControl *>> BC_msgFromControl;        // 用于存储接收广播数据包(高速的）
+    vector<vector<msgFromControl *>> BC_msgFromControl2;       // 用于存储接收广播数据包（低速的）
+    vector<msgFromControl *> one_msgFromComtrol;               // 用于存储接收新的广播数据(高速的）
+    vector<msgFromControl *> one_msgFromComtrol2;              // 用于存储接收新的广播数据（低速的）
+    vector<nodeLocalNeighList *> cur_neighborList;             // 用于接收链路层本地链路信息
+    vector<nodeLocalNeighList *> old_neighborList;             // 用于存储旧的链路层本地链路信息
 
-	// 以下为测试用映射表
-	vector<tst_mapping_table *> mapping_table;
-	// 使用哈希表，存储每次网内节点，以判断哪些节点毁伤
-	vector<uint16_t> old_node_set;
+    // 以下为测试用映射表
+    vector<tst_mapping_table *> mapping_table;
+    // 使用哈希表，存储每次网内节点，以判断哪些节点毁伤
+    vector<uint16_t> old_node_set;
 
-	// 泛洪机制
-	// 对于高速
-	unsigned int sn;
-	vector<sn_nodeNetNeighList *> sn_NetNeighList;
-	// 对于低速
-	unsigned int disu_sn;
-	vector<sn_nodeNetNeighList *> disu_sn_NetNeighList;
+    // 泛洪机制
+    // 对于高速
+    unsigned int sn;
+    vector<sn_nodeNetNeighList *> sn_NetNeighList;
+    // 对于低速
+    unsigned int disu_sn;
+    vector<sn_nodeNetNeighList *> disu_sn_NetNeighList;
 
 } MMANETData;
 

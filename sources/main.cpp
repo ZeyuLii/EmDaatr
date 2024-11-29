@@ -46,6 +46,8 @@ int main(int argc, char *argv[]) {
     system("clear");
     system("source ./rm.sh");
 
+    srand(time(NULL));
+
     extern int over_count;
     extern int PPS_overcount;
     extern int fd_irq;
